@@ -1,0 +1,4 @@
+{
+  "file_not_found": "File {json_file} not found.",
+  "decode_error": "Error decoding JSON file: {error}"
+}
