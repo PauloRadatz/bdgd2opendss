@@ -201,6 +201,26 @@ class PVsystem:
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
                 f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
+        elif self.phases == '1' and (self.kv == 0.240 or self.kv == 0.44):
+            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+                f'bus1={self.bus1}.{self.bus_nodes} '
+                f'conn={self.conn} '
+                f'kv={self.kv/2:.3f} '
+                f'pf={self.pf} '
+                f'pmpp={self.pmpp} '
+                f'kva={numpy.ceil(self.pmpp)} '
+                f'irradiance={self.irradiance} \n'
+                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
+        elif self.phases == '1':
+            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+                f'bus1={self.bus1}.{self.bus_nodes} '
+                f'conn={self.conn} '
+                f'kv={self.kv/numpy.sqrt(3):.3f} '
+                f'pf={self.pf} '
+                f'pmpp={self.pmpp} '
+                f'kva={numpy.ceil(self.pmpp)} '
+                f'irradiance={self.irradiance} \n'
+                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
         else:
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
@@ -231,11 +251,21 @@ class PVsystem:
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
                 f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
+        elif self.phases == '1' and (self.kv == 0.240 or self.kv == 0.44):
+            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+                f'bus1={self.bus1}.{self.bus_nodes} '
+                f'conn={self.conn} '
+                f'kv={self.kv/2:.3f} '
+                f'pf={self.pf} '
+                f'pmpp={self.pmpp} '
+                f'kva={numpy.ceil(self.pmpp)} '
+                f'irradiance={self.irradiance} \n'
+                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
         elif self.phases == '1':
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
-                f'kv={self.kv} '
+                f'kv={self.kv/numpy.sqrt(3):.3f} '
                 f'pf={self.pf} '
                 f'pmpp={self.pmpp} '
                 f'kva={numpy.ceil(self.pmpp)} '
@@ -245,7 +275,7 @@ class PVsystem:
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
-                f'kv={self.kv*numpy.sqrt(3):.3f} '
+                f'kv={self.kv} '
                 f'pf={self.pf} '
                 f'pmpp={self.pmpp} '
                 f'kva={numpy.ceil(self.pmpp)} '
@@ -361,10 +391,10 @@ class PVsystem:
         for key, value in pvsystem_config.items():
             if key == "calculated":
                 pvsystem_._process_calculated(pvsystem_, value, row)
-            elif key == "direct_mapping":
-                pvsystem_._process_direct_mapping(pvsystem_, value,row)
             elif key == "indirect_mapping":
                 pvsystem_._process_indirect_mapping(pvsystem_, value,row)
+            elif key == "direct_mapping":
+                pvsystem_._process_direct_mapping(pvsystem_, value,row)
             elif key == "static":
                 pvsystem_._process_static(pvsystem_, value)
         return pvsystem_
