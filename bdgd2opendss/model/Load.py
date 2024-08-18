@@ -318,7 +318,7 @@ class Load:
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
 
-        if int(self.phases) == 1 and (float(self.kv) == 0.240 or float(self.kv) == 0.44):
+        if int(self.phases) == 1 and float(self.kv) == 0.240:
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=1 kv={float(self.kv)/2} kw = {self.kw/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
@@ -348,7 +348,7 @@ class Load:
 
     def __repr__(self):
 
-        if int(self.phases) == 1 and (float(self.kv) == 0.240 or float(self.kv) == 0.44):
+        if int(self.phases) == 1 and float(self.kv) == 0.240:
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=1 kv={float(self.kv)/2} kw = {self.kw/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
