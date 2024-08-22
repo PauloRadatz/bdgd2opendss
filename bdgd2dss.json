@@ -958,7 +958,8 @@
                     "PAC",
                     "POT_INST",
                     "FAS_CON",
-                    "TEN_CON"
+                    "TEN_CON",
+                    "UNI_TR_MT"
                 ],
                 "type":{
                     "CEG_GD":"category",
@@ -972,7 +973,6 @@
                 "columns":[
                     "CTMT",
                     "CEG_GD",
-                    "UNI_TR_MT",
                     "PAC",
                     "POT_INST",
                     "FAS_CON",
