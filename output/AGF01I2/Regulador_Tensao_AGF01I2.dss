@@ -1,0 +1,36 @@
+New "Transformer.ANDRG02E4519" phases=1 windings=2 buses=["3810330438449018.1.4" "3810330438449018F.1.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.ANDRG02E4519" transformer="ANDRG02E4519" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_ANDRG02E4519_P" phases=1 bus1="3810330438449018.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_ANDRG02E4519_S" phases=1 bus1="3810330438449018F.4" R=15 X=0 basefreq=60
+New "Transformer.BNDRG02E4519" phases=1 windings=2 buses=["3810330438449018.2.4" "3810330438449018F.2.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.BNDRG02E4519" transformer="BNDRG02E4519" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_BNDRG02E4519_P" phases=1 bus1="3810330438449018.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_BNDRG02E4519_S" phases=1 bus1="3810330438449018F.4" R=15 X=0 basefreq=60
+New "Transformer.CNDRG02E4519" phases=1 windings=2 buses=["3810330438449018.3.4" "3810330438449018F.3.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.CNDRG02E4519" transformer="CNDRG02E4519" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_CNDRG02E4519_P" phases=1 bus1="3810330438449018.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_CNDRG02E4519_S" phases=1 bus1="3810330438449018F.4" R=15 X=0 basefreq=60
+New "Transformer.ANDRG90E5009" phases=1 windings=2 buses=["3811355538425147.1.4" "3811355538425147F.1.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.ANDRG90E5009" transformer="ANDRG90E5009" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_ANDRG90E5009_P" phases=1 bus1="3811355538425147.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_ANDRG90E5009_S" phases=1 bus1="3811355538425147F.4" R=15 X=0 basefreq=60
+New "Transformer.BNDRG90E5009" phases=1 windings=2 buses=["3811355538425147.2.4" "3811355538425147F.2.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.BNDRG90E5009" transformer="BNDRG90E5009" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_BNDRG90E5009_P" phases=1 bus1="3811355538425147.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_BNDRG90E5009_S" phases=1 bus1="3811355538425147F.4" R=15 X=0 basefreq=60
+New "Transformer.CNDRG90E5009" phases=1 windings=2 buses=["3811355538425147.3.4" "3811355538425147F.3.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[2750 2750] xhl=0.6 %loadloss=2.869 %noloadloss=2.500
+New "Regcontrol.CNDRG90E5009" transformer="CNDRG90E5009" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_CNDRG90E5009_P" phases=1 bus1="3811355538425147.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_CNDRG90E5009_S" phases=1 bus1="3811355538425147F.4" R=15 X=0 basefreq=60
+New "Transformer.ANDRG91E5671" phases=1 windings=2 buses=["3807860038462028.1.4" "3807860038462028F.1.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[4200 4200] xhl=0.7 %loadloss=3.758 %noloadloss=3.387
+New "Regcontrol.ANDRG91E5671" transformer="ANDRG91E5671" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_ANDRG91E5671_P" phases=1 bus1="3807860038462028.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_ANDRG91E5671_S" phases=1 bus1="3807860038462028F.4" R=15 X=0 basefreq=60
+New "Transformer.BNDRG91E5671" phases=1 windings=2 buses=["3807860038462028.2.4" "3807860038462028F.2.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[4200 4200] xhl=0.7 %loadloss=3.758 %noloadloss=3.387
+New "Regcontrol.BNDRG91E5671" transformer="BNDRG91E5671" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_BNDRG91E5671_P" phases=1 bus1="3807860038462028.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_BNDRG91E5671_S" phases=1 bus1="3807860038462028F.4" R=15 X=0 basefreq=60
+New "Transformer.CNDRG91E5671" phases=1 windings=2 buses=["3807860038462028.3.4" "3807860038462028F.3.4"] conns=[Wye Wye ] kvs=[7.967 7.967] kvas=[4200 4200] xhl=0.7 %loadloss=3.758 %noloadloss=3.387
+New "Regcontrol.CNDRG91E5671" transformer="CNDRG91E5671" winding=2 vreg=69.711 band=2 ptratio=120.0
+New "Reactor.TRF_CNDRG91E5671_P" phases=1 bus1="3807860038462028.4" R=15 X=0 basefreq=60 
+New "Reactor.TRF_CNDRG91E5671_S" phases=1 bus1="3807860038462028F.4" R=15 X=0 basefreq=60
