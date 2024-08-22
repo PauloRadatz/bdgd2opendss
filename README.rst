@@ -1,12 +1,12 @@
 bdgd2opendss
 ============
 
-`bdgd2opendss` is a powerful tool designed to facilitate the integration and analysis of distribution systems in OpenDSS. It builds on core functionalities initially developed in the `bdgd-tools` project, extending them with new features focused on improving conversion efficiency and accuracy.
+`bdgd2opendss` is a powerful tool designed to facilitate the integration and analysis of distribution systems in OpenDSS. It builds on core functionalities initially developed in the `bdgd-tools` project, extending them with new features focused on improving conversion efficiency and accuracy. In addition to its technical benefits, bdgd2opendss serves an important educational purpose, aimed at democratizing Brazilian distribution system modeling by making real Brazilian distribution system models accessible to students and researchers.
 
 What does `bdgd2opendss` do?
 ----------------------------
 
-`bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`. In addition to its technical benefits, bdgd2opendss serves an important educational purpose, aimed at democratizing Brazilian distribution system modeling by making real Brazilian distribution system models accessible to students and researchers.
+`bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`.
 
 Why a New Repository?
 ---------------------
