@@ -6,7 +6,7 @@ bdgd2opendss
 What does `bdgd2opendss` do?
 ----------------------------
 
-`bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`.
+`bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`. In addition to its technical benefits, bdgd2opendss serves an important educational purpose, aimed at democratizing Brazilian distribution system modeling by making real Brazilian distribution system models accessible to students and researchers.
 
 Why a New Repository?
 ---------------------
