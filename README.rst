@@ -76,6 +76,29 @@ Contributing
 
 Contributions to `bdgd2opendss` are welcome! Please refer to our contribution guidelines in ``CONTRIBUTING.md`` for details on how you can help improve the project.
 
+How to Cite
+-----------
+
+If you use `bdgd2opendss` in your academic work, please reference it as follows:
+
+**APA Style:**
+
+    Radatz, P., & Contributors. (2024). bdgd2opendss: A tool for converting Brazilian distribution system models to OpenDSS (Version X.X.X) [Computer software]. GitHub. https://github.com/pauloradatz/bdgd2opendss
+
+**BibTeX Entry:**
+
+.. code-block:: bibtex
+
+    @software{radatz2024bdgd2opendss,
+      author = {Paulo Radatz and Contributors},
+      title = {bdgd2opendss: A tool for converting Brazilian distribution system models to OpenDSS},
+      year = {2024},
+      version = {X.X.X},
+      url = {https://github.com/pauloradatz/bdgd2opendss}
+    }
+
+Please replace `X.X.X` with the version of the package you are using.
+
 Contact
 -------
 
