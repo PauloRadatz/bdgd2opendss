@@ -3,10 +3,10 @@
 import json
 import os.path
 import pathlib
+
 import geopandas as gpd
 import pandas as pd
-import pyogrio
-import pyarrow
+
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -31,7 +31,7 @@ def load_json(json_file: str = "bdgd2dss.json"):
     return data
 
 
-def merge_entities_tables(dataframe1: gpd.geodataframe.GeoDataFrame,dataframe2: gpd.geodataframe.GeoDataFrame):
+def merge_entities_tables(dataframe1: gpd.geodataframe.GeoDataFrame, dataframe2: gpd.geodataframe.GeoDataFrame):
     """
     Merge two GeoDataFrames of entities based on their indices and handle duplicated columns.
 
@@ -46,11 +46,12 @@ def merge_entities_tables(dataframe1: gpd.geodataframe.GeoDataFrame,dataframe2: 
 
     """
 
-    merged_dfs= dataframe2.join(dataframe1, lsuffix='_left')
+    merged_dfs = dataframe2.join(dataframe1, lsuffix='_left')
     duplicated_columns = [col for col in merged_dfs.columns if '_left' in col]
     merged_dfs.drop(columns=duplicated_columns, inplace=True)
 
-    return  merged_dfs
+    return merged_dfs
+
 
 def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_column: str = ""):
     """
@@ -89,7 +90,7 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
 
     """
 
-    merged_dfs = pd.merge( entity1_df, enetity2_df,left_on=left_column, right_on=right_column, how='inner')
+    merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
 
     for column in merged_dfs.columns:
         if column.endswith('_x'):
@@ -102,25 +103,24 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
 
 
 def create_output_file(object_list=[], file_name="", object_lists="", file_names="", feeder=""):
-
-    """Create an output file and write data from a list of objects.
+    """Create an dss_models_output file and write data from a list of objects.
 
     Parameters:
     - object_list (list): List of objects to be written to the file.Ex: line or transformer objects.
-    - file_name (str): Name of the output file. Ex: transformers.txt or lines.txt
+    - file_name (str): Name of the dss_models_output file. Ex: transformers.txt or lines.txt
 
-    Creates an output file in the 'output' directory and writes OpenDSS commands from the list,
+    Creates an dss_models_output file in the 'dss_models_output' directory and writes OpenDSS commands from the list,
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
 
-    if not os.path.exists("output"):
-        os.mkdir("output")
+    if not os.path.exists("dss_models_output"):
+        os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'output/{feeder}'):
-        os.mkdir(f'output/{feeder}')
+    if not os.path.exists(f'dss_models_output/{feeder}'):
+        os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'output\{feeder}')
+    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     if object_lists != "":
 
@@ -157,35 +157,36 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
 
         return f'{file_name}_{feeder}.dss'
 
+
 def create_master_file(file_name="", feeder="", master_content=""):
     """
-    Create an output file and write data from a list of objects.
+    Create an dss_models_output file and write data from a list of objects.
 
 
-    Creates an output file in the 'output' directory and writes OpenDSS commands from the list,
+    Creates an dss_models_output file in the 'dss_models_output' directory and writes OpenDSS commands from the list,
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
 
-    if not os.path.exists("output"):
-        os.mkdir("output")
+    if not os.path.exists("dss_models_output"):
+        os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'output/{feeder}'):
-        os.mkdir(f'output/{feeder}')
+    if not os.path.exists(f'dss_models_output/{feeder}'):
+        os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory= os.path.join(os.getcwd(), f'output\{feeder}')
+    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{feeder} foi gerado\n')
+        print(f'O arquivo {file_name}_{feeder} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
-def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords"):
 
+def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords"):
     """Crie um arquivo de saída csv e grave dados de um DataFrame.
         Parâmetros:
         - df (DataFrame): Lista de objetos a serem gravados no arquivo.ex: objetos de linha ou transformador.
@@ -196,14 +197,14 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
 
     """
 
-    if not os.path.exists("output"):
-        os.mkdir("output")
+    if not os.path.exists("dss_models_output"):
+        os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'output/{feeder}'):
-        os.mkdir(f'output/{feeder}')
+    if not os.path.exists(f'dss_models_output/{feeder}'):
+        os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'output/{feeder}')
-    dir_path = os.path.join(output_directory, f'{feeder}_{filename}.csv')
+    output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
+    dir_path = os.path.join(output_directory, f'{filename}.csv')
     # dir_path = os.path.join(output_directory, f'{filename}_{feeder}.csv')
 
     try:
@@ -215,26 +216,24 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
 
 
 def create_output_all_coords(object_list=[], file_name="", object_lists="", file_names="", feeder=""):
-
-    """Create an output file and write data from a list of objects.
+    """Create an dss_models_output file and write data from a list of objects.
 
     Parameters:
     - object_list (list): List of objects to be written to the file.Ex: line or transformer objects.
-    - file_name (str): Name of the output file. Ex: transformers.txt or lines.txt
+    - file_name (str): Name of the dss_models_output file. Ex: transformers.txt or lines.txt
 
-    Creates an output file in the 'output' directory and writes OpenDSS commands from the list,
+    Creates an dss_models_output file in the 'dss_models_output' directory and writes OpenDSS commands from the list,
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
 
-    if not os.path.exists("output"):
-        os.mkdir("output")
+    if not os.path.exists("dss_models_output"):
+        os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'output/{feeder}'):
-        os.mkdir(f'output/{feeder}')
+    if not os.path.exists(f'dss_models_output/{feeder}'):
+        os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'output\{feeder}')
-
+    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     if object_lists != "":
         for object_list, file_name in zip(object_lists, file_names):
@@ -286,14 +285,13 @@ def create_dfs_coords(filename="", feeder=""):
     path_object = pathlib.Path(filename)
 
     gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
-                        columns=cols,
-                        ignore_geometry=False, engine='pyogrio', use_arrow=True)
+                              columns=cols,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
     gdf_SSDMT = gdf_SSDMT.loc[gdf_SSDMT['CTMT'] == feeder]
 
     gdf_SSDBT = gpd.read_file(path_object, layer='SSDBT',
-                        columns=cols,
-                        ignore_geometry=False, engine='pyogrio',use_arrow=True)
+                              columns=cols,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
     gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
 
     return gdf_SSDMT, gdf_SSDBT
-

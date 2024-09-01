@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 
 from dataclasses import dataclass, field
+
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file
+
 
 @dataclass
 class Case:
@@ -19,7 +21,6 @@ class Case:
     _PVsystems: list[PVsystem] = field(init=False)
     _dfs: dict = field(init=False)
 
-
     @property
     def id(self):
         return self._id
@@ -27,7 +28,6 @@ class Case:
     @id.setter
     def id(self, value):
         self._id = value
-
 
     @property
     def circuitos(self):
@@ -86,11 +86,11 @@ class Case:
         self._loads = value
 
     @property
-    def pvsystems(self): #mozart
+    def pvsystems(self):  # mozart
         return self._PVsystems
 
     @pvsystems.setter
-    def pvsystems(self, value): #mozart
+    def pvsystems(self, value):  # mozart
         self._PVsystems = value
 
     @property
@@ -144,30 +144,30 @@ class Case:
             nphases_value = match.group(2)
             return f'New "Linecode.{linecode_num}_{nphases_value}" nphases={nphases_value}'
 
-
         setattr(linecode_, f"_linecode_{i}", re.sub(pattern, repl, input_str))
 
-    def output_master(self,file_names, tip_dia = "", mes = ""):
+    def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
 
         for i in file_names:
-
-            master = master + f'Redirect "{i}"\n'
-
-
+            if i[:2] == "GD":
+                master = master + f'!Redirect "{i}"\n'
+            else:
+                master = master + f'Redirect "{i}"\n'
         master = master + f'''Set mode = daily
 Set tolerance = 0.0001
 Set maxcontroliter = 10
 !Set algorithm = newton
 !Solve mode = direct
-Solve'''
+Solve
+buscoords buscoords.csv'''
 
-        create_master_file(file_name=f'Master_{tip_dia}_{mes}',feeder = self.id, master_content=master)
+        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.id, master_content=master)
 
     def create_outputs_masters(self, file_names):
         """
-        Creates output masters based on file names.
+        Creates dss_models_output masters based on file names.
 
         Args:
         - file_names (list): List of file names.
@@ -184,7 +184,6 @@ Solve'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-
         for elemento in file_names:
             if "Cargas" in elemento:
                 indice = file_names.index(elemento)
@@ -200,13 +199,8 @@ Solve'''
             aux_PIP = base_string_PIP.replace('_DU', f'_{tip_dia}')
 
             for mes in meses:
-
-                file_names[indice-2] = aux_BT.replace('01_', f'{mes}_')
-                file_names[indice-1] = aux_MT.replace('01_', f'{mes}_')
+                file_names[indice - 2] = aux_BT.replace('01_', f'{mes}_')
+                file_names[indice - 1] = aux_MT.replace('01_', f'{mes}_')
                 file_names[indice] = aux_PIP.replace('01_', f'{mes}_')
 
-
-                self.output_master(tip_dia = tip_dia, mes = mes, file_names=file_names)
-
-
-
+                self.output_master(tip_dia=tip_dia, mes=mes, file_names=file_names)
