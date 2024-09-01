@@ -50,11 +50,11 @@ To install `bdgd2opendss`, follow these steps:
 
         cd bdgd2opendss
 
-3. Install the required dependencies:
+3. Install the required dependencies (It works well with Python 3.11. We need to test other versions and create requirement files for them):
 
     .. code-block:: bash
 
-        pip install -r requirements.txt
+        pip install -r requirements_py311.txt
 
 Usage
 -----
