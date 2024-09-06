@@ -139,29 +139,6 @@ def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     return pathlib.Path(caller_file).resolve().parent
 
 
-def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
-    """
-    Returns the file directory that calls this function.
-
-    :param caller_frame: The frame that call the function.
-    :return: A Pathlib.path object representing the file directory that called this function.
-    """
-    caller_file = inspect.getfile(caller_frame)
-    return pathlib.Path(caller_file).resolve().parent
-
-
-def run_gui(folder_bdgd: str) -> None:
-    caller_frame = inspect.currentframe().f_back
-    caller_path = get_caller_directory(caller_frame)
-    json_file = os.path.join(caller_path, "bdgd2dss.json")
-
-    print(f"Base escolhida {folder_bdgd}")
-    data = load_json(json_file=json_file)
-
-    gui = GUI(folder_bdgd, data)
-    gui.load_window()
-
-
 def get_feeder_list(folder: str) -> List[str]:  # TODO is there a way to not load everything?
     folder_bdgd = folder
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
