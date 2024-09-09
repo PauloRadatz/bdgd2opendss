@@ -25,7 +25,7 @@ Acknowledgments
 The development of `bdgd2opendss` builds upon the efforts of the contributors to the original `bdgd-tools` project. Special thanks to the following individuals who played a significant role in the success of the original project:
 
 - **Ênio Rodrigues** - The mastermind behind the outstanding code structure that has made the evolution of the tool easier.
-- **Paulo Radatz and Lucas Almeida** - Responsible for creating the mapping between the `bdgd` and OpenDSS models.
+- **Paulo Radatz, Lucas Almeida, and Andrey Lopes** - Responsible for creating the mapping between the `bdgd` and OpenDSS models.
 - **Professor Lucas Melo, Miguel Casemiro, and Mozart Nogueira** (Universidade Federal do Ceará) - Improved the tool to near completion and performed valuable validations.
 - **Professor Carlos Frederico, Guilherme Broslavschi, Ananda, and Raphael Toshio Sakai** (Universidade de São Paulo) - Contributed to the development of important features, such as the addition of coordinates and energymeters.
 - **Ana Camila Mamede** (Universidade Federal de Uberlândia)
