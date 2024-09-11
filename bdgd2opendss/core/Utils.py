@@ -145,6 +145,9 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
 
         try:
             with open(path, "w") as file:
+                if "GD_BT" or "GD_MT" in file_name: #cria curvas padrões do EPRI
+                    print(file_name)
+                    file.write(standard_curves_pv() + "\n")
                 for string in object_list:
                     if type(string) == str:
                         file.write(string + "\n")
@@ -302,5 +305,14 @@ def create_voltage_bases(dicionario_kv):
         lista.append(dicionario_kv[key])
     x=set(lista)
     return(list(x))
+
+def standard_curves_pv():
+        return(f'New "LoadShape.PVIrrad_diaria" npts=24 interval=1 \n'
+               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
+               f'New XYCurve.MyPvsT npts=4  xarray=[0  25  75  100]  yarray=[1.2 1.0 0.8  0.6] \n'
+               f'New XYCurve.MyEff npts=4  xarray=[0.1  0.2  0.4  1.0]  yarray=[0.86  0.9  0.93  0.97] \n'
+               f'New Tshape.MyTemp npts=24 interval=1 \n'
+               f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
+               )
     
 

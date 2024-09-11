@@ -184,14 +184,6 @@ class PVsystem:
             return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=6 %imag=1.5 %noloadloss=0.29 %loadloss=1.46 \n'
                 f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kVA=1000 conns=[delta wye] \n')
 
-    def cria_curvas_PV(self):
-        return(f'New "LoadShape.PVIrrad_diaria" npts=24 interval=1 \n'
-               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
-               f'New XYCurve.MyPvsT npts=4  xarray=[0  25  75  100]  yarray=[1.2 1.0 0.8  0.6] \n'
-               f'New XYCurve.MyEff npts=4  xarray=[0.1  0.2  0.4  1.0]  yarray=[0.86  0.9  0.93  0.97] \n'
-               f'New Tshape.MyTemp npts=24 interval=1 temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
-               )
-
     def full_string(self) -> str:
         
         if self.sit_ativ == "DS":
