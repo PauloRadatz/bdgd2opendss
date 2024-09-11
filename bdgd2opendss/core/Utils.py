@@ -295,3 +295,12 @@ def create_dfs_coords(filename="", feeder=""):
     gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
 
     return gdf_SSDMT, gdf_SSDBT
+
+def create_voltage_bases(dicionario_kv):
+    lista=[]
+    for key,value in dicionario_kv.items():
+        lista.append(dicionario_kv[key])
+    x=set(lista)
+    return(list(x))
+    
+

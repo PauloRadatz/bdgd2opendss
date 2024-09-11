@@ -24,6 +24,7 @@ from bdgd2opendss.core.Utils import create_output_file
 from dataclasses import dataclass
 
 dicionario_kv = {}
+mtkv = []
 
 @dataclass
 class Transformer:
@@ -387,6 +388,8 @@ class Transformer:
             setattr(transformer_, f"_{mapping_key}", row[mapping_value])
             if mapping_key == "transformer":#modificação - 08/08
                 dicionario_kv[row[mapping_value]] = getattr(transformer_,"kv2")
+                mtkv.append(getattr(transformer_,"kv1")) 
+                
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):
