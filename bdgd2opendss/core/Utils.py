@@ -145,9 +145,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
 
         try:
             with open(path, "w") as file:
-                if file_name == "GD_BT" or "GD_MT": #cria curvas padrões do EPRI
-                    print(file_name)
+                if "GD_" in file_name: #cria curvas padrões do EPRI
                     file.write(standard_curves_pv() + "\n")
+                else:
+                    ...
                 for string in object_list:
                     if type(string) == str:
                         file.write(string + "\n")
