@@ -155,7 +155,7 @@ class Case:
         y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
         for k in list(x):
             y.append(k)
-        voltagebases = " ".join(str(z) for z in y) 
+        voltagebases = " ".join(str(z) for z in set(y))
 
         for i in file_names:
             if i[:2] == "GD":
