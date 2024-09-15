@@ -296,6 +296,7 @@
                     "bus2": "PAC_2",
                     "bus3": "PAC_3",
                     "transformer": "COD_ID",
+                    "fase": "FAS_CON",
                     "kvas": "POT_NOM",
                     "tap": "TAP",
                     "feeder": "CTMT",
@@ -313,6 +314,9 @@
                         "POT_NOM","/1000)","* 100"
                     ]
                 }
+            },
+            "EQTRMT": {
+
             },
             "UNTRMT_R": {
                 "arquivo": "Reator_MTBT",

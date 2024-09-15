@@ -377,8 +377,8 @@ def convert_ttranf_windings(case):
         'B': 2,
         'T': 2,
         'MT': 3,
-        'DA': 3,
-        'DF': 3,
+        'DA': 2,
+        'DF': 2,
     }
     return switch_dict.get(case, 'Invalid case')
 

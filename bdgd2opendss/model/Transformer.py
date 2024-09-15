@@ -30,7 +30,7 @@ mtkv = []
 class Transformer:
 
     _feeder: str = ""
-
+    _fase: str =""
     _bus1: str = ""
     _bus2: str = ""
     _bus3: str = ""
@@ -246,6 +246,14 @@ class Transformer:
     @Tip_Lig.setter
     def Tip_Lig(self, value):
         self._Tip_Lig = value
+    
+    @property
+    def fase(self):
+        return self._fase
+
+    @fase.setter
+    def fase(self, value):
+        self._fase = value
 
     def adapting_string_variables(self):
 
@@ -294,9 +302,9 @@ class Transformer:
                 kvas = f'{self.kvas} {self.kvas}'
                 conns = f'{self.conn_p} {self.conn_s}'
             elif self.Tip_Lig == "DA" or self.Tip_Lig == "DF":
-                kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}"'
-                kvas = f'{self.kvas} {self.kvas/2} {self.kvas/2}'
+                kvs = f'{self.kv1} {self.kv2} '
+                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" '
+                kvas = f'{self.kvas} {self.kvas} '
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             else:
                 kvs = f'{self.kv1} {self.kv2}'
@@ -311,9 +319,12 @@ class Transformer:
 
         return kvs, buses, conns, kvas, taps, MRT
 
-    def pattern_reactor(self):
-
-        return  f'New "Reactor.TRF_{self.transformer}" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
+    def pattern_reactor(self,tip_lig):
+        tip_lig = self.Tip_Lig
+        if tip_lig == "DA" or tip_lig == "DF":
+            return  f'New "Reactor.TRF_{self.transformer}{self.fase}" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
+        else:
+            return  f'New "Reactor.TRF_{self.transformer}" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
 
     def pattern_MRT(self):
 
@@ -324,8 +335,8 @@ class Transformer:
 
         self.kvs, self.buses, self.conns, self.kvas, self.taps, MRT= Transformer.adapting_string_variables(self)
 
-
-        return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
+        if self.Tip_Lig == 'DF' or self.Tip_Lig == 'DA':
+            return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
                 f'conns=[{self.conns}] '
@@ -334,23 +345,46 @@ class Transformer:
                 f'kvas=[{self.kvas}] '
                 f'%loadloss={self.loadloss:.6f} %noloadloss={self.noloadloss:.6f}\n'
                 f'{MRT}'
-                f'{self.pattern_reactor()}')
-
-    def __repr__(self):
-
-        self.kvs, self.buses, self.conns, self.kvas, self.taps, MRT= Transformer.adapting_string_variables(self)
-
-
-        return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
+                f'{self.pattern_reactor(self.Tip_Lig)}')
+        else: 
+            return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
                 f'conns=[{self.conns}] '
                 f'kvs=[{self.kvs}] '
                 f'taps=[{self.taps}] '
                 f'kvas=[{self.kvas}] '
-                f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}\n'
+                f'%loadloss={self.loadloss:.6f} %noloadloss={self.noloadloss:.6f}\n'
                 f'{MRT}'
-                f'{self.pattern_reactor()}')
+                f'{self.pattern_reactor(self.Tip_Lig)}')
+        
+    def __repr__(self):
+
+        self.kvs, self.buses, self.conns, self.kvas, self.taps, MRT= Transformer.adapting_string_variables(self)
+
+
+        if self.Tip_Lig == 'DF' or self.Tip_Lig == 'DA':
+            return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
+                f'windings={self.windings} '
+                f'buses=[{self.buses}] '
+                f'conns=[{self.conns}] '
+                f'kvs=[{self.kvs}] '
+                f'taps=[{self.taps}] '
+                f'kvas=[{self.kvas}] '
+                f'%loadloss={self.loadloss:.6f} %noloadloss={self.noloadloss:.6f}\n'
+                f'{MRT}'
+                f'{self.pattern_reactor(self.Tip_Lig)}')
+        else: 
+            return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
+                f'windings={self.windings} '
+                f'buses=[{self.buses}] '
+                f'conns=[{self.conns}] '
+                f'kvs=[{self.kvs}] '
+                f'taps=[{self.taps}] '
+                f'kvas=[{self.kvas}] '
+                f'%loadloss={self.loadloss:.6f} %noloadloss={self.noloadloss:.6f}\n'
+                f'{MRT}'
+                f'{self.pattern_reactor(self.Tip_Lig)}')
 
 
     @staticmethod
