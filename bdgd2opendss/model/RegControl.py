@@ -303,7 +303,7 @@ class RegControl:
         if self.buses == "":
             self.buses, self.kvas = RegControl.adapting_string_variables(self)
 
-        if self.conn_p == 'Wye' or 'wye':
+        if self.conn_p == 'Wye':
             return  (
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
@@ -341,7 +341,7 @@ class RegControl:
         if self.buses == "":
             self.buses, self.kvas = RegControl.adapting_string_variables(self)
 
-        if self.conn_p == 'Wye' or 'wye':
+        if self.conn_p == 'Wye':
             return  (
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
