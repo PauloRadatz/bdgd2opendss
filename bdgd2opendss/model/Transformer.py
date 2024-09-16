@@ -301,6 +301,11 @@ class Transformer:
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
                 kvas = f'{self.kvas} {self.kvas}'
                 conns = f'{self.conn_p} {self.conn_s}'
+            elif "D" in self.Tip_Lig and "4" in self.bus2_nodes:
+                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.2f}'
+                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
+                kvas = f'{self.kvas} {self.kvas}'
+                conns = f'{self.conn_p} {self.conn_s}'
             else:
                 kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
