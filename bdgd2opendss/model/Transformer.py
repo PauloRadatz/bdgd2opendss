@@ -422,7 +422,10 @@ class Transformer:
             setattr(transformer_, f"_{mapping_key}", row[mapping_value])
             if mapping_key == "transformer":#modificação - 08/08
                 dicionario_kv[row[mapping_value]] = getattr(transformer_,"kv2")
-                mtkv.append(getattr(transformer_,"kv1")) 
+                if getattr(transformer_,"phases") == '1':
+                    ...
+                else:
+                    mtkv.append(getattr(transformer_,"kv1")) 
                 
 
     @staticmethod
