@@ -292,7 +292,7 @@ class Transformer:
             MRT = self.pattern_MRT()
         else:
             if self.Tip_Lig == "MT":
-                kvs = f'{self.kv1/numpy.sqrt(3):.2f} {self.kv2/2} {self.kv2/2}'
+                kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}"'
                 kvas = f'{self.kvas} {self.kvas/2} {self.kvas/2}'
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
