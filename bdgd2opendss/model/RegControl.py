@@ -14,6 +14,7 @@ import copy
 import re
 from typing import Any
 
+import numpy as np
 import geopandas as gpd
 from tqdm import tqdm
 
@@ -302,19 +303,19 @@ class RegControl:
         if self.buses == "":
             self.buses, self.kvas = RegControl.adapting_string_variables(self)
 
-        if self.conn_p == 'Wye' or 'wye':
+        if self.conn_p == 'Wye':
             return  (
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[7.967 7.967] '
+    f'kvs=[{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*7967/self.ptratio:.3f} '
+    f'vreg={self.vreg*(self.kv1/np.sqrt(3))/self.ptratio:.2f} '
     f'band={self.band} '
     f'ptratio={self.ptratio}\n'
     f'{self.pattern_reactor_reg()}')
@@ -324,13 +325,13 @@ class RegControl:
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[13.8 13.8] '
+    f'kvs=[{self.kv1} {self.kv1}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*13800/self.ptratio:.3f} '
+    f'vreg={self.vreg*self.kv1/self.ptratio:.2f} '
     f'band={self.band} '
     f'ptratio={self.ptratio}\n'
     )
@@ -340,19 +341,19 @@ class RegControl:
         if self.buses == "":
             self.buses, self.kvas = RegControl.adapting_string_variables(self)
 
-        if self.conn_p == 'Wye' or 'wye':
+        if self.conn_p == 'Wye':
             return  (
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[7.967 7.967] '
+    f'kvs=[{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*7967/self.ptratio:.3f} '
+    f'vreg={self.vreg*(self.kv1/np.sqrt(3))/self.ptratio:.2f} '
     f'band={self.band} '
     f'ptratio={self.ptratio}\n'
     f'{self.pattern_reactor_reg()}')
@@ -362,13 +363,13 @@ class RegControl:
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[13.8 13.8] '
+    f'kvs=[{self.kv1} {self.kv1}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*13800/self.ptratio:.3f} '
+    f'vreg={self.vreg*self.kv1/self.ptratio:.2f} '
     f'band={self.band} '
     f'ptratio={self.ptratio}\n'
     )
@@ -433,7 +434,12 @@ class RegControl:
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
                 param_value = row[param_name]
-                setattr(regcontrol_, f"_{mapping_key}", function_(str(param_value)))
+                if mapping_key == 'ptratio':
+                    x = function_(str(param_value))
+                    setattr(regcontrol_, f"_{mapping_key}", x[0])
+                    setattr(regcontrol_, "_kv1", x[1])
+                else:
+                    setattr(regcontrol_, f"_{mapping_key}", function_(str(param_value)))
             else:
                 setattr(regcontrol_, f"_{mapping_key}", row[mapping_value])
 

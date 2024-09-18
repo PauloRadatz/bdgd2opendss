@@ -296,6 +296,7 @@
                     "bus2": "PAC_2",
                     "bus3": "PAC_3",
                     "transformer": "COD_ID",
+                    "fase": "FAS_CON",
                     "kvas": "POT_NOM",
                     "tap": "TAP",
                     "feeder": "CTMT",
@@ -569,7 +570,7 @@
             "UGBT_tab": {
                 "arquivo": "GD_BT",
                 "static":{
-                    "irradiance": 1.0,
+                    "irradiance": 0.98,
                     "pf": 0.92
                 },
                 "indirect_mapping":{
@@ -595,7 +596,8 @@
                     "PVsys": "CEG_GD",
                     "Trafo": "UNI_TR_MT",
                     "bus1": "PAC",
-                    "pmpp": "POT_INST"
+                    "pmpp": "POT_INST",
+                    "sit_ativ": "SIT_ATIV"
                 },
                 "calculated":{
 
@@ -614,7 +616,8 @@
                     "feeder":"CTMT",
                     "PVsys_MT": "CEG_GD",
                     "bus1": "PAC",
-                    "pmpp": "POT_INST"
+                    "pmpp": "POT_INST",
+                    "sit_ativ": "SIT_ATIV"
                 },
                 "indirect_mapping":{
                     "phases":[
@@ -959,7 +962,8 @@
                     "POT_INST",
                     "FAS_CON",
                     "TEN_CON",
-                    "UNI_TR_MT"
+                    "UNI_TR_MT",
+                    "SIT_ATIV"
                 ],
                 "type":{
                     "CEG_GD":"category",
@@ -976,7 +980,8 @@
                     "PAC",
                     "POT_INST",
                     "FAS_CON",
-                    "TEN_CON"
+                    "TEN_CON",
+                    "SIT_ATIV"
                 ],
                 "type":{
                     "CEG_GD":"category",

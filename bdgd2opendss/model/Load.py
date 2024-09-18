@@ -431,7 +431,7 @@ class Load:
         """
         for mapping_key, mapping_value in value.items():
             setattr(load_, f"_{mapping_key}", row[mapping_value])
-            if mapping_key == "GD_setter" and "G" in row[mapping_value]:
+            if mapping_key == "GD_setter" and row[mapping_value]:
                 dicionario[row[mapping_value]] = getattr(load_,"bus_nodes")
             if mapping_key == "Trafo":
                 try:

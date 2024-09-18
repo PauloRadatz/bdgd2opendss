@@ -36,7 +36,8 @@ class PVsystem:
     _kv: float = 0.0
     _pmpp: float = 0.0
     _pf: float = 0.92
-    _irradiance: int = 1.0
+    _irradiance: int = 0.98
+    _sit_ativ: str = ""
 
     _phases: str = ""
     _bus_nodes: str = ""
@@ -130,6 +131,14 @@ class PVsystem:
     def conn(self, value):
         self._conn = value
 
+    @property
+    def sit_ativ(self):
+        return self._sit_ativ
+
+    @sit_ativ.setter
+    def sit_ativ(self, value):
+        self._sit_ativ = value
+
     def pattern_pvsystem_MT(self,bus1,nome,potmax): #ajeitar isso aqui
         self.bus = bus1
         self.PVsys = nome
@@ -175,23 +184,19 @@ class PVsystem:
             return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=6 %imag=1.5 %noloadloss=0.29 %loadloss=1.46 \n'
                 f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kVA=1000 conns=[delta wye] \n')
 
-    def cria_curvas_PV(self):
-        return(f'New "LoadShape.PVIrrad_diaria" npts=24 interval=1 \n'
-               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
-               f'New XYCurve.MyPvsT npts=4  xarray=[0  25  75  100]  yarray=[1.2 1.0 0.8  0.6] \n'
-               f'New XYCurve.MyEff npts=4  xarray=[0.1  0.2  0.4  1.0]  yarray=[0.86  0.9  0.93  0.97] \n'
-               f'New Tshape.MyTemp npts=24 interval=1 temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
-               )
-
     def full_string(self) -> str:
-        if len(self.bus_nodes) > 6:
-            self.phases = '3'
-        elif len(self.bus_nodes) > 4:
-            self.phases = '2'
+        
+        if self.sit_ativ == "DS":
+            return("")
         else:
-            self.phases = '1'
-        if self.kv > 1:
-            return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
+            if len(self.bus_nodes) > 6:
+                self.phases = '3'
+            elif len(self.bus_nodes) > 4:
+                self.phases = '2'
+            else:
+                self.phases = '1'
+            if self.kv > 1:
+                return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
                 f'bus1=TR_GD_{self.bus1}.{self.bus_nodes}.0 '
                 f'conn=Wye '
                 f'kv=0.38 '
@@ -201,8 +206,8 @@ class PVsystem:
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
                 f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
-        elif self.phases == '1' and self.kv == 0.240:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            elif self.phases == '1' and self.kv == 0.240:
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv/2:.3f} '
@@ -211,8 +216,8 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-        elif self.phases == '1':
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            elif self.phases == '1':
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv/numpy.sqrt(3):.3f} '
@@ -221,8 +226,8 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-        else:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            else:
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv} '
@@ -234,14 +239,17 @@ class PVsystem:
 
     def __repr__(self):
 
-        if len(self.bus_nodes) > 6:
-            self.phases = '3'
-        elif len(self.bus_nodes) > 4:
-            self.phases = '2'
+        if self.sit_ativ == "DS":
+            return("")
         else:
-            self.phases = '1'
-        if self.kv > 1:
-            return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
+            if len(self.bus_nodes) > 6:
+                self.phases = '3'
+            elif len(self.bus_nodes) > 4:
+                self.phases = '2'
+            else:
+                self.phases = '1'
+            if self.kv > 1:
+                return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
                 f'bus1=TR_GD_{self.bus1}.{self.bus_nodes}.0 '
                 f'conn=Wye '
                 f'kv=0.38 '
@@ -251,8 +259,8 @@ class PVsystem:
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
                 f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
-        elif self.phases == '1' and self.kv == 0.240:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            elif self.phases == '1' and self.kv == 0.240:
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv/2:.3f} '
@@ -261,8 +269,8 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-        elif self.phases == '1':
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            elif self.phases == '1':
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv/numpy.sqrt(3):.3f} '
@@ -271,8 +279,8 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-        else:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            else:
+                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv} '
@@ -281,7 +289,7 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-
+            
     @staticmethod
     def _process_static(pvsystem_, value):
         """

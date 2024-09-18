@@ -3,7 +3,8 @@
 from dataclasses import dataclass, field
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
+from bdgd2opendss.model.Transformer import dicionario_kv, mtkv
 
 
 @dataclass
@@ -150,13 +151,21 @@ class Case:
 
         master = "clear\n"
 
+        x = set(mtkv)  #cria lista de tensões de base na média tensão
+        y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
+        for k in list(x):
+            y.append(k)
+        voltagebases = " ".join(str(z) for z in set(y))
+
         for i in file_names:
             if i[:2] == "GD":
                 master = master + f'!Redirect "{i}"\n'
             else:
                 master = master + f'Redirect "{i}"\n'
-        master = master + f'''Set mode = daily
-Set tolerance = 0.0001
+        master = master + f'''Set mode = daily   
+Set Voltagebases = [{voltagebases}]
+Calc Voltagebases
+Set tolerance = 0.0001 
 Set maxcontroliter = 10
 !Set algorithm = newton
 !Solve mode = direct
