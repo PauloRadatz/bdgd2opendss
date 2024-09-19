@@ -42,7 +42,7 @@ To install `bdgd2opendss`, follow these steps:
 
     .. code-block:: bash
 
-        git clone https://github.com/yourusername/bdgd2opendss.git
+        git clone https://github.com/pauloradatz/bdgd2opendss.git
 
 2. Navigate to the project directory:
 
