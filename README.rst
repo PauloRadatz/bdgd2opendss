@@ -36,7 +36,7 @@ Without their dedication and expertise, this continuation of the project would n
 Installation
 ------------
 
-To install `bdgd2opendss`, follow the steps below. If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course 'Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos <https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7>'. Aula 6.1 summarizes the process of downloading and installing a repository like this one.
+To install `bdgd2opendss`, follow the steps below. If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course `Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos <https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7>`_. Aula 6.1 summarizes the process of downloading and installing a repository like this one.
 
 1. Clone the repository:
 
