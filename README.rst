@@ -25,7 +25,7 @@ Acknowledgments
 The development of `bdgd2opendss` builds upon the efforts of the contributors to the original `bdgd-tools` project. Special thanks to the following individuals who played a significant role in the success of the original project:
 
 - **Ênio Rodrigues** - The mastermind behind the outstanding code structure that has made the evolution of the tool easier.
-- **Paulo Radatz and Lucas Almeida** - Responsible for creating the mapping between the `bdgd` and OpenDSS models.
+- **Paulo Radatz, Lucas Almeida, and Andrey Lopes** - Responsible for creating the mapping between the `bdgd` and OpenDSS models.
 - **Professor Lucas Melo, Miguel Casemiro, and Mozart Nogueira** (Universidade Federal do Ceará) - Improved the tool to near completion and performed valuable validations.
 - **Professor Carlos Frederico, Guilherme Broslavschi, Ananda, and Raphael Toshio Sakai** (Universidade de São Paulo) - Contributed to the development of important features, such as the addition of coordinates and energymeters.
 - **Ana Camila Mamede** (Universidade Federal de Uberlândia)
@@ -36,13 +36,13 @@ Without their dedication and expertise, this continuation of the project would n
 Installation
 ------------
 
-To install `bdgd2opendss`, follow these steps:
+To install `bdgd2opendss`, follow the steps below. If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course `Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos <https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7>`_. Aula 6.1 summarizes the process of downloading and installing a repository like this one.
 
 1. Clone the repository:
 
     .. code-block:: bash
 
-        git clone https://github.com/yourusername/bdgd2opendss.git
+        git clone https://github.com/pauloradatz/bdgd2opendss.git
 
 2. Navigate to the project directory:
 
