@@ -58,11 +58,20 @@ def buses_coords(coords_shx, df_ssd):
 
 
 def get_buscoords(ssdmt, ssdbt):
-    coords_ssdmt_bdgd = extract_shx(ssdmt)
-    buscoords_mt = buses_coords(coords_ssdmt_bdgd, ssdmt)
-    coords_ssdbt_bdgd = extract_shx(ssdbt)
-    buscoords_bt = buses_coords(coords_ssdbt_bdgd, ssdbt)
-    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']]],
-                          axis=0).reset_index(drop=True)
+    if not ssdmt.empty:
+        coords_ssdmt_bdgd = extract_shx(ssdmt)
+        buscoords_mt = buses_coords(coords_ssdmt_bdgd, ssdmt)
+    else: #caso não exista sistema de média tensão, retorna apenas o sistema de baixa tensão.
+        coords_ssdbt_bdgd = extract_shx(ssdbt)
+        buscoords_bt = buses_coords(coords_ssdbt_bdgd, ssdbt)        
+        print("There's no SSDMT in this feeder.")
+        return(buscoords_bt[['PAC', 'long', 'lat']])
+    if not ssdbt.empty:
+        coords_ssdbt_bdgd = extract_shx(ssdbt)
+        buscoords_bt = buses_coords(coords_ssdbt_bdgd, ssdbt)
+    else: #caso não exista o sistema de baixa tensão, retorna apenas o sistema de média tensão.
+        print("There's no SSDBT in this feeder.")        
+        return(buscoords_mt[['PAC', 'long', 'lat']])
+    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']]], axis=0).reset_index(drop=True)
     # return buscoords[['PAC', 'long', 'lat']].to_csv(path, index=False, header=False)
     return buscoords[['PAC', 'long', 'lat']]

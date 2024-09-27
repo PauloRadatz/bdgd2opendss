@@ -229,10 +229,13 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                     print(f'No {entity} elements found.\n')
 
             if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-                case.regcontrols, aux = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
-                    case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"), left_column='UN_RE',
-                    right_column='COD_ID'))
-                list_files_name.append(aux)
+                try:
+                    case.regcontrols, aux = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
+                        case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"), left_column='UN_RE',
+                        right_column='COD_ID'))
+                    list_files_name.append(aux)
+                except UnboundLocalError:
+                    print("No RegControls found for this feeder. \n")
             else:
                 print("No RegControls found for this feeder.\n")
 
@@ -244,38 +247,43 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.load_shapes, aux = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
                                                                          alimentador)
             list_files_name.append(aux)
-
-            case.loads, aux = Load.create_load_from_json(json_data.data,
+            if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+                case.loads, aux = Load.create_load_from_json(json_data.data,
                                                          case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
                                                          case.dfs['CRVCRG']['gdf'], 'UCBT_tab')
-            list_files_name.append(aux)
+                list_files_name.append(aux)
+            else:
+                print(f'No UCBT found for this feeder.\n')
 
-            case.loads, aux = Load.create_load_from_json(json_data.data,
+            if not case.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
+                case.loads, aux = Load.create_load_from_json(json_data.data,
                                                          case.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
                                                          case.dfs['CRVCRG']['gdf'], 'PIP')
-            list_files_name.append(aux)
-
+                list_files_name.append(aux)
+            else:
+                print(f'No PIP found for this feeder.\n')
+                
             if not case.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
                 case.loads, aux = Load.create_load_from_json(json_data.data,
                                                              case.dfs['UCMT_tab']['gdf'].query("CTMT==@alimentador"),
                                                              case.dfs['CRVCRG']['gdf'], 'UCMT_tab')
                 list_files_name.append(aux)
             else:
-                print("Não há unidades consumidoras de média tensão neste alimentador")
+                print(f'No UCMT found for this feeder.\n')
 
-            case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGBT_tab']['gdf'].query(
-                "CTMT==@alimentador"), 'UGBT_tab')  # código adicionado por Mozart 07/07 às 14h
-            list_files_name.append(aux)
-
-            if not case.dfs['UGMT_tab']['gdf'].query(
-                "CTMT == @alimentador").empty:  # adicionado por Mozart 17/07/2024 às 10:36
-                case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data,
-                                                                         case.dfs['UGMT_tab']['gdf'].query(
-                                                                             "CTMT==@alimentador"),
-                                                                         'UGMT_tab')  # código adicionado por Mozart 07/07 às 14h
+            if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:  
+                case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGBT_tab']['gdf'].query(
+                    "CTMT==@alimentador"), 'UGBT_tab')  # código adicionado por Mozart 07/07 às 14h
                 list_files_name.append(aux)
             else:
-                print("Não há geração distribuída de média tensão neste alimentador. \n")
+                print("No UGBT found for this feeder. \n")
+
+            if not case.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:  # adicionado por Mozart 17/07/2024 às 10:36
+                case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGMT_tab']['gdf'].query(
+                                                                        "CTMT==@alimentador"),'UGMT_tab')  # código adicionado por Mozart 07/07 às 14h
+                list_files_name.append(aux)
+            else:
+                print("No UGMT found for this feeder. \n")
 
             case.output_master(list_files_name)
             case.create_outputs_masters(list_files_name)

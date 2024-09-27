@@ -301,7 +301,8 @@
                     "tap": "TAP",
                     "feeder": "CTMT",
                     "MRT": "MRT",
-                    "Tip_Lig": "TIP_TRAFO"
+                    "Tip_Lig": "TIP_TRAFO",
+                    "sit_ativ": "SIT_ATIV"
                 },
                 "calculated": {
                     "loadloss": [
@@ -311,7 +312,7 @@
                     ],
                     "noloadloss": [
                         "(","PER_FER","/",
-                        "POT_NOM","/1000)","* 100"
+                        "POT_NOM","/1000)","*100"
                     ]
                 }
             },
@@ -348,6 +349,8 @@
                     "vreg": "TEN_REG",
                     "prefix_transformer": "LIG_FAS_P",
                     "xhl": "XHL",
+                    "noloadloss": "PER_FER",
+                    "totalloss": "PER_TOT",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping":{
@@ -381,15 +384,6 @@
                     ]
                 },
                 "calculated": {
-                    "loadloss": [
-                        "(","PER_TOT","-",
-                        "PER_FER",")","/",
-                        "POT_NOM","/1000*100"
-                    ],
-                    "noloadloss": [
-                        "(","PER_FER","/",
-                        "POT_NOM","/1000)","* 100"
-                    ]
                 }
 
             }
@@ -409,6 +403,7 @@
                     "load": "PN_CON",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
+                    "sit_ativ": "SIT_ATIV",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -479,8 +474,8 @@
                     "data_con": "DAT_CON",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
-                    "GD_setter": "CEG_GD",
-                    "Trafo": "UNI_TR_MT",
+                    "sit_ativ": "SIT_ATIV",
+                    "connected": "SUB",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -532,7 +527,7 @@
                     "load": "COD_ID",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
-                    "Trafo": "UNI_TR_MT",
+                    "sit_ativ": "SIT_ATIV",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -576,7 +571,7 @@
                 "indirect_mapping":{
                     "phases":[
                         "FAS_CON",
-                        "convert_tfascon_phases"
+                        "convert_tfascon_phases_load"
                     ],
                     "conn":[
                         "FAS_CON",
@@ -594,7 +589,6 @@
                 "direct_mapping":{
                     "feeder":"CTMT",
                     "PVsys": "CEG_GD",
-                    "Trafo": "UNI_TR_MT",
                     "bus1": "PAC",
                     "pmpp": "POT_INST",
                     "sit_ativ": "SIT_ATIV"
@@ -609,12 +603,12 @@
             "UGMT_tab": {
                 "arquivo": "GD_MT",
                 "static":{
-                    "irradiance": 1.0,
+                    "irradiance": 0.98,
                     "pf": 0.92
                 },
                 "direct_mapping":{
                     "feeder":"CTMT",
-                    "PVsys_MT": "CEG_GD",
+                    "PVsys": "CEG_GD",
                     "bus1": "PAC",
                     "pmpp": "POT_INST",
                     "sit_ativ": "SIT_ATIV"
@@ -756,8 +750,8 @@
                     "MRT",
                     "FAS_CON_P",
                     "FAS_CON_S",
-                    "FAS_CON_T"
-
+                    "FAS_CON_T",
+                    "SIT_ATIV"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -801,7 +795,8 @@
                     "PAC_1",
                     "PAC_2",
                     "TIP_REGU",
-                    "CTMT"
+                    "CTMT",
+                    "SIT_ATIV"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -885,7 +880,8 @@
                     "ENE_10",
                     "ENE_11",
                     "ENE_12",
-                    "CTMT"
+                    "CTMT",
+                    "SIT_ATIV"
                 ],
                 "type": {
                     "PN_CON": "category",
@@ -901,8 +897,6 @@
                     "FAS_CON",
                     "TEN_FORN",
                     "TIP_CC",
-                    "CEG_GD",
-                    "UNI_TR_MT", 
                     "ENE_01",
                     "ENE_02",
                     "ENE_03",
@@ -917,7 +911,9 @@
                     "ENE_12",
                     "CTMT",
                     "RAMAL",
-                    "DAT_CON"
+                    "DAT_CON",
+                    "SUB",
+                    "SIT_ATIV"
                 ],
                 "type": {
                     "PN_CON": "category",
@@ -946,7 +942,8 @@
                     "ENE_11",
                     "ENE_12",
                     "CTMT",
-                    "COD_ID"
+                    "COD_ID",
+                    "SIT_ATIV"
                 ],
                 "type": {
                     "FAS_CON": "category",
@@ -962,7 +959,6 @@
                     "POT_INST",
                     "FAS_CON",
                     "TEN_CON",
-                    "UNI_TR_MT",
                     "SIT_ATIV"
                 ],
                 "type":{
