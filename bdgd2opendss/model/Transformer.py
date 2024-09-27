@@ -279,33 +279,23 @@ class Transformer:
 
         if self.MRT == 1:
             if self.Tip_Lig == "MT":
-                kvs = f'{self.kv1/numpy.sqrt(3):.2f} {self.kv2/2} {self.kv2/2}'
+                kvs = f'{self.kv1} {self.kv2} {self.kv3}'
                 kvas = f'{self.kvas} {self.kvas/2} {self.kvas/2}'
                 buses = f'"MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             else:
-                kvs = f'{self.kv1/numpy.sqrt(3):.2f} {self.kv2/numpy.sqrt(3):.2f}'
+                kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" '
                 kvas = f'{self.kvas} {self.kvas}'
                 conns = f'{self.conn_p} {self.conn_s}'
 
             MRT = self.pattern_MRT()
         else:
-            if self.Tip_Lig == "MT":
-                kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
+            if self.kv3 != 0:
+                kvs = f'{self.kv1} {self.kv2} {self.kv3}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}"'
                 kvas = f'{self.kvas} {self.kvas/2} {self.kvas/2}'
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
-            elif self.Tip_Lig == "M" and self.phases == 1:
-                kvs = f'{self.kv1/numpy.sqrt(3):.2f} {self.kv2/numpy.sqrt(3):.2f}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
-                kvas = f'{self.kvas} {self.kvas}'
-                conns = f'{self.conn_p} {self.conn_s}'
-            elif "D" in self.Tip_Lig and "4" in self.bus2_nodes:
-                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.2f}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
-                kvas = f'{self.kvas} {self.kvas}'
-                conns = f'{self.conn_p} {self.conn_s}'
             else:
                 kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
@@ -421,9 +411,9 @@ class Transformer:
         for mapping_key, mapping_value in value.items():
             setattr(transformer_, f"_{mapping_key}", row[mapping_value])
             if mapping_key == "transformer":#modificação - 08/08
-                dicionario_kv[row[mapping_value]] = getattr(transformer_,"kv2")
-                if getattr(transformer_,"phases") == '1':
-                    ...
+                dicionario_kv[row[mapping_value]] = getattr(transformer_,"kv2") 
+                if getattr(transformer_,"phases") == '1' and getattr(transformer_,"_kv1") == (7.96 or 13.2 or 19.919): #Alimentadores que só tem trafos monofásicos
+                    mtkv.append(round(float(getattr(transformer_,"kv1"))*numpy.sqrt(3),1))
                 else:
                     mtkv.append(getattr(transformer_,"kv1")) 
                 

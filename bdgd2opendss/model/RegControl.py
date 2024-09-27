@@ -5,8 +5,8 @@
  * Date: 06/11/2023
  * Time: 23:53
  *
- * Edited by:
- * Date:
+ * Edited by: Mozartdon 
+ * Date:25/09/2024
  * Time:
 """
 # Não remover a linha de importação abaixo
@@ -44,8 +44,6 @@ class RegControl:
     _transformer: str = ""
     _ten_lin_se: str = ""
     _kv1: int = 0
-    _kv2: int = 0
-    _kv3: int = 0
     _buses: str = ""
     _phases: int = 0
     _bus1_nodes: str = ""
@@ -56,7 +54,7 @@ class RegControl:
     _conn_s: str = ""
     _conn_t: str = ""
     _kvas: int = 0
-    _loadloss: float = 0.0
+    _totalloss: float = 0.0
     _noloadloss: float = 0.0
 
     @property
@@ -141,22 +139,6 @@ class RegControl:
         self._kv1 = value
 
     @property
-    def kv2(self):
-        return self._kv2
-
-    @kv2.setter
-    def kv2(self, value):
-        self._kv2 = value
-
-    @property
-    def kv3(self):
-        return self._kv3
-
-    @kv3.setter
-    def kv3(self, value):
-        self._kv3 = value
-
-    @property
     def conn_p(self):
         return self._conn_p
 
@@ -181,20 +163,20 @@ class RegControl:
         self._conn_t = value
 
     @property
-    def loadloss(self):
-        return self._loadloss
-
-    @loadloss.setter
-    def loadloss(self, value):
-        self._loadloss = value
-
-    @property
     def noloadloss(self):
         return self._noloadloss
 
     @noloadloss.setter
     def noloadloss(self, value):
         self._noloadloss = value
+
+    @property
+    def totalloss(self):
+        return self._totalloss
+
+    @totalloss.setter
+    def totalloss(self, value):
+        self._totalloss = value
 
     @property
     def prefix_transformer(self):
@@ -282,97 +264,74 @@ class RegControl:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 
         """
-
-
+        if self.conn_p == 'Wye' and float(self.kv1) == 7.6:
+            kvs = "7.967 7.967"
+            kv = 7.967*1000
+        elif self.conn_p == 'Wye':
+            kvs = f'{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}'
+            kv = self.kv1/np.sqrt(3)*1000
+        else:
+            kvs = f'{self.kv1} {self.kv1}'
+            kv = self.kv1*1000
 
         buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
 
+        kva = self.kvas
         kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])
+        
 
 
-        return buses, kvas
+        return buses, kvas, kvs, kv, kva
 
     def pattern_reactor_reg(self):
-
-        return (f'New "Reactor.TRF_{self.prefix_transformer}{self.transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
+        if self.conn_p == "Delta":
+            return("")
+        else:
+            return (f'New "Reactor.TRF_{self.prefix_transformer}{self.transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
                 f'New "Reactor.TRF_{self.prefix_transformer}{self.transformer}_S" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
         )
 
     def full_string(self) -> str:
 
         if self.buses == "":
-            self.buses, self.kvas = RegControl.adapting_string_variables(self)
-
-        if self.conn_p == 'Wye':
-            return  (
+            self.buses, self.kvas, self.kvs, kv, kva = RegControl.adapting_string_variables(self)
+        
+        return(
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}] '
+    f'kvs=[{self.kvs}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
-    f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
+    f'%loadloss={(self.totalloss - self.noloadloss)/(10*kva):.3f} %noloadloss={self.noloadloss/(10*kva):.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*(self.kv1/np.sqrt(3))/self.ptratio:.2f} '
+    f'vreg={self.ptratio} '
     f'band={self.band} '
-    f'ptratio={self.ptratio}\n'
+    f'ptratio={self.vreg*kv/self.ptratio:.4f} \n'
     f'{self.pattern_reactor_reg()}')
-        else:
-            return  (
-    f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
-    f'windings={self.windings} '
-    f'buses=[{self.buses}] '
-    f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[{self.kv1} {self.kv1}] '
-    f'kvas=[{self.kvas}] '
-    f'xhl={self.xhl} '
-    f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
-    f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
-    f'winding={self.windings} '
-    f'vreg={self.vreg*self.kv1/self.ptratio:.2f} '
-    f'band={self.band} '
-    f'ptratio={self.ptratio}\n'
-    )
-
+    
     def __repr__(self):
 
         if self.buses == "":
-            self.buses, self.kvas = RegControl.adapting_string_variables(self)
-
-        if self.conn_p == 'Wye':
-            return  (
+            self.buses, self.kvas, self.kvs, kv, kva = RegControl.adapting_string_variables(self)
+        
+        return(
     f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}] '
+    f'kvs=[{self.kvs}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
-    f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
+    f'%loadloss={(self.totalloss - self.noloadloss)/(10*kva):.3f} %noloadloss={self.noloadloss/(10*kva):.3f}'
     f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
     f'winding={self.windings} '
-    f'vreg={self.vreg*(self.kv1/np.sqrt(3))/self.ptratio:.2f} '
+    f'vreg={self.ptratio} '
     f'band={self.band} '
-    f'ptratio={self.ptratio}\n'
+    f'ptratio={self.vreg*kv/self.ptratio:.4f} \n'
     f'{self.pattern_reactor_reg()}')
-        else:
-            return  (
-    f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
-    f'windings={self.windings} '
-    f'buses=[{self.buses}] '
-    f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
-    f'kvs=[{self.kv1} {self.kv1}] '
-    f'kvas=[{self.kvas}] '
-    f'xhl={self.xhl} '
-    f'%loadloss={self.loadloss:.3f} %noloadloss={self.noloadloss:.3f}'
-    f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
-    f'winding={self.windings} '
-    f'vreg={self.vreg*self.kv1/self.ptratio:.2f} '
-    f'band={self.band} '
-    f'ptratio={self.ptratio}\n'
-    )
 
 
     @staticmethod
