@@ -300,11 +300,19 @@ def create_dfs_coords(filename="", feeder=""):
 
     return gdf_SSDMT, gdf_SSDBT
 
-def create_voltage_bases(dicionario_kv):
+def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
-    for key,value in dicionario_kv.items():
-        lista.append(dicionario_kv[key])
+    for value in dicionario_kv.values(): #dicionario_kv.values() usar
+        if value >= 0.22:
+            lista.append(value)
+        else:
+            ...
     x=set(lista)
+    if max(lista) == '0.38':
+        try:
+            x.remove('0.22')
+        except KeyError:
+            ...
     return(list(x))
 
 def standard_curves_pv():
