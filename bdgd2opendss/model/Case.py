@@ -150,11 +150,12 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-
+        mtkv.sort()
         x = set(mtkv)  #cria lista de tensões de base na média tensão
         y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
         for k in list(x):
             y.append(k)
+        y.sort()
         voltagebases = " ".join(str(z) for z in set(y))
 
         for i in file_names:

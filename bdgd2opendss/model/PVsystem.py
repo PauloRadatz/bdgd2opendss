@@ -18,10 +18,8 @@ import numpy
 import geopandas as gpd
 from tqdm import tqdm
 
-from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
-from bdgd2opendss.model.Load import dicionario
-from bdgd2opendss.model.Transformer import dicionario_kv
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn, convert_tfascon_phases, convert_tfascon_phases_load
+from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
 
 from dataclasses import dataclass
 
@@ -32,7 +30,6 @@ class PVsystem:
 
     _bus1: str = ""
     _PVsys: str = ""
-    _PVsys_MT: str = ""
     _kv: float = 0.0
     _pmpp: float = 0.0
     _pf: float = 0.92
@@ -66,14 +63,6 @@ class PVsystem:
     @PVsys.setter
     def PVsys(self, value):
         self._PVsys = value
-
-    @property
-    def PVsys_MT(self):
-        return self._PVsys_MT
-
-    @PVsys_MT.setter
-    def PVsys_MT(self, value):
-        self._PVsys_MT = value
 
     @property
     def kv(self):
@@ -139,95 +128,11 @@ class PVsystem:
     def sit_ativ(self, value):
         self._sit_ativ = value
 
-    def pattern_pvsystem_MT(self,bus1,nome,potmax): #ajeitar isso aqui
-        self.bus = bus1
-        self.PVsys = nome
-        self.pmpp = potmax
-
-        if numpy.ceil(self.pmpp) < 45:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=3.6 %noloadloss=0.367 %loadloss=1.86 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=30 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 75:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=3.2 %noloadloss=0.467 %loadloss=2.53 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=45 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 112.5:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=2.7 %noloadloss=0.293 %loadloss=1.507 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=75 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 150:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=2.5 %noloadloss=0.249 %loadloss=1.35 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=112.5 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 225:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=2.3 %noloadloss=0.233 %loadloss=1.25 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=150 conns=[delta wye] \n ')
-
-        elif numpy.ceil(self.pmpp) < 300:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=3.5 %imag=2.3 %noloadloss=0.233 %loadloss=1.25 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=225 conns=[delta wye] \n ')
-
-        elif numpy.ceil(self.pmpp) < 500:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=4.5 %imag=1.9 %noloadloss=0.193 %loadloss=1.09 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=300 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 750:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=5.5 %imag=1.8 %noloadloss=0.36 %loadloss=1.8 \n'
-            f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=500 conns=[delta wye] \n')
-
-        elif numpy.ceil(self.pmpp) < 1000:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=6 %imag=1.7 %noloadloss=0.32 %loadloss=1.6 \n'
-                f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kva=750 conns=[delta wye] \n')
-
-        else:
-            return (f' New Transformer.TR_PV_{self.PVsys_MT} phases=3 xhl=6 %imag=1.5 %noloadloss=0.29 %loadloss=1.46 \n'
-                f'~ buses=[{self.bus} TR_GD_{self.bus}] kvs=[13.8 0.38] kVA=1000 conns=[delta wye] \n')
-
     def full_string(self) -> str:
-        
         if self.sit_ativ == "DS":
             return("")
         else:
-            if len(self.bus_nodes) > 6:
-                self.phases = '3'
-            elif len(self.bus_nodes) > 4:
-                self.phases = '2'
-            else:
-                self.phases = '1'
-            if self.kv > 1:
-                return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
-                f'bus1=TR_GD_{self.bus1}.{self.bus_nodes}.0 '
-                f'conn=Wye '
-                f'kv=0.38 '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
-                f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
-            elif self.phases == '1' and self.kv == 0.240:
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
-                f'bus1={self.bus1}.{self.bus_nodes} '
-                f'conn={self.conn} '
-                f'kv={self.kv/2:.3f} '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-            elif self.phases == '1':
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
-                f'bus1={self.bus1}.{self.bus_nodes} '
-                f'conn={self.conn} '
-                f'kv={self.kv/numpy.sqrt(3):.3f} '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-            else:
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv} '
@@ -238,49 +143,10 @@ class PVsystem:
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
 
     def __repr__(self):
-
         if self.sit_ativ == "DS":
             return("")
         else:
-            if len(self.bus_nodes) > 6:
-                self.phases = '3'
-            elif len(self.bus_nodes) > 4:
-                self.phases = '2'
-            else:
-                self.phases = '1'
-            if self.kv > 1:
-                return (f'New \"PVsystem.{self.PVsys_MT}" phases=3 '
-                f'bus1=TR_GD_{self.bus1}.{self.bus_nodes}.0 '
-                f'conn=Wye '
-                f'kv=0.38 '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n'
-                f'{self.pattern_pvsystem_MT(self.bus1, self.PVsys_MT,numpy.ceil(self.pmpp))} \n')
-            elif self.phases == '1' and self.kv == 0.240:
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
-                f'bus1={self.bus1}.{self.bus_nodes} '
-                f'conn={self.conn} '
-                f'kv={self.kv/2:.3f} '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-            elif self.phases == '1':
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
-                f'bus1={self.bus1}.{self.bus_nodes} '
-                f'conn={self.conn} '
-                f'kv={self.kv/numpy.sqrt(3):.3f} '
-                f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
-            else:
-                return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
                 f'kv={self.kv} '
@@ -289,6 +155,7 @@ class PVsystem:
                 f'kva={numpy.ceil(self.pmpp)} '
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
+
             
     @staticmethod
     def _process_static(pvsystem_, value):
@@ -322,16 +189,6 @@ class PVsystem:
         attribute on the transformer object using the value from the row.
         """
         for mapping_key, mapping_value in value.items():
-            if mapping_key == 'PVsys':
-                try:
-                    setattr(pvsystem_, f"_bus_nodes", dicionario[row[mapping_value]])
-                except KeyError:
-                    print(f'\n Usina de geração de BT sem carga associada \n GD:{row[mapping_value]}')
-            if mapping_key == "Trafo":
-                try:
-                    setattr(pvsystem_, f"_kv", dicionario_kv[row[mapping_value]])
-                except KeyError:
-                    continue
             setattr(pvsystem_, f"_{mapping_key}", row[mapping_value])
 
 
