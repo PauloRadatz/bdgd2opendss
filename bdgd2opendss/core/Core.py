@@ -190,7 +190,6 @@ def export_feeder_list(feeder_list, feeder):
 
 #def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
 #        limit_ramal_30m: Optional[bool] = False) -> None:
-# TODO refatorar. Pois (creio) que os parametros feeder / all_feeders sao excludentes!
 
 def run(folder: str, feeder: Optional[str] = None, par: Optional[Parameters] = None,
          ) -> None:
@@ -208,10 +207,10 @@ def run(folder: str, feeder: Optional[str] = None, par: Optional[Parameters] = N
 
     geodataframes = json_data.create_geodataframes(folder_bdgd)
 
-    # TODO refatorar. Vide comentario TODO abaixo.
+    # TO DO refatorar. Vide comentario TO DO abaixo.
     for alimentador in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
 
-        # TODO refatorar. este if nao faz muito sentido. Se passo o alimentador (feeder) nao faz sentido percorrer o "for each" para cada alimentador.
+        # TO DO refatorar. este if nao faz muito sentido. Se passo o alimentador (feeder) nao faz sentido percorrer o "for each" para cada alimentador.
         # isto so garante que o feeder estara na CTMT (o que pode ser feito de maneira + eficiente)
         if alimentador == feeder or par.allFeeders == True:
 
