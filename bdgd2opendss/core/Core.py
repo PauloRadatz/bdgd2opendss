@@ -13,6 +13,16 @@ import bdgd2opendss.model.BusCoords as Coords
 from bdgd2opendss import Case, Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import load_json, inner_entities_tables, create_output_feeder_coords, create_dfs_coords
 
+# parameters class. To be defined by the user.
+class Parameters:
+
+    def __init__(self, allFeeders = False, limitRamal30m = True, ger4fios = True, gerCapacitors = False, loadModel = "ANEEL" ):
+        self.allFeeders = False     # generates all feeders
+        self.limitRamal30m = True   # limits ramal to 30m
+        self.ger4fios = True        # generates with Neutral
+        self.gerCapacitors = False  # generates capacitors banks
+        self.loadModel = "ANEEL"    # loadModel ANEEL (e.g 2 loads for each load), model8
+
 class Table:
     def __init__(self, name, columns, data_types, ignore_geometry_):
         self.name = name
@@ -177,12 +187,15 @@ def export_feeder_list(feeder_list, feeder):
             output.write(str(k)+"\n")
     return(f'Lista de alimentadores criada em {path}')
 
-def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
-        limit_ramal_30m: Optional[bool] = False) -> None:
 
-    # if user didnt choose a feeder
-    if feeder is None:
-        all_feeders = True
+#def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
+#        limit_ramal_30m: Optional[bool] = False) -> None:
+# TODO refatorar. Pois (creio) que os parametros feeder / all_feeders sao excludentes!
+
+def run(folder: str, feeder: Optional[str] = None, par: Optional[Parameters] = None,
+         ) -> None:
+#    if feeder is None:
+#        all_feeders = True
 
     folder_bdgd = folder
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
@@ -195,9 +208,12 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
 
     geodataframes = json_data.create_geodataframes(folder_bdgd)
 
+    # TODO refatorar. Vide comentario TODO abaixo.
     for alimentador in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
 
-        if alimentador == feeder or all_feeders == True:
+        # TODO refatorar. este if nao faz muito sentido. Se passo o alimentador (feeder) nao faz sentido percorrer o "for each" para cada alimentador.
+        # isto so garante que o feeder estara na CTMT (o que pode ser feito de maneira + eficiente)
+        if alimentador == feeder or par.allFeeders == True:
 
             case = Case()
             case.dfs = geodataframes
@@ -205,40 +221,31 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.id = alimentador
             print(f"\nAlimentador: {alimentador}")
 
-            # creates circuit
             case.circuitos, aux = Circuit.create_circuit_from_json(json_data.data, case.dfs['CTMT']['gdf'].query(
                 "COD_ID==@alimentador"))
             list_files_name = [aux]
-
-            # creates SEGCON
             case.line_codes, aux = LineCode.create_linecode_from_json(json_data.data, case.dfs['SEGCON']['gdf'],
                                                                       alimentador)
             list_files_name.append(aux)
 
             for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
-
                 if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
-
-                    # creates LINES
                     case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
                                                                                case.dfs[entity]['gdf'].query(
                                                                                    "CTMT==@alimentador"), entity,
-                                                                               ramal_30m=limit_ramal_30m)
+                                                                               ramal_30m=par.limitRamal30m)
 
-                   # Acho que este else pode ser eliminado. O tratamento da booleana eh interno create_line_from_json
-
-#                  if limit_ramal_30m == True:
-#                      case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-#                                                                                case.dfs[entity]['gdf'].query(
-#                                                                                   "CTMT==@alimentador"), entity,
-#                                                                              ramal_30m=limit_ramal_30m)
-#
-#
-#                   else:
-#                      case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-#                                                                                case.dfs[entity]['gdf'].query(
-#                                                                                   "CTMT==@alimentador"), entity)
+# OLD CODE o parametro limitRamal30m eh tratado internament nao preciso deste if
+#if par.limitRamal30m == True:
+#    case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
+#                                                               case.dfs[entity]['gdf'].query(
+#                                                                   "CTMT==@alimentador"), entity,
+#                                                               ramal_30m=par.limitRamal30m)
+#else:
+#    case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
+#                                                               case.dfs[entity]['gdf'].query(
+#                                                                  "CTMT==@alimentador"), entity)
 
                     list_files_name.append(aux)
                     if aux_em != "":
@@ -246,7 +253,6 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                 else:
                     print(f'No {entity} elements found.\n')
 
-            #
             if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
                 try:
                     case.regcontrols, aux = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
@@ -266,8 +272,6 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.load_shapes, aux = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
                                                                          alimentador)
             list_files_name.append(aux)
-
-            #
             if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
                 case.loads, aux = Load.create_load_from_json(json_data.data,
                                                          case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
