@@ -125,7 +125,7 @@ class JsonData:
                 'ignore_geometry': table.ignore_geometry
             }
         return geodataframes
-    
+
     def create_geodataframes_lista_ctmt(self, file_name):
         """
         :return: Dicionário contendo GeoDataFrames.
@@ -134,7 +134,7 @@ class JsonData:
 
         for table_name, table in self.tables.items():
             gdf_ = gpd.read_file(file_name, layer="CTMT", columns=table.columns,
-                                 engine='pyogrio', use_arrow=True) 
+                                 engine='pyogrio', use_arrow=True)
 
             geodataframes[table_name] = {
                 'gdf': gdf_
@@ -179,6 +179,8 @@ def export_feeder_list(feeder_list, feeder):
 
 def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
         limit_ramal_30m: Optional[bool] = False) -> None:
+
+    # if user didnt choose a feeder
     if feeder is None:
         all_feeders = True
 
@@ -203,31 +205,48 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.id = alimentador
             print(f"\nAlimentador: {alimentador}")
 
+            # creates circuit
             case.circuitos, aux = Circuit.create_circuit_from_json(json_data.data, case.dfs['CTMT']['gdf'].query(
                 "COD_ID==@alimentador"))
             list_files_name = [aux]
+
+            # creates SEGCON
             case.line_codes, aux = LineCode.create_linecode_from_json(json_data.data, case.dfs['SEGCON']['gdf'],
                                                                       alimentador)
             list_files_name.append(aux)
 
             for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
+
                 if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
-                    if limit_ramal_30m == True:
-                        case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-                                                                                   case.dfs[entity]['gdf'].query(
-                                                                                       "CTMT==@alimentador"), entity,
-                                                                                   ramal_30m=limit_ramal_30m)
-                    else:
-                        case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-                                                                                   case.dfs[entity]['gdf'].query(
-                                                                                       "CTMT==@alimentador"), entity)
+
+                    # creates LINES
+                    case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
+                                                                               case.dfs[entity]['gdf'].query(
+                                                                                   "CTMT==@alimentador"), entity,
+                                                                               ramal_30m=limit_ramal_30m)
+
+                   # Acho que este else pode ser eliminado. O tratamento da booleana eh interno create_line_from_json
+
+#                  if limit_ramal_30m == True:
+#                      case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
+#                                                                                case.dfs[entity]['gdf'].query(
+#                                                                                   "CTMT==@alimentador"), entity,
+#                                                                              ramal_30m=limit_ramal_30m)
+#
+#
+#                   else:
+#                      case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
+#                                                                                case.dfs[entity]['gdf'].query(
+#                                                                                   "CTMT==@alimentador"), entity)
+
                     list_files_name.append(aux)
                     if aux_em != "":
                         list_files_name.append(aux_em)
                 else:
                     print(f'No {entity} elements found.\n')
 
+            #
             if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
                 try:
                     case.regcontrols, aux = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
@@ -247,6 +266,8 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.load_shapes, aux = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
                                                                          alimentador)
             list_files_name.append(aux)
+
+            #
             if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
                 case.loads, aux = Load.create_load_from_json(json_data.data,
                                                          case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
@@ -262,7 +283,7 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                 list_files_name.append(aux)
             else:
                 print(f'No PIP found for this feeder.\n')
-                
+
             if not case.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
                 case.loads, aux = Load.create_load_from_json(json_data.data,
                                                              case.dfs['UCMT_tab']['gdf'].query("CTMT==@alimentador"),
@@ -271,7 +292,7 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             else:
                 print(f'No UCMT found for this feeder.\n')
 
-            if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:  
+            if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
                 case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGBT_tab']['gdf'].query(
                     "CTMT==@alimentador"), 'UGBT_tab')  # código adicionado por Mozart 07/07 às 14h
                 list_files_name.append(aux)
