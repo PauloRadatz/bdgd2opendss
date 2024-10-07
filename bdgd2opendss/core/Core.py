@@ -361,6 +361,8 @@ def populaCase(jsonData, geodataframes, par):
     # SEGCON
     case.line_codes, fileName = LineCode.create_linecode_from_json(jsonData, case.dfs['SEGCON']['gdf'],
                                                                    alimentador)
+
+    # TODO sugiro fazer o append dentro de todos os "creates" (para simplificar o codigo / jah q tudo eh "referenciado" em Python)
     list_files_name.append(fileName)
 
     for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
@@ -368,9 +370,8 @@ def populaCase(jsonData, geodataframes, par):
         # SSDMT
         if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
             case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(jsonData,
-                                                                            case.dfs[entity]['gdf'].query(
-                                                                                "CTMT==@alimentador"), entity,
-                                                                            ramal_30m=par.limitRamal30m)
+                                                                            case.dfs[entity]['gdf'].query("CTMT==@alimentador"),
+                                                                            entity,ramal_30m=par.limitRamal30m)
 
             # OLD CODE o parametro limitRamal30m eh tratado internamente nao preciso deste if
             # if par.limitRamal30m == True:
@@ -390,23 +391,32 @@ def populaCase(jsonData, geodataframes, par):
             print(f'No {entity} elements found.\n')
 
     # UNREMT
-    if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-        try:
-            case.regcontrols, fileName = RegControl.create_regcontrol_from_json(jsonData, inner_entities_tables(
-                case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"), left_column='UN_RE',
-                right_column='COD_ID'))
-            list_files_name.append(fileName)
-        except UnboundLocalError:
-            print("No RegControls found for this feeder. \n")
+    # do the merge before checking if result set is empty
+    merged_dfs = inner_entities_tables(case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                       left_column='UN_RE', right_column='COD_ID')
+
+    if not merged_dfs.query("CTMT == @alimentador").empty :
+    # OLD CODE if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
+
+    # TODO Mozart optei por retirar o try/except, pois tratei o erro. Mas eh discutivel...
+    # try:
+        case.regcontrols, fileName = RegControl.create_regcontrol_from_json(jsonData,merged_dfs)
+        list_files_name.append(fileName)
+    #    except UnboundLocalError:
+    #        print("No RegControls found for this feeder.\n")
     else:
-        print("No RegControls found for this feeder.\n")
+        if case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
+            print("No RegControls found for this feeder.\n")
+        else :
+            print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
 
     # UNTRMT
-    case.transformers, fileName = Transformer.create_transformer_from_json(jsonData, inner_entities_tables(
-        case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-        left_column='UNI_TR_MT', right_column='COD_ID'))
+    merged_dfs = inner_entities_tables(case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                        left_column='UNI_TR_MT', right_column='COD_ID')
+    case.transformers, fileName = Transformer.create_transformer_from_json(jsonData,merged_dfs)
     list_files_name.append(fileName)
 
+    # CRVCRG
     case.load_shapes, fileName = LoadShape.create_loadshape_from_json(jsonData, case.dfs['CRVCRG']['gdf'],
                                                                       alimentador)
     list_files_name.append(fileName)
@@ -454,5 +464,6 @@ def populaCase(jsonData, geodataframes, par):
     else:
         print("No UGMT found for this feeder. \n")
 
-        case.output_master(list_files_name)
-        case.create_outputs_masters(list_files_name)
+    # creates dss files
+    case.output_master(list_files_name)
+    case.create_outputs_masters(list_files_name)

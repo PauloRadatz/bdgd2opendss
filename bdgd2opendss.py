@@ -15,7 +15,7 @@ if __name__ == '__main__':
     alimentador = "ABR07"
 
     bdgdPath = r"F:\DropboxZecao\Dropbox\0CEMIG\0_BDGDs\Creluz\Creluz-D_598_2022-12-31_V11_20230831-0921.gdb"
-    alimentador = "1_2REDE_1" # "1_3PAS_1" # "1_2REDE_1"
+    alimentador = "1_REDE2_1" # "1_3PAS_1" # "1_REDE2_1"
 
     # PARAMETERS
     # folder_bdgd
