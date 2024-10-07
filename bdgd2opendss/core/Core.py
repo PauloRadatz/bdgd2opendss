@@ -4,13 +4,13 @@ import json
 import os.path
 import pathlib
 import time
-from typing import Optional, List
+from typing import List
 
 import geopandas as gpd
 
 import bdgd2opendss.model.BusCoords as Coords
 from bdgd2opendss import Case, Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import load_json, inner_entities_tables, create_output_feeder_coords, create_dfs_coords
+from bdgd2opendss.core.Utils import inner_entities_tables, create_output_feeder_coords, create_dfs_coords
 
 # parameters class. To be defined by the user.
 class Parameters:
@@ -186,7 +186,7 @@ def export_feeder_list(feeder_list, feeder):
     with open(path,'w') as output:
         for k in feeder_list:
             output.write(str(k)+"\n")
-    return(f'Lista de alimentadores criada em {path}')
+    return f'Lista de alimentadores criada em {path}'
 
 # OLD CODE
 #def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
@@ -228,7 +228,7 @@ def run( par: Parameters ) :
         # verifies if the feeder exists
         if par.alimentador not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
             print(f"\nAlimentador: {par.alimentador} não encontrado na CTMT!")
-            return;
+            return
 
         populaCase(json_data.data, geodataframes, par)
 
