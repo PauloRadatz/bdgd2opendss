@@ -26,8 +26,8 @@ class Parameters:
         self.ger4fios = ger4fios            # generates with Neutral
         self.gerCapacitors = gerCapacitors  # generates capacitors banks
         self.loadModel = loadModel          # loadModel ANEEL (e.g 2 loads for each load), model8
-        self.genTypeMT = genMT              # chooses between: "generator" / "PVSystem" or "asBDGD"
-        self.genTypeBT = genBT              # "PV" = PV generator as PVSystem or simple generator
+        self.genTypeMT = genMT              # chooses between: "generator" / "PVSystem" / "asBDGD"
+        self.genTypeBT = genBT              # chooses between: "generator" / "PVSystem" /
         self.gerCoord = gerCoord            # boolean to control the geographic generation
 
 class Table:
@@ -167,7 +167,6 @@ def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     caller_file = inspect.getfile(caller_frame)
     return pathlib.Path(caller_file).resolve().parent
 
-
 def get_feeder_list(folder: str) -> List[str]:  # TODO is there a way to not load everything?
     folder_bdgd = folder
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
@@ -193,30 +192,13 @@ def export_feeder_list(feeder_list, feeder):
             output.write(str(k)+"\n")
     return f'Lista de alimentadores criada em {path}'
 
-# OLD CODE
-#def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
-#        limit_ramal_30m: Optional[bool] = False) -> None:
-
 def run( par: Parameters ) :
-
-#   OLD CODE all_feeders agora vem dentro de par
-#    if feeder is None:
-#        all_feeders = True
-
-#    OLD CODE linha desnecessaria, folder_bdgd agora vem dentro de par
-#    folder_bdgd = folder
 
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
 
     json_data = JsonData(json_file_name)
 
     geodataframes = json_data.create_geodataframes(par.folder_bdgd)
-
-    # OLD CODE Esta parte foi movida p/ dentro do populaCase.
-    # do jeito que estava, criava as coordenadas somente de 1 unico alimentador
-    #gdf_SSDMT, gdf_SSDBT = create_dfs_coords(folder_bdgd, feeder)
-    #df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
-    #create_output_feeder_coords(df_coords, feeder)
 
     # generates all feeders
     if par.allFeeders :
@@ -232,123 +214,18 @@ def run( par: Parameters ) :
 
         # verifies if the feeder exists
         if par.alimentador not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
-            print(f"\nAlimentador: {par.alimentador} não encontrado na CTMT!")
+            print(f"\nFeeder: {par.alimentador} not found in CTMT.")
             return
 
         populaCase(json_data.data, geodataframes, par)
 
-    # quebrei a def run em 2 partes
-    # OLD CODE is below if something crashes...
-    # if alimentador == feeder or par.allFeeders == True:
-
-        # case = Case()
-        # case.dfs = geodataframes
-        # case.id = alimentador
-        # print(f"\nAlimentador: {alimentador}")
-
-        # # CTMT
-        # case.circuitos, fileName = Circuit.create_circuit_from_json(json_data.data, case.dfs['CTMT']['gdf'].query(
-        # "COD_ID==@alimentador"))
-        # list_files_name = [fileName]
-
-        # # SEGCON
-        # case.line_codes, fileName = LineCode.create_linecode_from_json(json_data.data, case.dfs['SEGCON']['gdf'],
-        # alimentador)
-        # list_files_name.append(fileName)
-
-        # for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
-
-        # if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
-        # case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(json_data.data,
-        # case.dfs[entity]['gdf'].query(
-        # "CTMT==@alimentador"), entity,
-        # ramal_30m=par.limitRamal30m)
-
-        # # OLD CODE o parametro limitRamal30m eh tratado internament nao preciso deste if
-        # #if par.limitRamal30m == True:
-        # #    case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(json_data.data,
-        # #                                                               case.dfs[entity]['gdf'].query(
-        # #                                                                   "CTMT==@alimentador"), entity,
-        # #                                                               ramal_30m=par.limitRamal30m)
-        # #else:
-        # #    case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(json_data.data,
-        # #                                                               case.dfs[entity]['gdf'].query(
-        # #                                                                  "CTMT==@alimentador"), entity)
-
-        # list_files_name.append(fileName)
-        # if aux_em != "":
-        # list_files_name.append(aux_em)
-        # else:
-        # print(f'No {entity} elements found.\n')
-
-        # if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-        # try:
-        # case.regcontrols, fileName = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
-        # case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"), left_column='UN_RE',
-        # right_column='COD_ID'))
-        # list_files_name.append(fileName)
-        # except UnboundLocalError:
-        # print("No RegControls found for this feeder. \n")
-        # else:
-        # print("No RegControls found for this feeder.\n")
-
-        # case.transformers, fileName = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
-        # case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-        # left_column='UNI_TR_MT', right_column='COD_ID'))
-        # list_files_name.append(fileName)
-
-        # case.load_shapes, fileName = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
-        # alimentador)
-        # list_files_name.append(fileName)
-
-        # if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-        # case.loads, fileName = Load.create_load_from_json(json_data.data,
-        # case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
-        # case.dfs['CRVCRG']['gdf'], 'UCBT_tab')
-        # list_files_name.append(fileName)
-        # else:
-        # print(f'No UCBT found for this feeder.\n')
-
-        # if not case.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
-        # case.loads, fileName = Load.create_load_from_json(json_data.data,
-        # case.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
-        # case.dfs['CRVCRG']['gdf'], 'PIP')
-        # list_files_name.append(fileName)
-        # else:
-        # print(f'No PIP found for this feeder.\n')
-
-        # if not case.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-        # case.loads, fileName = Load.create_load_from_json(json_data.data,
-        # case.dfs['UCMT_tab']['gdf'].query("CTMT==@alimentador"),
-        # case.dfs['CRVCRG']['gdf'], 'UCMT_tab')
-        # list_files_name.append(fileName)
-        # else:
-        # print(f'No UCMT found for this feeder.\n')
-
-        # if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-        # case.pvsystems, fileName = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGBT_tab']['gdf'].query(
-        # "CTMT==@alimentador"), 'UGBT_tab')  # código adicionado por Mozart 07/07 às 14h
-        # list_files_name.append(fileName)
-        # else:
-        # print("No UGBT found for this feeder. \n")
-
-        # if not case.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-        # case.pvsystems, fileName = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGMT_tab']['gdf'].query(
-        # "CTMT==@alimentador"),'UGMT_tab')
-        # list_files_name.append(fileName)
-        # else:
-        # print("No UGMT found for this feeder. \n")
-
-        # case.output_master(list_files_name)
-        # case.create_outputs_masters(list_files_name)
-
 # this method populates Case object with data from BDGD
-# TODO so it makes sense to be a method of Case class
+# TODO so it makes sense to be a method of Case class (or any other class...)
 def populaCase(jsonData, geodataframes, par):
 
     alimentador = par.alimentador
 
-    # geographic coords
+    # generates the geographic coordinates
     if par.gerCoord:
         gdf_SSDMT, gdf_SSDBT = create_dfs_coords(par.folder_bdgd, alimentador)
         df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
@@ -357,17 +234,27 @@ def populaCase(jsonData, geodataframes, par):
     case = Case()
     case.dfs = geodataframes
     case.id = alimentador
-    print(f"\nAlimentador: {alimentador}")
+    print(f"\nFeeder: {alimentador}")
+
+    list_files_name = []
 
     # CTMT
-    case.circuitos, fileName = Circuit.create_circuit_from_json(jsonData, case.dfs['CTMT']['gdf'].query(
-        "COD_ID==@alimentador"))
-    list_files_name = [fileName]
+    try:
+        case.circuitos, fileName = Circuit.create_circuit_from_json(jsonData, case.dfs['CTMT']['gdf'].query(
+            "COD_ID==@alimentador"))
+        list_files_name.append(fileName)
+
+    except UnboundLocalError:
+        print("Error in CTMT.\n")
 
     # SEGCON
-    case.line_codes, fileName = LineCode.create_linecode_from_json(jsonData, case.dfs['SEGCON']['gdf'],
-                                                                   alimentador)
-    list_files_name.append(fileName)
+    try:
+        case.line_codes, fileName = LineCode.create_linecode_from_json(jsonData, case.dfs['SEGCON']['gdf'],
+                                                                       alimentador)
+        list_files_name.append(fileName)
+
+    except UnboundLocalError:
+        print("Error in SEGCON.\n")
 
     #
     for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
@@ -380,23 +267,12 @@ def populaCase(jsonData, geodataframes, par):
                                                                                 case.dfs[entity]['gdf'].query("CTMT==@alimentador"),
                                                                                 entity,ramal_30m=par.limitRamal30m)
 
-                # OLD CODE o parametro limitRamal30m eh tratado internamente nao preciso deste if
-                # if par.limitRamal30m == True:
-                #    case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(json_data.data,
-                #                                                               case.dfs[entity]['gdf'].query(
-                #                                                                   "CTMT==@alimentador"), entity,
-                #                                                               ramal_30m=par.limitRamal30m)
-                # else:
-                #    case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(json_data.data,
-                #                                                               case.dfs[entity]['gdf'].query(
-                #                                                                  "CTMT==@alimentador"), entity)
-
                 list_files_name.append(fileName)
                 if aux_em != "":
                     list_files_name.append(aux_em)
 
             except UnboundLocalError:
-                print("Erro {entity}.\n")
+                print(f"Error in {entity}.\n")
 
     # UNREMT
     # do the merge before checking if result set is empty
@@ -411,7 +287,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-             print("Erro UNREMT.\n")
+             print("Error in UNREMT.\n")
 
     else:
         if case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
@@ -429,7 +305,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro UNTRMT.\n")
+            print("Error in UNTRMT.\n")
 
     else:
         print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
@@ -441,7 +317,7 @@ def populaCase(jsonData, geodataframes, par):
         list_files_name.append(fileName)
 
     except UnboundLocalError:
-        print("Erro CRVCRG\n")
+        print("Error in CRVCRG\n")
 
     # UCBT_tab
     if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
@@ -453,7 +329,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro UCBT_tab\n")
+            print("Error in UCBT_tab\n")
 
     else:
         print(f'No UCBT found for this feeder.\n')
@@ -468,7 +344,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro PIP\n")
+            print("Error in PIP\n")
 
     else:
         print(f'No PIP found for this feeder.\n')
@@ -483,7 +359,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro UCMT\n")
+            print("Error in UCMT\n")
     else:
         print(f'No UCMT found for this feeder.\n')
 
@@ -496,7 +372,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro UGBT_tab\n")
+            print("Error in UGBT_tab\n")
 
     else:
         print("No UGBT found for this feeder. \n")
@@ -510,7 +386,7 @@ def populaCase(jsonData, geodataframes, par):
             list_files_name.append(fileName)
 
         except UnboundLocalError:
-            print("Erro UGBT_tab\n")
+            print("Error in UGBT_tab\n")
     else:
         print("No UGMT found for this feeder. \n")
 
