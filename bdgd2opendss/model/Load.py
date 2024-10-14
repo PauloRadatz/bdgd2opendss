@@ -19,9 +19,9 @@ import geopandas as gpd
 from tqdm import tqdm
 
 
-from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, convert_tfascon_conn, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
+from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv #modificação 08/08
+from bdgd2opendss.model.Transformer import dicionario_kv, list_dsativ #modificação 08/08
 
 import numpy as np
 
@@ -47,8 +47,7 @@ class Load:
     _bus_nodes: str = ""
     _kv: str = ""
     _kw: str = ""
-    _connected: str = ""
-    _sit_ativ: str = ""
+    _transformer: str = ""
 
     _tip_dia: str = ""
     _load_DO: str = ""
@@ -311,59 +310,59 @@ class Load:
         self._energia_12 = value
 
     @property
-    def sit_ativ(self) -> str:
-        return self._sit_ativ
+    def transformer(self) -> str:
+        return self._transformer
 
-    @sit_ativ.setter
-    def sit_ativ(self, value: str):
-        self._sit_ativ = value
+    @transformer.setter
+    def transformer(self, value: str):
+        self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254 
         x=create_voltage_bases(dicionario_kv)
-        if int(self.phases) == 1:
-            if float(self.kv) == 0.24:
-                kv = float(self.kv)/2
-            elif float(self.kv) > 0.22: #verificar a maior tensão de linha das voltage bases para definir isso aqui (se 0.380 fazer isso, se não, não fazer)
-                kv = round(self.kv/np.sqrt(3),2)
-            elif float(self.kv) == 0.22 and max(x) < 0.38:
-                kv = round(float(self.kv)/np.sqrt(3),3)
-            else:
-                kv = float(self.kv)            
+        if self.phases == '1':
+            phases = '1'
+            conn = 'Wye'
         else:
-            if float(self.kv) == 0.12:
-                kv = 2*float(self.kv)
-            elif self.kv == 0.127:
-                kv = round(self.kv*np.sqrt(3),2)
-            else: 
-                kv = float(self.kv)
-        return(kv)
+            phases = '3'
+            conn = 'Delta'
+
+        if phases == '1':
+            if float(self.kv) == 0.24 or float(self.kv) == 0.44:
+                kv = float(self.kv)/2
+            else: #verificar a maior tensão de linha das voltage bases para definir isso aqui (se 0.380 fazer isso, se não, não fazer)
+                kv = round(self.kv/np.sqrt(3),3)       
+        else:
+            kv = float(self.kv)
+        return(kv,phases,conn)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        kv = Load.adapting_string_variables_load(self)
+        if self.transformer in list_dsativ: #remove as cargas desativadas
+            return("")
+        else:
+            kv,phases,conn = Load.adapting_string_variables_load(self)
         
+            return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={phases} conn={conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+                f'daily="{self.daily}_{self.tip_dia}" \n'\
+                f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={phases} conn={conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+                f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
+                
+            
+    def __repr__(self):
+        kv,phases = Load.adapting_string_variables_load(self)
+
         if self._connected == '0' or self.sit_ativ == "DS": #remove as cargas desativadas
             return("")
         else:
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=1 kv={self.kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={phases} conn={self.conn} model=2 kv={self.kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
-                f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"\n '
-
-    def __repr__(self):
-        kv = Load.adapting_string_variables_load(self)
-        if self._connected == '0':
-            return("")
-        else:
-            return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=1 kv={kv} kw = {float(self.kw)/2:.7f} '\
-                f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}" \n'\
-                f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n '
 
@@ -385,7 +384,7 @@ class Load:
 
             return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(qt_tipdia_mes(tip_dia, mes)*24*fc))/1000
 
-        except KeyError:
+        except KeyError: #TODO implementar uma curva default de iluminação pública ou para cargas que não tenha curvas típicas
 
             print("There's no corresponding loadshape for this load")
 
@@ -422,6 +421,11 @@ class Load:
         """
         for mapping_key, mapping_value in value.items():
             setattr(load_, f"_{mapping_key}", row[mapping_value])
+            if mapping_key == "transformer":
+                try:
+                    setattr(load_, f"_kv", dicionario_kv[row[mapping_value]])
+                except KeyError:
+                    continue
 
     @staticmethod
     def _process_indirect_mapping(load_, value, row):
