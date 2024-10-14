@@ -89,9 +89,11 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     - Columns with '_y' suffix have the suffix removed.
 
     """
-
-    merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
-
+    if left_column == 'UN_RE':
+        merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
+    else:
+        merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='right') #Pegar UNI_TR_MT que não tenham EQTRMT (geram linhas e cargas isoladas)
+        merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
     for column in merged_dfs.columns:
         if column.endswith('_x'):
             merged_dfs.drop(columns=column, inplace=True)

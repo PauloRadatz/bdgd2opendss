@@ -102,6 +102,7 @@ class JsonData:
 
             for _ in range(runs):
                 start_time = time.time()
+                print(f'Criando o geodataframe de {table.name}') #nome do elemento que está sendo lido no momento
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                      include_fields=table.columns, columns=table.columns,
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',
@@ -188,8 +189,11 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
     json_data = JsonData(json_file_name)
 
     gdf_SSDMT, gdf_SSDBT = create_dfs_coords(folder_bdgd, feeder)
-    df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
-    create_output_feeder_coords(df_coords, feeder)
+    if gdf_SSDBT.empty and gdf_SSDMT.empty:
+        print("There's no SSDBT and SSDMT in this feeder")
+    else:
+        df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
+        create_output_feeder_coords(df_coords, feeder)
 
     geodataframes = json_data.create_geodataframes(folder_bdgd)
 
@@ -203,6 +207,7 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
             case.id = alimentador
             print(f"\nAlimentador: {alimentador}")
 
+
             case.circuitos, aux = Circuit.create_circuit_from_json(json_data.data, case.dfs['CTMT']['gdf'].query(
                 "COD_ID==@alimentador"))
             list_files_name = [aux]
@@ -210,6 +215,11 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                                                                       alimentador)
             list_files_name.append(aux)
 
+            case.transformers, aux = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
+                case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                left_column='UNI_TR_MT', right_column='COD_ID'))
+            list_files_name.append(aux)
+            
             for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
                 if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
@@ -238,11 +248,6 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                     print("No RegControls found for this feeder. \n")
             else:
                 print("No RegControls found for this feeder.\n")
-
-            case.transformers, aux = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
-                case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-                left_column='UNI_TR_MT', right_column='COD_ID'))
-            list_files_name.append(aux)
 
             case.load_shapes, aux = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
                                                                          alimentador)
