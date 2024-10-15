@@ -3,14 +3,14 @@
 from dataclasses import dataclass, field
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv
-from bdgd2opendss.model.Circuit import kv
-
+from bdgd2opendss.model import BusCoords
+from bdgd2opendss.model.Transformer import dicionario_kv, kv
+from bdgd2opendss.core import Utils
+from bdgd2opendss.core.Settings import settings
 
 @dataclass
 class Case:
-    _id: str = ""
+
     _circuitos: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
     _lines_SSDBT: list[Line] = field(init=False)
@@ -23,13 +23,16 @@ class Case:
     _PVsystems: list[PVsystem] = field(init=False)
     _dfs: dict = field(init=False)
 
-    @property
-    def id(self):
-        return self._id
+    def __init__(self, jsonData, geodataframes, folder_bdgd, feeder ):
+        self._jsonData = jsonData
+        self._dfs = geodataframes
+        self.folder_bdgd = folder_bdgd
+        self.feeder = feeder
 
-    @id.setter
-    def id(self, value):
-        self._id = value
+        print(f"\nFeeder: {feeder}")
+
+        # init list
+        self.list_files_name = []
 
     @property
     def circuitos(self):
@@ -110,24 +113,29 @@ class Case:
     def line_code_names(self):
         return [l.linecode for l in self.line_codes]
 
+    # TODO Warning Unresolved attribute reference 'lines' for class 'Case'
     def line_name(self):
         return [l.line for l in self.lines]
 
+    # TODO Warning Unresolved attribute reference 'load_shape' for class 'LoadShape'
     def load_shape_names(self):
         return [ls.load_shape for ls in self.load_shapes]
 
     def transformers_names(self):
         return [tr.transformer for tr in self.transformers]
 
+    # TODO Warning Unresolved attribute reference 'regcontrol' for class 'RegControl'
     def regcontrols_names(self):
         return [rgc.regcontrol for rgc in self.regcontrols]
 
     def loads_names(self):
         return [ld.load for ld in self.loads]
 
+    # TODO Warning Unresolved attribute reference 'PVsystems' for class 'Case'
     def pvsystems_names(self):
         return [pv.pvsystem for pv in self.pvsystems]
 
+    # TODO Warning Expected to return 'str', got no return
     def rename_linecode_string(linecode_, i, input_str: str) -> str:
         """
         This function re-writes the string identfying key places by specified parameters and insering caracteres.
@@ -151,9 +159,12 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-        y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
+        #mtkv.sort() # OLD CODE
+        #x = set(mtkv)  #cria lista de tensões de base na média tensão # OLD CODE
+        y = Utils.create_voltage_bases(dicionario_kv) #cria lista de tensões de base
+        #for k in list(x):
+        #    y.append(k)
         y.sort()
-        y.append(kv[0])
         voltagebases = " ".join(str(z) for z in set(y))
 
         for i in file_names:
@@ -161,17 +172,17 @@ class Case:
                 master = master + f'!Redirect "{i}"\n'
             else:
                 master = master + f'Redirect "{i}"\n'
-        master = master + f'''Set mode = daily   
+        master = master + f'''Set mode = daily
 Set Voltagebases = [{voltagebases}]
 Calc Voltagebases
-Set tolerance = 0.0001 
+Set tolerance = 0.0001
 Set maxcontroliter = 10
 !Set algorithm = newton
 !Solve mode = direct
 Solve
 buscoords buscoords.csv'''
 
-        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.id, master_content=master)
+        Utils.create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
 
     def create_outputs_masters(self, file_names):
         """
@@ -192,6 +203,13 @@ buscoords buscoords.csv'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
+        # TODO melhorar este codigo
+        '''
+        base_string_BT = 'Cargas_BT_DU01_1_REDE2_1.dss'
+        base_string_MT = 'Cargas_MT_DU01_1_REDE2_1.dss'
+        base_string_PIP = 'Cargas_IP_DU01_1_REDE2_1.dss'
+        '''
+        # TODO Este tipo de indexacao eh fragil. Se a ordem dos appends muda, o codigo quebra.
         for elemento in file_names:
             if "Cargas" in elemento:
                 indice = file_names.index(elemento)
@@ -212,3 +230,263 @@ buscoords buscoords.csv'''
                 file_names[indice] = aux_PIP.replace('01_', f'{mes}_')
 
                 self.output_master(tip_dia=tip_dia, mes=mes, file_names=file_names)
+
+    # this method populates Case object with data from BDGD
+    def PopulaCase(self):
+
+        '''
+        self.GenGeographicCoord()
+
+        self.Populates_CTMT()
+
+        self.Populates_SEGCON()
+
+        self.Populates_Entity()
+
+        self.Populates_UNREMT()
+        '''
+        # erro
+        self.Populates_UNTRMT()
+
+        # self.Popula_CRVCRG()
+
+        # erro
+        #self.Populates_UCBT()
+
+        # erro
+        #self.Populates_PIP()
+
+        #self.Populates_UCMT()
+
+        # erro
+        #self.Populates_UGBT()
+
+        #self.Populates_UGMT()
+
+        # creates dss files
+        self.output_master(self.list_files_name)
+        self.create_outputs_masters(self.list_files_name)
+
+    # generates the geographic coordinates
+    def GenGeographicCoord(self):
+
+        if settings.gerCoord:
+            #
+            gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
+            #
+            df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
+            #
+            Utils.create_output_feeder_coords(df_coords, self.feeder)
+
+    # CTMT
+    def Populates_CTMT(self):
+
+        alimentador = self.feeder
+
+        try:
+            circuitos, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query(
+                "COD_ID==@alimentador"))
+            self.list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in CTMT.\n")
+
+    # SEGCON
+    def Populates_SEGCON(self):
+
+        try:
+            self.line_codes, fileName = LineCode.create_linecode_from_json(self._jsonData, self.dfs['SEGCON']['gdf'],
+                                                                           self.feeder)
+            self.list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in SEGCON.\n")
+
+    # UCBT
+    def Popula_UCBT(self,alimentador):
+
+        if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                _loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                              self._dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
+                                                              self._dfs['CRVCRG']['gdf'], 'UCBT_tab')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UCBT_tab\n")
+
+        else:
+            print(f'No UCBT found for this feeder.\n')
+
+    # SSDMT
+    def Populates_Entity(self):
+
+        alimentador = self.feeder
+
+        for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
+
+            if not self.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
+
+                try:
+                    self._lines_SSDMT, fileName, aux_em = Line.create_line_from_json(self._jsonData,
+                                                                                    self.dfs[entity]['gdf'].query(
+                                                                                        "CTMT==@alimentador"),
+                                                                                    entity, ramal_30m=settings.limitRamal30m)
+
+                    self.list_files_name.append(fileName)
+                    if aux_em != "":
+                        self.list_files_name.append(aux_em)
+
+                except UnboundLocalError:
+                    print(f"Error in {entity}.\n")
+
+    # UNREMT
+    def Populates_UNREMT(self):
+
+        alimentador = self.feeder
+
+        # do the merge before checking if result set is empty
+        merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
+                                           self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                           left_column='UN_RE', right_column='COD_ID')
+
+        if not merged_dfs.query("CTMT == @alimentador").empty:
+
+            try:
+                self.regcontrols, fileName = RegControl.create_regcontrol_from_json(self._jsonData, merged_dfs)
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UNREMT.\n")
+
+        else:
+            if self.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
+                print("No RegControls found for this feeder.\n")
+            else:
+                print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
+
+    # EQTRMT
+    def Populates_UNTRMT(self):
+
+        alimentador = self.feeder
+
+        merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
+                                           self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                           left_column='UNI_TR_MT', right_column='COD_ID')
+        if not merged_dfs.query("CTMT == @alimentador").empty:
+            try:
+
+                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs)
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UNTRMT.\n")
+
+        else:
+            print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+
+    # CRVCRG
+    def Popula_CRVCRG(self):
+
+        try:
+            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder)
+            self.list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in CRVCRG\n")
+
+    # UCBT_tab
+    def Populates_UCBT(self):
+
+        alimentador = self.feeder
+
+        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                                  self.dfs['UCBT_tab']['gdf'].query(
+                                                                      "CTMT==@alimentador"),
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UCBT_tab\n")
+
+        else:
+            print(f'No UCBT found for this feeder.\n')
+
+    # PIP
+    def Populates_PIP(self):
+
+        alimentador = self.feeder
+
+        if not self.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                                  self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
+                                                                  self.dfs['CRVCRG']['gdf'], 'PIP')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in PIP\n")
+
+        else:
+            print(f'No PIP found for this feeder.\n')
+
+    # UCMT_tab
+    def Populates_UCMT(self):
+
+        alimentador = self.feeder
+
+        if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                                  self.dfs['UCMT_tab']['gdf'].query(
+                                                                      "CTMT==@alimentador"),
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UCMT\n")
+        else:
+            print(f'No UCMT found for this feeder.\n')
+
+    # UGBT_tab
+    def Populates_UGBT(self):
+
+        alimentador = self.feeder
+
+        if not self.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                                                                              self.dfs['UGBT_tab']['gdf'].query(
+                                                                                  "CTMT==@alimentador"), 'UGBT_tab')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UGBT_tab\n")
+
+        else:
+            print("No UGBT found for this feeder. \n")
+
+    # UGMT_tab
+    def Populates_UGMT(self):
+
+        alimentador = self.feeder
+
+        if not self.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+            try:
+                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                                                                              self.dfs['UGMT_tab']['gdf'].query(
+                                                                                  "CTMT==@alimentador"), 'UGMT_tab')
+                self.list_files_name.append(fileName)
+
+            except UnboundLocalError:
+                print("Error in UGBT_tab\n")
+        else:
+            print("No UGMT found for this feeder. \n")
