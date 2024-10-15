@@ -352,19 +352,19 @@ class Load:
                 
             
     def __repr__(self):
-        kv,phases = Load.adapting_string_variables_load(self)
-
-        if self._connected == '0' or self.sit_ativ == "DS": #remove as cargas desativadas
+        if self.transformer in list_dsativ: #remove as cargas desativadas
             return("")
         else:
+            kv,phases,conn = Load.adapting_string_variables_load(self)
+        
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={self.conn} model=2 kv={self.kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={phases} conn={conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={phases} conn={conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"\n '
+                f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
@@ -382,11 +382,12 @@ class Load:
             pot_atv_max = max(df["pot_atv"][tip_dia])
             fc = pot_atv_media/pot_atv_max
 
-            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(qt_tipdia_mes(tip_dia, mes)*24*fc))/1000
+            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(qt_tipdia_mes(tip_dia, mes)*24*fc)/1000)
 
-        except KeyError: #TODO implementar uma curva default de iluminação pública ou para cargas que não tenha curvas típicas
+        except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
 
             print("There's no corresponding loadshape for this load")
+
 
     @staticmethod
     def _process_static(load_, value):
@@ -572,7 +573,7 @@ class Load:
                     for mes in meses:
                         new_load = copy.deepcopy(load_)
                         new_load.tip_dia = i
-                        new_load.kw = new_load.calculate_kw(df=crv_dataframe_aux, tip_dia=i, mes=mes)
+                        new_load.kw = new_load.calculate_kw(df=crv_dataframe_aux, tip_dia=i, mes=mes) #TODO observar aqui o problema dos loadshapes
 
                         if i=="DU":
                             DU_meses[mes].append(new_load)

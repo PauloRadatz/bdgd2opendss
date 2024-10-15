@@ -215,10 +215,13 @@ def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] =
                                                                       alimentador)
             list_files_name.append(aux)
 
-            case.transformers, aux = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
-                case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-                left_column='UNI_TR_MT', right_column='COD_ID'))
-            list_files_name.append(aux)
+            if not case.dfs['UNTRMT']['gdf'].query("CTMT == @alimentador").empty:
+                case.transformers, aux = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
+                    case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                    left_column='UNI_TR_MT', right_column='COD_ID'))
+                list_files_name.append(aux)
+            else:
+                print("No UNTRMT found for this feeder")
             
             for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
