@@ -4,31 +4,14 @@ import json
 import os.path
 import pathlib
 import time
-from dataclasses import dataclass
-from typing import List
+from typing import List, Union, Optional
+from .Settings import settings
 
 import geopandas as gpd
 
 import bdgd2opendss.model.BusCoords as Coords
 from bdgd2opendss import Case, Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import inner_entities_tables, create_output_feeder_coords, create_dfs_coords
-
-# parameters class. To be defined by the user.
-@dataclass
-class Parameters:
-
-    def __init__(self, bdgdPath: str, alim: str, allFeeders=False, limitRamal30m=True,
-                 ger4fios=True, gerCapacitors=False, loadModel="ANEEL", genMT="asBDGD", genBT="generator", gerCoord=True):
-        self.folder_bdgd = bdgdPath         # BDGD path
-        self.alimentador = alim             # feeder name
-        self.allFeeders = allFeeders        # generates all feeders
-        self.limitRamal30m = limitRamal30m  # limits ramal to 30m
-        self.ger4fios = ger4fios            # generates with Neutral
-        self.gerCapacitors = gerCapacitors  # generates capacitors banks
-        self.loadModel = loadModel          # loadModel ANEEL (e.g 2 loads for each load), model8
-        self.genTypeMT = genMT              # chooses between: "generator" / "PVSystem" / "asBDGD"
-        self.genTypeBT = genBT              # chooses between: "generator" / "PVSystem" /
-        self.gerCoord = gerCoord            # boolean to control the geographic generation
 
 class Table:
     def __init__(self, name, columns, data_types, ignore_geometry_):
@@ -192,42 +175,43 @@ def export_feeder_list(feeder_list, feeder):
             output.write(str(k)+"\n")
     return f'Lista de alimentadores criada em {path}'
 
-def run( par: Parameters ) :
+def run(bdgd_file_path: Union[str, pathlib.Path],
+        output_folder: Optional[Union[str, pathlib.Path]] = None,
+        all_feeders: bool = True,
+        feeder: Optional[str] = None) :
 
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
 
     json_data = JsonData(json_file_name)
 
-    geodataframes = json_data.create_geodataframes(par.folder_bdgd)
+    geodataframes = json_data.create_geodataframes(bdgd_file_path)
 
     # generates all feeders
-    if par.allFeeders :
+    if all_feeders:
 
         # TO DO refatorar. Vide comentario TO DO abaixo.
-        for alimentador in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
+        for feeder in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
 
-            par.alimentador = alimentador
-
-            populaCase(json_data.data, geodataframes, par)
+            populaCase(json_data.data, geodataframes, feeder, bdgd_file_path)
 
     else :
 
         # verifies if the feeder exists
-        if par.alimentador not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
-            print(f"\nFeeder: {par.alimentador} not found in CTMT.")
+        if feeder not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
+            print(f"\nFeeder: {feeder} not found in CTMT.")
             return
 
-        populaCase(json_data.data, geodataframes, par)
+        populaCase(json_data.data, geodataframes, feeder, bdgd_file_path)
 
 # this method populates Case object with data from BDGD
-# TODO so it makes sense to be a method of Case class (or any other class...)
-def populaCase(jsonData, geodataframes, par):
+# TODO so it makes sense to be a method of Case class (or any other class...) - Paulo will work on it
+def populaCase(jsonData, geodataframes, feeder, bdgd_file_path):
 
-    alimentador = par.alimentador
+    alimentador = feeder
 
     # generates the geographic coordinates
-    if par.gerCoord:
-        gdf_SSDMT, gdf_SSDBT = create_dfs_coords(par.folder_bdgd, alimentador)
+    if settings.gerCoord:
+        gdf_SSDMT, gdf_SSDBT = create_dfs_coords(bdgd_file_path, alimentador)
         df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
         create_output_feeder_coords(df_coords, alimentador)
 
@@ -265,7 +249,7 @@ def populaCase(jsonData, geodataframes, par):
             try:
                 case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(jsonData,
                                                                                 case.dfs[entity]['gdf'].query("CTMT==@alimentador"),
-                                                                                entity,ramal_30m=par.limitRamal30m)
+                                                                                entity,ramal_30m=settings.limitRamal30m)
 
                 list_files_name.append(fileName)
                 if aux_em != "":
