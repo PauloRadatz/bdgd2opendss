@@ -137,7 +137,7 @@ class PVsystem:
     @transformer.setter
     def transformer(self, value):
         self._transformer = value
-
+    
     def full_string(self) -> str:
         if self.sit_ativ == "DS" or self.transformer in list_dsativ:
             return("")
@@ -184,6 +184,7 @@ class PVsystem:
             setattr(pvsystem_, f"_{static_key}", static_value)
 
 
+
     @staticmethod
     def _process_direct_mapping(pvsystem_, value, row):
         """
@@ -200,7 +201,11 @@ class PVsystem:
         """
         for mapping_key, mapping_value in value.items():
             setattr(pvsystem_, f"_{mapping_key}", row[mapping_value])
-
+            if mapping_key == "transformer":
+                try:
+                    setattr(pvsystem_, f"_kv", dicionario_kv[row[mapping_value]])
+                except KeyError:
+                    ...
 
     @staticmethod
     def _process_indirect_mapping(pvsystem_, value, row):

@@ -27,9 +27,6 @@ import numpy as np
 
 from dataclasses import dataclass
 
-#dicionario = {} dicionário de nós para o PVsystem caso haja necessidade
-lista_kvbt = []
-
 @dataclass
 class Load:
 
@@ -318,35 +315,27 @@ class Load:
         self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254 
-        x=create_voltage_bases(dicionario_kv)
+        # x=create_voltage_bases(dicionario_kv)
         if self.phases == '1':
-            phases = '1'
-            conn = 'Wye'
-        else:
-            phases = '3'
-            conn = 'Delta'
-
-        if phases == '1':
             if float(self.kv) == 0.24 or float(self.kv) == 0.44:
                 kv = float(self.kv)/2
             else: #verificar a maior tensão de linha das voltage bases para definir isso aqui (se 0.380 fazer isso, se não, não fazer)
                 kv = round(self.kv/np.sqrt(3),3)       
         else:
             kv = float(self.kv)
-        return(kv,phases,conn)
+        return(kv)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
         if self.transformer in list_dsativ: #remove as cargas desativadas
             return("")
         else:
-            kv,phases,conn = Load.adapting_string_variables_load(self)
-        
+            kv = Load.adapting_string_variables_load(self)
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
                 
@@ -355,14 +344,13 @@ class Load:
         if self.transformer in list_dsativ: #remove as cargas desativadas
             return("")
         else:
-            kv,phases,conn = Load.adapting_string_variables_load(self)
-        
+            kv = Load.adapting_string_variables_load(self)
             return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={phases} conn={conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
