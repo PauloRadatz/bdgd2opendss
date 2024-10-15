@@ -4,9 +4,11 @@ from dataclasses import dataclass, field
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.model import BusCoords
-from bdgd2opendss.model.Transformer import dicionario_kv, kv
+from bdgd2opendss.model.Transformer import dicionario_kv
 from bdgd2opendss.core import Utils
 from bdgd2opendss.core.Settings import settings
+# from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
+from bdgd2opendss.model.Circuit import kv
 
 @dataclass
 class Case:
@@ -158,21 +160,18 @@ class Case:
 
     def output_master(self, file_names, tip_dia="", mes=""):
 
-        master = "clear\n"
-        #mtkv.sort() # OLD CODE
-        #x = set(mtkv)  #cria lista de tensões de base na média tensão # OLD CODE
-        y = Utils.create_voltage_bases(dicionario_kv) #cria lista de tensões de base
-        #for k in list(x):
-        #    y.append(k)
-        y.sort()
-        voltagebases = " ".join(str(z) for z in set(y))
+            master = "clear\n"
+            y = Utils.create_voltage_bases(dicionario_kv)  # cria lista de tensões de base na baixa tensão
+            y.sort()
+            y.append(kv[0])
+            voltagebases = " ".join(str(z) for z in set(y))
 
-        for i in file_names:
-            if i[:2] == "GD":
-                master = master + f'!Redirect "{i}"\n'
-            else:
-                master = master + f'Redirect "{i}"\n'
-        master = master + f'''Set mode = daily
+            for i in file_names:
+                if i[:2] == "GD":
+                    master = master + f'!Redirect "{i}"\n'
+                else:
+                    master = master + f'Redirect "{i}"\n'
+            master = master + f'''Set mode = daily
 Set Voltagebases = [{voltagebases}]
 Calc Voltagebases
 Set tolerance = 0.0001
@@ -182,7 +181,7 @@ Set maxcontroliter = 10
 Solve
 buscoords buscoords.csv'''
 
-        Utils.create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
+            Utils.create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
 
     def create_outputs_masters(self, file_names):
         """
