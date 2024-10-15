@@ -2,6 +2,10 @@ import bdgd2opendss as bdgd
 from bdgd2opendss import settings
 import pathlib
 import os
+import warnings
+
+# Suppress RuntimeWarnings globally
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 if __name__ == '__main__':
 
