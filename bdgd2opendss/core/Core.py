@@ -101,6 +101,7 @@ class JsonData:
 
             for _ in range(runs):
                 start_time = time.time()
+                print(f'Creating geofataframe {table.name}')
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                      include_fields=table.columns, columns=table.columns,
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',
@@ -240,6 +241,18 @@ def populaCase(jsonData, geodataframes, feeder, bdgd_file_path):
     except UnboundLocalError:
         print("Error in SEGCON.\n")
 
+    # UNTRMT
+    merged_dfs = inner_entities_tables(case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                       left_column='UNI_TR_MT', right_column='COD_ID')
+    if not merged_dfs.query("CTMT == @alimentador").empty:
+
+        case.transformers, fileName = Transformer.create_transformer_from_json(jsonData,merged_dfs)
+        list_files_name.append(fileName)
+
+    else:
+        print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+
+
     #
     for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
@@ -278,21 +291,6 @@ def populaCase(jsonData, geodataframes, feeder, bdgd_file_path):
             print("No RegControls found for this feeder.\n")
         else :
             print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
-
-    # UNTRMT
-    merged_dfs = inner_entities_tables(case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-                                       left_column='UNI_TR_MT', right_column='COD_ID')
-    if not merged_dfs.query("CTMT == @alimentador").empty:
-        try:
-
-            case.transformers, fileName = Transformer.create_transformer_from_json(jsonData,merged_dfs)
-            list_files_name.append(fileName)
-
-        except UnboundLocalError:
-            print("Error in UNTRMT.\n")
-
-    else:
-        print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
 
     # CRVCRG
     try:

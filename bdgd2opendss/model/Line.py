@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.model.Transformer import list_dsativ
 
 
 from dataclasses import dataclass
@@ -38,6 +39,7 @@ class Line:
     _phases: int = 0
     _length: float = 0.0
     _prefix_name: str = ""
+    _transformer: str = ""
 
     _entity: str =''
 
@@ -201,10 +203,18 @@ class Line:
     def x1(self, value: float):
         self._x1 = value
 
+    @property
+    def transformer(self):
+        return self._transformer
+
+    @transformer.setter
+    def transformer(self, value: str):
+        self._transformer = value
+
 
     def pattern_segment(self):
 
-        if self.prefix_name == "SMT":
+        if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
             self.bus1, self.bus2 = self.bus1, self.bus2
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
@@ -231,6 +241,8 @@ class Line:
 
         # if em:
         #     return self.pattern_energymeter()
+        if self.transformer in list_dsativ:
+            return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
             return self.pattern_switch()

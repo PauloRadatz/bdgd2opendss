@@ -148,6 +148,7 @@
                     "bus2": "PAC_2",
                     "line": "COD_ID",
                     "linecode": "TIP_CND",
+                    "transformer":"UNI_TR_MT",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -189,6 +190,7 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "line": "COD_ID",
+                    "transformer":"UNI_TR_MT",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -215,6 +217,7 @@
                     "bus2": "PAC_2",
                     "line": "COD_ID",
                     "linecode": "TIP_CND",
+                    "transformer":"UNI_TR_MT",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -245,7 +248,26 @@
                 "arquivo": "Transformador_MTBT",
                 "static": {
                 },
+                "direct_mapping": {
+                    "kv2": "TEN_LIN_SE",
+                    "transformer": "COD_ID",
+                    "sit_ativ": "SIT_ATIV",
+                    "bus1": "PAC_1",
+                    "bus2": "PAC_2",
+                    "bus3": "PAC_3",
+                    "fase": "FAS_CON",
+                    "tap": "TAP",
+                    "feeder": "CTMT",
+                    "MRT": "MRT",
+                    "Tip_Lig": "TIP_TRAFO",
+                    "totalloss": "PER_TOT",
+                    "noloadloss": "PER_FER"
+                },
                 "indirect_mapping": {
+                    "kvas": [
+                        "POT_NOM",
+                        "convert_tpotaprt"
+                    ],
                     "phases": [
                         "LIG_FAS_P",
                         "convert_tfascon_phases_trafo"
@@ -264,10 +286,6 @@
                     ],
                     "kv1": [
                         "TEN_PRI",
-                        "convert_tten"
-                    ],
-                    "kv2": [
-                        "TEN_SEC",
                         "convert_tten"
                     ],
                     "kv3": [
@@ -291,29 +309,7 @@
                         "convert_tfascon_conn"
                     ]
                 },
-                "direct_mapping": {
-                    "bus1": "PAC_1",
-                    "bus2": "PAC_2",
-                    "bus3": "PAC_3",
-                    "transformer": "COD_ID",
-                    "fase": "FAS_CON",
-                    "kvas": "POT_NOM",
-                    "tap": "TAP",
-                    "feeder": "CTMT",
-                    "MRT": "MRT",
-                    "Tip_Lig": "TIP_TRAFO",
-                    "sit_ativ": "SIT_ATIV"
-                },
-                "calculated": {
-                    "loadloss": [
-                        "(","PER_TOT","-",
-                        "PER_FER",")","/",
-                        "POT_NOM","/1000*100"
-                    ],
-                    "noloadloss": [
-                        "(","PER_FER","/",
-                        "POT_NOM","/1000)","*100"
-                    ]
+                "calculated":{        
                 }
             },
             "UNTRMT_R": {
@@ -457,7 +453,7 @@
                     ],
                     "conn": [
                         "FAS_CON",
-                        "convert_tfascon_conn"
+                        "convert_tfascon_conn_load"
                     ],
                     "bus_nodes": [
                         "FAS_CON",
@@ -474,8 +470,7 @@
                     "data_con": "DAT_CON",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
-                    "sit_ativ": "SIT_ATIV",
-                    "connected": "SUB",
+                    "transformer": "UNI_TR_MT",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -500,7 +495,7 @@
                 "arquivo": "Cargas_IP",
                 "static": {
                     "pf": 0.92,
-                    "vminpu": 0.93,
+                    "vminpu": 0.92,
                     "Vmaxpu": 1.50,
                     "status": "variable"
                 },
@@ -511,7 +506,7 @@
                     ],
                     "conn": [
                         "FAS_CON",
-                        "convert_tfascon_conn"
+                        "convert_tfascon_conn_load"
                     ],
                     "bus_nodes": [
                         "FAS_CON",
@@ -527,7 +522,7 @@
                     "load": "COD_ID",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
-                    "sit_ativ": "SIT_ATIV",
+                    "transformer": "UNI_TR_MT",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -588,6 +583,7 @@
                 },
                 "direct_mapping":{
                     "feeder":"CTMT",
+                    "transformer":"UNI_TR_MT",
                     "PVsys": "CEG_GD",
                     "bus1": "PAC",
                     "pmpp": "POT_INST",
@@ -726,6 +722,7 @@
                     "FAS_CON",
                     "PAC_1",
                     "PAC_2",
+                    "UNI_TR_MT",
                     "CTMT"
                 ],
                 "type": {
@@ -737,12 +734,12 @@
             },
             "UNTRMT": {
                 "columns": [
+                    "SIT_ATIV",
                     "COD_ID",
                     "PAC_1",
                     "PAC_2",
                     "PAC_3",
                     "TAP",
-                    "POT_NOM",
                     "PER_FER",
                     "PER_TOT",
                     "CTMT",
@@ -751,7 +748,7 @@
                     "FAS_CON_P",
                     "FAS_CON_S",
                     "FAS_CON_T",
-                    "SIT_ATIV"
+                    "TEN_LIN_SE"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -763,13 +760,11 @@
             "EQTRMT": {
                 "columns": [
                     "COD_ID",
+                    "POT_NOM",
                     "FAS_CON",
                     "TEN_PRI",
                     "TEN_SEC",
                     "TEN_TER",
-                    "POT_NOM",
-                    "PER_FER",
-                    "PER_TOT",
                     "LIG_FAS_P",
                     "LIG_FAS_S",
                     "LIG_FAS_T",
@@ -835,6 +830,7 @@
                     "PAC_2",
                     "TIP_CND",
                     "COMP",
+                    "UNI_TR_MT",
                     "CTMT"
                 ],
                 "type": {
@@ -852,6 +848,7 @@
                     "PAC_2",
                     "TIP_CND",
                     "COMP",
+                    "UNI_TR_MT",
                     "CTMT"
                 ],
                 "type": {
@@ -897,6 +894,7 @@
                     "FAS_CON",
                     "TEN_FORN",
                     "TIP_CC",
+                    "UNI_TR_MT",
                     "ENE_01",
                     "ENE_02",
                     "ENE_03",
@@ -956,6 +954,7 @@
                     "CTMT",
                     "CEG_GD",
                     "PAC",
+                    "UNI_TR_MT",
                     "POT_INST",
                     "FAS_CON",
                     "TEN_CON",
@@ -987,6 +986,7 @@
                 },
                 "ignore_geometry": "False"
             }
+            }
         }
     }
-}
+
