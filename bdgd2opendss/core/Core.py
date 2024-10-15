@@ -6,7 +6,6 @@ from typing import List, Union, Optional
 
 from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.model.Case import Case
-from .Settings import settings
 
 def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     """

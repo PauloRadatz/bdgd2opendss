@@ -3,16 +3,16 @@
 from dataclasses import dataclass, field
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.model import BusCoords
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
 from bdgd2opendss.model.Transformer import dicionario_kv
-from bdgd2opendss.core import Utils
-from bdgd2opendss.core.Settings import settings
-# from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
 from bdgd2opendss.model.Circuit import kv
+from bdgd2opendss.model import BusCoords
+from bdgd2opendss.core.Settings import settings
+from bdgd2opendss.core import Utils
 
 @dataclass
 class Case:
-
+    _id: str = ""
     _circuitos: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
     _lines_SSDBT: list[Line] = field(init=False)
@@ -35,6 +35,14 @@ class Case:
 
         # init list
         self.list_files_name = []
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        self._id = value
 
     @property
     def circuitos(self):
@@ -160,18 +168,22 @@ class Case:
 
     def output_master(self, file_names, tip_dia="", mes=""):
 
-            master = "clear\n"
-            y = Utils.create_voltage_bases(dicionario_kv)  # cria lista de tensões de base na baixa tensão
-            y.sort()
-            y.append(kv[0])
-            voltagebases = " ".join(str(z) for z in set(y))
+        master = "clear\n"
+        y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
+        y.sort()
+        #  TODO do jeito que esta, a variavel kv (declarada na classe circuit) entra neste metodo como 1 variavel global
+        #   A mesma questao ocorre com a variavel dicionario_kv idealmente devemos refatorar e acessar estas variaveis por metodos jah
+        #   que esta classe ja possui as variaveis _circuitos e _transformers (idealmente os metodos podem chegar o preecnhimento da variavel e
+        #   qualquer dependencia (temporal) de se executar o circuit e transformer antes). Eg _circuitos.GetKv()
+        y.append(kv[0])
+        voltagebases = " ".join(str(z) for z in set(y))
 
-            for i in file_names:
-                if i[:2] == "GD":
-                    master = master + f'!Redirect "{i}"\n'
-                else:
-                    master = master + f'Redirect "{i}"\n'
-            master = master + f'''Set mode = daily
+        for i in file_names:
+            if i[:2] == "GD":
+                master = master + f'!Redirect "{i}"\n'
+            else:
+                master = master + f'Redirect "{i}"\n'
+        master = master + f'''Set mode = daily
 Set Voltagebases = [{voltagebases}]
 Calc Voltagebases
 Set tolerance = 0.0001
@@ -181,7 +193,7 @@ Set maxcontroliter = 10
 Solve
 buscoords buscoords.csv'''
 
-            Utils.create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
+        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.id, master_content=master)
 
     def create_outputs_masters(self, file_names):
         """
@@ -202,17 +214,15 @@ buscoords buscoords.csv'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        # TODO melhorar este codigo
-        '''
-        base_string_BT = 'Cargas_BT_DU01_1_REDE2_1.dss'
-        base_string_MT = 'Cargas_MT_DU01_1_REDE2_1.dss'
-        base_string_PIP = 'Cargas_IP_DU01_1_REDE2_1.dss'
-        '''
-        # TODO Este tipo de indexacao eh fragil. Se a ordem dos appends muda, o codigo quebra.
+        # TODO de fato quebrou, gerando excpetion: UnboundLocalError: local variable 'indice' referenced before assignment
+        #  Correcao temporaria. Inicializei indice abaixo
+        indice = 0
+
         for elemento in file_names:
             if "Cargas" in elemento:
                 indice = file_names.index(elemento)
 
+        # TODO Este tipo de indexacao eh fragil. Se a ordem dos appends muda, o codigo quebra.
         base_string_BT = file_names[indice - 2]
         base_string_MT = file_names[indice - 1]
         base_string_PIP = file_names[indice]
@@ -233,7 +243,6 @@ buscoords buscoords.csv'''
     # this method populates Case object with data from BDGD
     def PopulaCase(self):
 
-        '''
         self.GenGeographicCoord()
 
         self.Populates_CTMT()
@@ -243,24 +252,20 @@ buscoords buscoords.csv'''
         self.Populates_Entity()
 
         self.Populates_UNREMT()
-        '''
-        # erro
+
         self.Populates_UNTRMT()
 
-        # self.Popula_CRVCRG()
+        self.Popula_CRVCRG()
 
-        # erro
-        #self.Populates_UCBT()
+        self.Populates_UCBT()
 
-        # erro
-        #self.Populates_PIP()
+        self.Populates_PIP()
 
-        #self.Populates_UCMT()
+        self.Populates_UCMT()
 
-        # erro
-        #self.Populates_UGBT()
+        self.Populates_UGBT()
 
-        #self.Populates_UGMT()
+        self.Populates_UGMT()
 
         # creates dss files
         self.output_master(self.list_files_name)
