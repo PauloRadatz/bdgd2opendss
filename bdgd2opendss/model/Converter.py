@@ -1,9 +1,5 @@
 # -*- encoding: utf-8 -*-
 
-import json
-import pathlib
-import numpy as np
-
 def convert_tten(case):
     switch_dict = {
         "0": 0.0,

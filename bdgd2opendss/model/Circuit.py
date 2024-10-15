@@ -8,6 +8,8 @@ from tqdm import tqdm
 from bdgd2opendss.core.Utils import create_output_file
 
 from dataclasses import dataclass
+
+# TODO vide TO DO em case/output_master
 kv = []
 
 @dataclass

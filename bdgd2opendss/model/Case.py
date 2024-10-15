@@ -12,7 +12,7 @@ from bdgd2opendss.core import Utils
 
 @dataclass
 class Case:
-    _id: str = ""
+    #_id: str = "" # OLD CODE alterado p/ feeder
     _circuitos: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
     _lines_SSDBT: list[Line] = field(init=False)
@@ -35,14 +35,6 @@ class Case:
 
         # init list
         self.list_files_name = []
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, value):
-        self._id = value
 
     @property
     def circuitos(self):
@@ -193,7 +185,7 @@ Set maxcontroliter = 10
 Solve
 buscoords buscoords.csv'''
 
-        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.id, master_content=master)
+        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
 
     def create_outputs_masters(self, file_names):
         """
