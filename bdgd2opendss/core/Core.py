@@ -1,17 +1,17 @@
 # -*- encoding: utf-8 -*-
-
 import inspect
 import json
 import os.path
 import pathlib
 import time
-from typing import Optional, List
+from typing import List, Union, Optional
+from .Settings import settings
 
 import geopandas as gpd
 
 import bdgd2opendss.model.BusCoords as Coords
 from bdgd2opendss import Case, Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import load_json, inner_entities_tables, create_output_feeder_coords, create_dfs_coords
+from bdgd2opendss.core.Utils import inner_entities_tables, create_output_feeder_coords, create_dfs_coords
 
 class Table:
     def __init__(self, name, columns, data_types, ignore_geometry_):
@@ -23,7 +23,6 @@ class Table:
     def __str__(self):
         return f"Table(name={self.name}, columns={self.columns}, data_types={self.data_types}, " \
                f"ignore_geometry={self.ignore_geometry})"
-
 
 class JsonData:
     def __init__(self, file_name):
@@ -102,7 +101,6 @@ class JsonData:
 
             for _ in range(runs):
                 start_time = time.time()
-                print(f'Criando o geodataframe de {table.name}') #nome do elemento que está sendo lido no momento
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                      include_fields=table.columns, columns=table.columns,
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',
@@ -126,7 +124,7 @@ class JsonData:
                 'ignore_geometry': table.ignore_geometry
             }
         return geodataframes
-    
+
     def create_geodataframes_lista_ctmt(self, file_name):
         """
         :return: Dicionário contendo GeoDataFrames.
@@ -135,7 +133,7 @@ class JsonData:
 
         for table_name, table in self.tables.items():
             gdf_ = gpd.read_file(file_name, layer="CTMT", columns=table.columns,
-                                 engine='pyogrio', use_arrow=True) 
+                                 engine='pyogrio', use_arrow=True)
 
             geodataframes[table_name] = {
                 'gdf': gdf_
@@ -151,7 +149,6 @@ def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     """
     caller_file = inspect.getfile(caller_frame)
     return pathlib.Path(caller_file).resolve().parent
-
 
 def get_feeder_list(folder: str) -> List[str]:  # TODO is there a way to not load everything?
     folder_bdgd = folder
@@ -176,122 +173,207 @@ def export_feeder_list(feeder_list, feeder):
     with open(path,'w') as output:
         for k in feeder_list:
             output.write(str(k)+"\n")
-    return(f'Lista de alimentadores criada em {path}')
+    return f'Lista de alimentadores criada em {path}'
 
-def run(folder: str, feeder: Optional[str] = None, all_feeders: Optional[bool] = None,
-        limit_ramal_30m: Optional[bool] = False) -> None:
-    if feeder is None:
-        all_feeders = True
+def run(bdgd_file_path: Union[str, pathlib.Path],
+        output_folder: Optional[Union[str, pathlib.Path]] = None,
+        all_feeders: bool = True,
+        feeder: Optional[str] = None) :
 
-    folder_bdgd = folder
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
 
     json_data = JsonData(json_file_name)
 
-    gdf_SSDMT, gdf_SSDBT = create_dfs_coords(folder_bdgd, feeder)
-    if gdf_SSDBT.empty and gdf_SSDMT.empty:
-        print("There's no SSDBT and SSDMT in this feeder")
-    else:
+    geodataframes = json_data.create_geodataframes(bdgd_file_path)
+
+    # generates all feeders
+    if all_feeders:
+
+        # TO DO refatorar. Vide comentario TO DO abaixo.
+        for feeder in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
+
+            populaCase(json_data.data, geodataframes, feeder, bdgd_file_path)
+
+    else :
+
+        # verifies if the feeder exists
+        if feeder not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
+            print(f"\nFeeder: {feeder} not found in CTMT.")
+            return
+
+        populaCase(json_data.data, geodataframes, feeder, bdgd_file_path)
+
+# this method populates Case object with data from BDGD
+# TODO so it makes sense to be a method of Case class (or any other class...) - Paulo will work on it
+def populaCase(jsonData, geodataframes, feeder, bdgd_file_path):
+
+    alimentador = feeder
+
+    # generates the geographic coordinates
+    if settings.gerCoord:
+        gdf_SSDMT, gdf_SSDBT = create_dfs_coords(bdgd_file_path, alimentador)
         df_coords = Coords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
-        create_output_feeder_coords(df_coords, feeder)
+        create_output_feeder_coords(df_coords, alimentador)
 
-    geodataframes = json_data.create_geodataframes(folder_bdgd)
+    case = Case()
+    case.dfs = geodataframes
+    case.id = alimentador
+    print(f"\nFeeder: {alimentador}")
 
-    for alimentador in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
+    list_files_name = []
 
-        if alimentador == feeder or all_feeders == True:
+    # CTMT
+    try:
+        case.circuitos, fileName = Circuit.create_circuit_from_json(jsonData, case.dfs['CTMT']['gdf'].query(
+            "COD_ID==@alimentador"))
+        list_files_name.append(fileName)
 
-            case = Case()
-            case.dfs = geodataframes
+    except UnboundLocalError:
+        print("Error in CTMT.\n")
 
-            case.id = alimentador
-            print(f"\nAlimentador: {alimentador}")
+    # SEGCON
+    try:
+        case.line_codes, fileName = LineCode.create_linecode_from_json(jsonData, case.dfs['SEGCON']['gdf'],
+                                                                       alimentador)
+        list_files_name.append(fileName)
 
+    except UnboundLocalError:
+        print("Error in SEGCON.\n")
 
-            case.circuitos, aux = Circuit.create_circuit_from_json(json_data.data, case.dfs['CTMT']['gdf'].query(
-                "COD_ID==@alimentador"))
-            list_files_name = [aux]
-            case.line_codes, aux = LineCode.create_linecode_from_json(json_data.data, case.dfs['SEGCON']['gdf'],
-                                                                      alimentador)
-            list_files_name.append(aux)
+    #
+    for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
 
-            if not case.dfs['UNTRMT']['gdf'].query("CTMT == @alimentador").empty:
-                case.transformers, aux = Transformer.create_transformer_from_json(json_data.data, inner_entities_tables(
-                    case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
-                    left_column='UNI_TR_MT', right_column='COD_ID'))
-                list_files_name.append(aux)
-            else:
-                print("No UNTRMT found for this feeder")
-            
-            for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
+        # SSDMT
+        if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
 
-                if not case.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
-                    if limit_ramal_30m == True:
-                        case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-                                                                                   case.dfs[entity]['gdf'].query(
-                                                                                       "CTMT==@alimentador"), entity,
-                                                                                   ramal_30m=limit_ramal_30m)
-                    else:
-                        case.lines_SSDMT, aux, aux_em = Line.create_line_from_json(json_data.data,
-                                                                                   case.dfs[entity]['gdf'].query(
-                                                                                       "CTMT==@alimentador"), entity)
-                    list_files_name.append(aux)
-                    if aux_em != "":
-                        list_files_name.append(aux_em)
-                else:
-                    print(f'No {entity} elements found.\n')
+            try:
+                case.lines_SSDMT, fileName, aux_em = Line.create_line_from_json(jsonData,
+                                                                                case.dfs[entity]['gdf'].query("CTMT==@alimentador"),
+                                                                                entity,ramal_30m=settings.limitRamal30m)
 
-            if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-                try:
-                    case.regcontrols, aux = RegControl.create_regcontrol_from_json(json_data.data, inner_entities_tables(
-                        case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"), left_column='UN_RE',
-                        right_column='COD_ID'))
-                    list_files_name.append(aux)
-                except UnboundLocalError:
-                    print("No RegControls found for this feeder. \n")
-            else:
-                print("No RegControls found for this feeder.\n")
+                list_files_name.append(fileName)
+                if aux_em != "":
+                    list_files_name.append(aux_em)
 
-            case.load_shapes, aux = LoadShape.create_loadshape_from_json(json_data.data, case.dfs['CRVCRG']['gdf'],
-                                                                         alimentador)
-            list_files_name.append(aux)
-            if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-                case.loads, aux = Load.create_load_from_json(json_data.data,
-                                                         case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                         case.dfs['CRVCRG']['gdf'], 'UCBT_tab')
-                list_files_name.append(aux)
-            else:
-                print(f'No UCBT found for this feeder.\n')
+            except UnboundLocalError:
+                print(f"Error in {entity}.\n")
 
-            if not case.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
-                case.loads, aux = Load.create_load_from_json(json_data.data,
-                                                         case.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
-                                                         case.dfs['CRVCRG']['gdf'], 'PIP')
-                list_files_name.append(aux)
-            else:
-                print(f'No PIP found for this feeder.\n')
-                
-            if not case.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-                case.loads, aux = Load.create_load_from_json(json_data.data,
-                                                             case.dfs['UCMT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                             case.dfs['CRVCRG']['gdf'], 'UCMT_tab')
-                list_files_name.append(aux)
-            else:
-                print(f'No UCMT found for this feeder.\n')
+    # UNREMT
+    # do the merge before checking if result set is empty
+    merged_dfs = inner_entities_tables(case.dfs['EQRE']['gdf'], case.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                       left_column='UN_RE', right_column='COD_ID')
 
-            if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:  
-                case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGBT_tab']['gdf'].query(
-                    "CTMT==@alimentador"), 'UGBT_tab')  # código adicionado por Mozart 07/07 às 14h
-                list_files_name.append(aux)
-            else:
-                print("No UGBT found for this feeder. \n")
+    # OLD CODE if not case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
+    if not merged_dfs.query("CTMT == @alimentador").empty:
 
-            if not case.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:  # adicionado por Mozart 17/07/2024 às 10:36
-                case.pvsystems, aux = PVsystem.create_pvsystem_from_json(json_data.data, case.dfs['UGMT_tab']['gdf'].query(
-                                                                        "CTMT==@alimentador"),'UGMT_tab')  # código adicionado por Mozart 07/07 às 14h
-                list_files_name.append(aux)
-            else:
-                print("No UGMT found for this feeder. \n")
+        try:
+            case.regcontrols, fileName = RegControl.create_regcontrol_from_json(jsonData,merged_dfs)
+            list_files_name.append(fileName)
 
-            case.output_master(list_files_name)
-            case.create_outputs_masters(list_files_name)
+        except UnboundLocalError:
+             print("Error in UNREMT.\n")
+
+    else:
+        if case.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
+            print("No RegControls found for this feeder.\n")
+        else :
+            print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
+
+    # UNTRMT
+    merged_dfs = inner_entities_tables(case.dfs['EQTRMT']['gdf'], case.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                       left_column='UNI_TR_MT', right_column='COD_ID')
+    if not merged_dfs.query("CTMT == @alimentador").empty:
+        try:
+
+            case.transformers, fileName = Transformer.create_transformer_from_json(jsonData,merged_dfs)
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in UNTRMT.\n")
+
+    else:
+        print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+
+    # CRVCRG
+    try:
+        case.load_shapes, fileName = LoadShape.create_loadshape_from_json(jsonData, case.dfs['CRVCRG']['gdf'],
+                                                                          alimentador)
+        list_files_name.append(fileName)
+
+    except UnboundLocalError:
+        print("Error in CRVCRG\n")
+
+    # UCBT_tab
+    if not case.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+        try:
+            case.loads, fileName = Load.create_load_from_json(jsonData,
+                                                              case.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
+                                                              case.dfs['CRVCRG']['gdf'], 'UCBT_tab')
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in UCBT_tab\n")
+
+    else:
+        print(f'No UCBT found for this feeder.\n')
+
+    # PIP
+    if not case.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
+
+        try:
+            case.loads, fileName = Load.create_load_from_json(jsonData,
+                                                              case.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
+                                                              case.dfs['CRVCRG']['gdf'], 'PIP')
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in PIP\n")
+
+    else:
+        print(f'No PIP found for this feeder.\n')
+
+    # UCMT
+    if not case.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+        try:
+            case.loads, fileName = Load.create_load_from_json(jsonData,
+                                                              case.dfs['UCMT_tab']['gdf'].query("CTMT==@alimentador"),
+                                                              case.dfs['CRVCRG']['gdf'], 'UCMT_tab')
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in UCMT\n")
+    else:
+        print(f'No UCMT found for this feeder.\n')
+
+    # UGBT_tab
+    if not case.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+        try:
+            case.pvsystems, fileName = PVsystem.create_pvsystem_from_json(jsonData, case.dfs['UGBT_tab']['gdf'].query(
+                "CTMT==@alimentador"), 'UGBT_tab')
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in UGBT_tab\n")
+
+    else:
+        print("No UGBT found for this feeder. \n")
+
+    # UGMT_tab
+    if not case.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
+        try:
+            case.pvsystems, fileName = PVsystem.create_pvsystem_from_json(jsonData, case.dfs['UGMT_tab']['gdf'].query(
+                "CTMT==@alimentador"), 'UGMT_tab')
+            list_files_name.append(fileName)
+
+        except UnboundLocalError:
+            print("Error in UGBT_tab\n")
+    else:
+        print("No UGMT found for this feeder. \n")
+
+    # creates dss files
+    case.output_master(list_files_name)
+    case.create_outputs_masters(list_files_name)
