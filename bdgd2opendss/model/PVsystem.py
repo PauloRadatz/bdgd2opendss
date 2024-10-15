@@ -20,6 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn, convert_tfascon_phases, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
+from bdgd2opendss.model.Transformer import dicionario_kv, list_dsativ
 
 from dataclasses import dataclass
 
@@ -35,6 +36,7 @@ class PVsystem:
     _pf: float = 0.92
     _irradiance: int = 0.98
     _sit_ativ: str = ""
+    _transformer: str = ""
 
     _phases: str = ""
     _bus_nodes: str = ""
@@ -127,9 +129,17 @@ class PVsystem:
     @sit_ativ.setter
     def sit_ativ(self, value):
         self._sit_ativ = value
+    
+    @property
+    def transformer(self):
+        return self._transformer
 
+    @transformer.setter
+    def transformer(self, value):
+        self._transformer = value
+    
     def full_string(self) -> str:
-        if self.sit_ativ == "DS":
+        if self.sit_ativ == "DS" or self.transformer in list_dsativ:
             return("")
         else:
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
@@ -143,7 +153,7 @@ class PVsystem:
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
 
     def __repr__(self):
-        if self.sit_ativ == "DS":
+        if self.sit_ativ == "DS" or self.transformer in list_dsativ:
             return("")
         else:
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
@@ -174,6 +184,7 @@ class PVsystem:
             setattr(pvsystem_, f"_{static_key}", static_value)
 
 
+
     @staticmethod
     def _process_direct_mapping(pvsystem_, value, row):
         """
@@ -190,7 +201,11 @@ class PVsystem:
         """
         for mapping_key, mapping_value in value.items():
             setattr(pvsystem_, f"_{mapping_key}", row[mapping_value])
-
+            if mapping_key == "transformer":
+                try:
+                    setattr(pvsystem_, f"_kv", dicionario_kv[row[mapping_value]])
+                except KeyError:
+                    ...
 
     @staticmethod
     def _process_indirect_mapping(pvsystem_, value, row):

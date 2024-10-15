@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv, mtkv
+from bdgd2opendss.model.Transformer import dicionario_kv
+from bdgd2opendss.model.Circuit import kv
 
 
 @dataclass
@@ -125,7 +126,7 @@ class Case:
         return [ld.load for ld in self.loads]
 
     def pvsystems_names(self):
-        return [pv.pvsystem for pv in self.PVsystems]
+        return [pv.pvsystem for pv in self.pvsystems]
 
     def rename_linecode_string(linecode_, i, input_str: str) -> str:
         """
@@ -150,12 +151,9 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-        mtkv.sort()
-        x = set(mtkv)  #cria lista de tensões de base na média tensão
         y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
-        for k in list(x):
-            y.append(k)
         y.sort()
+        y.append(kv[0])
         voltagebases = " ".join(str(z) for z in set(y))
 
         for i in file_names:
