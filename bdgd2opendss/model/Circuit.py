@@ -5,10 +5,11 @@ from typing import Any, List
 import geopandas as gpd
 from tqdm import tqdm
 
-from bdgd2opendss.model.Converter import convert_tten
 from bdgd2opendss.core.Utils import create_output_file
 
 from dataclasses import dataclass
+
+# TODO vide TO DO em case/output_master
 kv = []
 
 @dataclass
@@ -81,7 +82,7 @@ class Circuit:
     def full_string(self) -> str:
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
-        
+
 
     def __repr__(self):
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
@@ -101,7 +102,7 @@ class Circuit:
         """
         for static_key, static_value in value.items():
             setattr(circuit_, f"_{static_key}", static_value)
-    
+
     @staticmethod
     def _process_direct_mapping(circuit_, value, row):
         """Static method to process the direct mapping configuration for a Circuit object.
@@ -144,7 +145,7 @@ class Circuit:
                 param_value = row[param_name]
                 setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigingo para string para encontrar valor no dicionario
                 if mapping_key == 'basekv':
-                    kv.append(function_(str(param_value))) 
+                    kv.append(function_(str(param_value)))
             else:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
@@ -197,7 +198,7 @@ class Circuit:
                     cls._process_static(circuit_, value)
             circuits.append(circuit_)
             progress_bar.set_description(f"Processing Circuit {_+1}")
-             
+
 
 
         file_name = create_output_file(circuits, circuit_config["arquivo"], feeder=circuit_.circuit)
