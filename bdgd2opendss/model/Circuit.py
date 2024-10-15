@@ -5,6 +5,7 @@ from typing import Any, List
 import geopandas as gpd
 from tqdm import tqdm
 
+from bdgd2opendss.model.Converter import convert_tten
 from bdgd2opendss.core.Utils import create_output_file
 
 from dataclasses import dataclass
