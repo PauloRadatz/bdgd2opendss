@@ -241,11 +241,11 @@ buscoords buscoords.csv'''
 
         self.Populates_SEGCON()
 
+        self.Populates_UNTRMT()
+
         self.Populates_Entity()
 
         self.Populates_UNREMT()
-
-        self.Populates_UNTRMT()
 
         self.Popula_CRVCRG()
 
