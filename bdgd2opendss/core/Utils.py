@@ -304,6 +304,8 @@ def create_dfs_coords(filename="", feeder=""):
 
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
+
+    # TODO evitar tomar decisoes
     for value in dicionario_kv.values(): #dicionario_kv.values() usar
         if value >= 0.22:
             lista.append(value)
@@ -325,5 +327,5 @@ def standard_curves_pv():
                f'New Tshape.MyTemp npts=24 interval=1 \n'
                f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
                )
-    
+
 
