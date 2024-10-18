@@ -84,7 +84,7 @@ class JsonData:
 
             for _ in range(runs):
                 start_time = time.time()
-                print(f'Creating geofataframe {table.name}')
+                print(f'Creating geodataframe {table.name}')
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                      include_fields=table.columns, columns=table.columns,
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',

@@ -264,6 +264,7 @@
                     "noloadloss": "PER_FER"
                 },
                 "indirect_mapping": {
+                    "kva": "POT_NOM",
                     "kvas": [
                         "POT_NOM",
                         "convert_tpotaprt"
@@ -742,6 +743,7 @@
                     "TAP",
                     "PER_FER",
                     "PER_TOT",
+                    "POT_NOM",
                     "CTMT",
                     "TIP_TRAFO",
                     "MRT",
