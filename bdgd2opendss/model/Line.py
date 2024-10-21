@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file
-from bdgd2opendss.model.Transformer import list_dsativ
+from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 
 
 from dataclasses import dataclass
@@ -241,7 +241,7 @@ class Line:
 
         # if em:
         #     return self.pattern_energymeter()
-        if self.transformer in list_dsativ:
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys():
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -251,6 +251,11 @@ class Line:
 
 
     def __repr__(self):
+
+        # if em:
+        #     return self.pattern_energymeter()
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys():
+            return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
             return self.pattern_switch()

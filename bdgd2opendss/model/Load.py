@@ -326,7 +326,7 @@ class Load:
         return(kv)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        if self.transformer in list_dsativ: #remove as cargas desativadas
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
             return("")
         else:
             kv = Load.adapting_string_variables_load(self)
@@ -341,7 +341,7 @@ class Load:
                 
             
     def __repr__(self):
-        if self.transformer in list_dsativ: #remove as cargas desativadas
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
             return("")
         else:
             kv = Load.adapting_string_variables_load(self)
