@@ -139,7 +139,7 @@ class PVsystem:
         self._transformer = value
     
     def full_string(self) -> str:
-        if self.sit_ativ == "DS" or self.transformer in list_dsativ:
+        if self.kv < 1 and (self.sit_ativ == "DS" or self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
         else:
             return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
@@ -280,7 +280,7 @@ class PVsystem:
         return pvsystem_
 
     @staticmethod
-    def create_pvsystem_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity:str):
+    def create_pvsystem_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity:str, pastadesaida: str = ""):
         pvsystems = []
         pvsystem_config = json_data['elements']['PVsystem'][entity]
 
@@ -291,6 +291,6 @@ class PVsystem:
             progress_bar.set_description(f"Processing pvsystem {entity} {_ + 1}")
 
 
-        file_name = create_output_file(pvsystems, pvsystem_config["arquivo"], feeder=pvsystem_.feeder)
+        file_name = create_output_file(pvsystems, pvsystem_config["arquivo"], feeder=pvsystem_.feeder, output_folder=pastadesaida)
 
         return pvsystems, file_name

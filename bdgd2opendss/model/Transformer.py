@@ -495,7 +495,7 @@ class Transformer:
         return transformer_
 
     @staticmethod
-    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame):
+    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida: str = ""):
         transformers = []
         transformer_config = json_data['elements']['Transformer']['UNTRMT']
 
@@ -506,7 +506,7 @@ class Transformer:
             transformers.append(transformer_)
             progress_bar.set_description(f"Processing transformer {_ + 1}")
 
-        file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder)
+        file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
 
         return transformers, file_name
     

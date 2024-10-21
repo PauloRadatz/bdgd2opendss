@@ -57,7 +57,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
         for feeder in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
 
-            case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder)
+            case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
             case.PopulaCase()
 
     else :
@@ -69,5 +69,5 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
                 print(f"\nFeeder: {feeder} not found in CTMT.")
                 continue
 
-            case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder)
+            case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
             case.PopulaCase()

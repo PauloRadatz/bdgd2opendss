@@ -104,7 +104,7 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     return merged_dfs
 
 
-def create_output_file(object_list=[], file_name="", object_lists="", file_names="", feeder=""):
+def create_output_file(object_list=[], file_name="", object_lists="", file_names="", output_folder="", feeder=""): #TODO dar a opção de criar o alimentador em qualquer pasta do computador
     """Create an dss_models_output file and write data from a list of objects.
 
     Parameters:
@@ -115,14 +115,28 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
+    if len(output_folder) > 0:
+        try:
+            if not os.path.exists(f'{output_folder}\{feeder}'):
+                os.mkdir(f'{output_folder}\{feeder}')
+            else:
+                output_directory = f'{output_folder}\{feeder}'
+        except FileNotFoundError:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
 
-    if not os.path.exists("dss_models_output"):
-        os.mkdir("dss_models_output")
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    else:
+        if not os.path.exists("dss_models_output"):
+            os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'dss_models_output/{feeder}'):
-        os.mkdir(f'dss_models_output/{feeder}')
+        if not os.path.exists(f'dss_models_output/{feeder}'):
+            os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     if object_lists != "":
 
@@ -164,7 +178,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
         return f'{file_name}_{feeder}.dss'
 
 
-def create_master_file(file_name="", feeder="", master_content=""):
+def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
     """
     Create an dss_models_output file and write data from a list of objects.
 
@@ -173,14 +187,28 @@ def create_master_file(file_name="", feeder="", master_content=""):
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
+    if len(output_folder) > 0:
+        try:
+            if not os.path.exists(f'{output_folder}\{feeder}'):
+                os.mkdir(f'{output_folder}\{feeder}')
+            else:
+                output_directory = f'{output_folder}\{feeder}'
+        except FileNotFoundError:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
 
-    if not os.path.exists("dss_models_output"):
-        os.mkdir("dss_models_output")
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    else:
+        if not os.path.exists("dss_models_output"):
+            os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'dss_models_output/{feeder}'):
-        os.mkdir(f'dss_models_output/{feeder}')
+        if not os.path.exists(f'dss_models_output/{feeder}'):
+            os.mkdir(f'dss_models_output/{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
 
@@ -192,7 +220,7 @@ def create_master_file(file_name="", feeder="", master_content=""):
         print(f"An error occurred: {str(e)}")
 
 
-def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords"):
+def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords", output_folder=""):
     """Crie um arquivo de saída csv e grave dados de um DataFrame.
         Parâmetros:
         - df (DataFrame): Lista de objetos a serem gravados no arquivo.ex: objetos de linha ou transformador.
@@ -202,14 +230,28 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
         separado por caracteres newline. Se ocorrer algum erro, ele será exibido.
 
     """
+    if len(output_folder) > 0:
+        try:
+            if not os.path.exists(f'{output_folder}\{feeder}'):
+                os.mkdir(f'{output_folder}\{feeder}')
+            else:
+                output_directory = f'{output_folder}\{feeder}'
+        except FileNotFoundError:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
 
-    if not os.path.exists("dss_models_output"):
-        os.mkdir("dss_models_output")
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    else:
+        if not os.path.exists("dss_models_output"):
+            os.mkdir("dss_models_output")
 
-    if not os.path.exists(f'dss_models_output/{feeder}'):
-        os.mkdir(f'dss_models_output/{feeder}')
+        if not os.path.exists(f'dss_models_output/{feeder}'):
+            os.mkdir(f'dss_models_output/{feeder}')
+        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
-    output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
     dir_path = os.path.join(output_directory, f'{filename}.csv')
     # dir_path = os.path.join(output_directory, f'{filename}_{feeder}.csv')
 

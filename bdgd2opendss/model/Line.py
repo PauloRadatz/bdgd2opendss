@@ -241,7 +241,8 @@ class Line:
 
         # if em:
         #     return self.pattern_energymeter()
-        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys():
+        
+        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -254,7 +255,7 @@ class Line:
 
         # if em:
         #     return self.pattern_energymeter()
-        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys():
+        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -370,7 +371,7 @@ class Line:
         return line_
 
     @staticmethod
-    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, ramal_30m = False):
+    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, ramal_30m = False, pastadesaida:str=""):
 
         lines = []
         energymeters = []
@@ -385,10 +386,10 @@ class Line:
             lines.append(line_)
             progress_bar.set_description(f"Processing Line {entity} {_ + 1}")
 
-        file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder)
+        file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder, output_folder=pastadesaida)
 
         if energymeters != []:
-            EM_file_name = create_output_file(energymeters, "EnergyMeters", feeder=line_.feeder)
+            EM_file_name = create_output_file(energymeters, "EnergyMeters", feeder=line_.feeder, output_folder=pastadesaida)
 
         else:
             EM_file_name = ""

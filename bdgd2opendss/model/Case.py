@@ -25,11 +25,12 @@ class Case:
     _PVsystems: list[PVsystem] = field(init=False)
     _dfs: dict = field(init=False)
 
-    def __init__(self, jsonData, geodataframes, folder_bdgd, feeder ):
+    def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
         self._jsonData = jsonData
         self._dfs = geodataframes
         self.folder_bdgd = folder_bdgd
         self.feeder = feeder
+        self.output_folder = output_folder
 
         print(f"\nFeeder: {feeder}")
 
@@ -185,7 +186,7 @@ Set maxcontroliter = 10
 Solve
 buscoords buscoords.csv'''
 
-        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master)
+        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master, output_folder=self.output_folder)
 
     def create_outputs_masters(self, file_names):
         """
@@ -272,16 +273,16 @@ buscoords buscoords.csv'''
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
             #
-            Utils.create_output_feeder_coords(df_coords, self.feeder)
+            Utils.create_output_feeder_coords(df_coords, self.feeder, output_folder=self.output_folder)
 
     # CTMT
-    def Populates_CTMT(self):
+    def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
 
         alimentador = self.feeder
 
         try:
             circuitos, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query(
-                "COD_ID==@alimentador"))
+                "COD_ID==@alimentador"), pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -292,7 +293,7 @@ buscoords buscoords.csv'''
 
         try:
             self.line_codes, fileName = LineCode.create_linecode_from_json(self._jsonData, self.dfs['SEGCON']['gdf'],
-                                                                           self.feeder)
+                                                                           self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -328,7 +329,7 @@ buscoords buscoords.csv'''
                     self._lines_SSDMT, fileName, aux_em = Line.create_line_from_json(self._jsonData,
                                                                                     self.dfs[entity]['gdf'].query(
                                                                                         "CTMT==@alimentador"),
-                                                                                    entity, ramal_30m=settings.limitRamal30m)
+                                                                                    entity, ramal_30m=settings.limitRamal30m, pastadesaida=self.output_folder)
 
                     self.list_files_name.append(fileName)
                     if aux_em != "":
@@ -350,7 +351,7 @@ buscoords buscoords.csv'''
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
             try:
-                self.regcontrols, fileName = RegControl.create_regcontrol_from_json(self._jsonData, merged_dfs)
+                self.regcontrols, fileName = RegControl.create_regcontrol_from_json(self._jsonData, merged_dfs,pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -373,7 +374,7 @@ buscoords buscoords.csv'''
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
 
-                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs)
+                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -386,7 +387,7 @@ buscoords buscoords.csv'''
     def Popula_CRVCRG(self):
 
         try:
-            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder)
+            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -403,7 +404,7 @@ buscoords buscoords.csv'''
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['UCBT_tab']['gdf'].query(
                                                                       "CTMT==@alimentador"),
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab')
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -422,7 +423,7 @@ buscoords buscoords.csv'''
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
-                                                                  self.dfs['CRVCRG']['gdf'], 'PIP')
+                                                                  self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -442,7 +443,7 @@ buscoords buscoords.csv'''
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['UCMT_tab']['gdf'].query(
                                                                       "CTMT==@alimentador"),
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab')
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -460,7 +461,7 @@ buscoords buscoords.csv'''
             try:
                 self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
                                                                               self.dfs['UGBT_tab']['gdf'].query(
-                                                                                  "CTMT==@alimentador"), 'UGBT_tab')
+                                                                                  "CTMT==@alimentador"), 'UGBT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -479,7 +480,7 @@ buscoords buscoords.csv'''
             try:
                 self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
                                                                               self.dfs['UGMT_tab']['gdf'].query(
-                                                                                  "CTMT==@alimentador"), 'UGMT_tab')
+                                                                                  "CTMT==@alimentador"), 'UGMT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
