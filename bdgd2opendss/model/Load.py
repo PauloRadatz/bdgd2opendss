@@ -326,7 +326,7 @@ class Load:
         return(kv)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        if self.transformer in list_dsativ: #remove as cargas desativadas
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
             return("")
         else:
             kv = Load.adapting_string_variables_load(self)
@@ -341,7 +341,7 @@ class Load:
                 
             
     def __repr__(self):
-        if self.transformer in list_dsativ: #remove as cargas desativadas
+        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
             return("")
         else:
             kv = Load.adapting_string_variables_load(self)
@@ -476,7 +476,7 @@ class Load:
 
 
     @staticmethod
-    def _create_output_load_files(dict_loads_tip_day: dict, tip_day: str, feeder: str, name: str):
+    def _create_output_load_files(dict_loads_tip_day: dict, tip_day: str, feeder: str, name: str, pastadesaida: str = ""):
 
         load_file_names = []
         load_lists= []
@@ -487,7 +487,7 @@ class Load:
             load_lists.append(value)
 
 
-        return create_output_file(object_lists=load_lists, file_names= load_file_names, feeder=feeder)
+        return create_output_file(object_lists=load_lists, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
 
     @staticmethod
     def compute_pre_kw(dataframe: gpd.geodataframe.GeoDataFrame):
@@ -537,7 +537,7 @@ class Load:
         return load_
 
     @staticmethod
-    def create_load_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame,crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str):
+    def create_load_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame,crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida: str = ""):
 
         DU_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
         DO_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
@@ -574,8 +574,8 @@ class Load:
 
             progress_bar.set_description(f"Processing load {entity} {_ + 1}")
 
-        file_name = Load._create_output_load_files(DU_meses, "DU", name= load_config["arquivo"], feeder=load_.feeder)
-        Load._create_output_load_files(SA_meses, "SA", name= load_config["arquivo"], feeder=load_.feeder)
-        Load._create_output_load_files(DO_meses, "DO", name= load_config["arquivo"], feeder=load_.feeder)
+        file_name = Load._create_output_load_files(DU_meses, "DU", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
+        Load._create_output_load_files(SA_meses, "SA", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
+        Load._create_output_load_files(DO_meses, "DO", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
 
         return DU_meses, file_name

@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file
-from bdgd2opendss.model.Transformer import list_dsativ
+from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 
 
 from dataclasses import dataclass
@@ -241,7 +241,8 @@ class Line:
 
         # if em:
         #     return self.pattern_energymeter()
-        if self.transformer in list_dsativ:
+        
+        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -251,6 +252,11 @@ class Line:
 
 
     def __repr__(self):
+
+        # if em:
+        #     return self.pattern_energymeter()
+        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
+            return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
             return self.pattern_switch()
@@ -365,7 +371,7 @@ class Line:
         return line_
 
     @staticmethod
-    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, ramal_30m = False):
+    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, ramal_30m = False, pastadesaida:str=""):
 
         lines = []
         energymeters = []
@@ -380,10 +386,10 @@ class Line:
             lines.append(line_)
             progress_bar.set_description(f"Processing Line {entity} {_ + 1}")
 
-        file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder)
+        file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder, output_folder=pastadesaida)
 
         if energymeters != []:
-            EM_file_name = create_output_file(energymeters, "EnergyMeters", feeder=line_.feeder)
+            EM_file_name = create_output_file(energymeters, "EnergyMeters", feeder=line_.feeder, output_folder=pastadesaida)
 
         else:
             EM_file_name = ""

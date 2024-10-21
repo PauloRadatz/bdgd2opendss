@@ -291,9 +291,9 @@ class Transformer:
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             else:
                 kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2/numpy.sqrt(3):.3f}'
-                kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
-                conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
+                kvas = f'{self.kvas} {self.kvas}'
+                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" '
+                conns = f'{self.conn_p} {self.conn_s} '
             MRT = self.pattern_MRT()
         else:
             if self.Tip_Lig == 'T':
@@ -349,13 +349,10 @@ class Transformer:
     def full_string(self) -> str:
         if self.sit_ativ == 'DS':
             return("")
-        # if self.conn_p == '1.2.3' or self.conn_p == '1.2.3.4':
-        #     phases = 3
-        # else:
-        #     phases = 1
-        self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
+        else:
+            self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
  
-        return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
+            return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
                 f'conns=[{self.conns}] '
@@ -367,14 +364,11 @@ class Transformer:
                 f'{self.pattern_reactor(self.Tip_Lig)}')
 
     def __repr__(self):
-
         if self.sit_ativ == 'DS':
             return("")
-    
-        self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
-
-
-        if self.Tip_Lig == 'DF' or self.Tip_Lig == 'DA':
+        else:
+            self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
+ 
             return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
@@ -382,18 +376,7 @@ class Transformer:
                 f'kvs=[{self.kvs}] '
                 f'taps=[{self.taps}] '
                 f'kvas=[{self.kvas}] '
-                f'%loadloss={(self.totalloss-self.noloadloss)/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
-                f'{MRT}'
-                f'{self.pattern_reactor(self.Tip_Lig)}')
-        else:
-            return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
-                f'windings={self.windings} '
-                f'buses=[{self.buses}] '
-                f'conns=[{self.conns}] '
-                f'kvs=[{self.kvs}] '
-                f'taps=[{self.taps}] '
-                f'kvas=[{self.kvas}] '
-                f'%loadloss={(self.totalloss-self.noloadloss)/(10*kva):.6f} %noloadloss={self.noloadloss/(10*kva):.6f}\n'
+                f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={float(self.noloadloss)/(10*float(kva)):.6f}\n'
                 f'{MRT}'
                 f'{self.pattern_reactor(self.Tip_Lig)}')
 
@@ -462,6 +445,8 @@ class Transformer:
                 function_ = globals()[function_name]
                 param_value = row[param_name]
                 setattr(transformer_, f"_{mapping_key}", function_(str(param_value)))
+                if mapping_key == 'kvas' and function_(str(param_value)) == 'Invalid case':
+                    setattr(transformer_, f"_{mapping_key}", getattr(transformer_,"_kva"))
             else:
                 setattr(transformer_, f"_{mapping_key}", row[mapping_value])
 
@@ -510,7 +495,7 @@ class Transformer:
         return transformer_
 
     @staticmethod
-    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame):
+    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida: str = ""):
         transformers = []
         transformer_config = json_data['elements']['Transformer']['UNTRMT']
 
@@ -521,7 +506,7 @@ class Transformer:
             transformers.append(transformer_)
             progress_bar.set_description(f"Processing transformer {_ + 1}")
 
-        file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder)
+        file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
 
         return transformers, file_name
     

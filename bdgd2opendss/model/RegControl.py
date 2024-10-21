@@ -447,7 +447,7 @@ class RegControl:
         return regcontrol_
 
     @staticmethod
-    def create_regcontrol_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame):
+    def create_regcontrol_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida: str=""):
         regcontrols = []
         regcontrol_config = json_data['elements']['RegControl']['EQRE']
 
@@ -457,6 +457,6 @@ class RegControl:
             regcontrols.append(regcontrol_)
             progress_bar.set_description(f"Processing regcontrol {_ + 1}")
 
-        file_name = create_output_file(regcontrols, regcontrol_config["arquivo"], feeder=regcontrol_.feeder)
+        file_name = create_output_file(regcontrols, regcontrol_config["arquivo"], feeder=regcontrol_.feeder, output_folder=pastadesaida)
 
         return regcontrols, file_name

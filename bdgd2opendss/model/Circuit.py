@@ -151,7 +151,7 @@ class Circuit:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @classmethod
-    def create_circuit_from_json(cls, json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame) -> List:
+    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida:str = "") -> List:
         """Class method to create a list of Circuit objects from JSON data and a GeoDataFrame.
 
         Args:
@@ -202,6 +202,6 @@ class Circuit:
 
 
 
-        file_name = create_output_file(circuits, circuit_config["arquivo"], feeder=circuit_.circuit)
+        file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
 
         return circuits, file_name
