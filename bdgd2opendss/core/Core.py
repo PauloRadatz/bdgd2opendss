@@ -45,7 +45,7 @@ def export_feeder_list(feeder_list, feeder):
 def run(bdgd_file_path: Union[str, pathlib.Path],
         output_folder: Optional[Union[str, pathlib.Path]] = None,
         all_feeders: bool = True,
-        lstFeeders: Optional[List[str]] = None) :
+        lst_feeders: Optional[List[str]] = None) :
 
     #
     json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
@@ -62,7 +62,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
     else :
 
-        for feeder in lstFeeders:
+        for feeder in lst_feeders:
 
             # verifies if the feeder exists
             if feeder not in geodataframes["CTMT"]['gdf']['COD_ID'].tolist() :
