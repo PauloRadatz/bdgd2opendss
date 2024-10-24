@@ -56,17 +56,35 @@ class JsonData:
         :return: Dicionário contendo informações das tabelas a serem processadas.
         """
         return self.tables
-
+    
+    def get_numeric_erros(df,column_types,name): #TODO criar um log txt explicitando os erros
+        list_error = []
+        for column in df.columns:
+            if column in column_types and column_types[column] != "category":
+                for index,value in enumerate(df[column]):
+                    try:
+                        if "int" in column_types:
+                            int(value)
+                        else:
+                            float(value)
+                    except ValueError:
+                        list_error.append(index)
+                        print(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {column}')
+    
     @staticmethod
-    def convert_data_types(df, column_types):
+    def convert_data_types(df, column_types, name): #TODO mostrar quais são os elementos com erro de preenchimento
         """
         Converte os tipos de dados das colunas do DataFrame fornecido.
         :param df: DataFrame a ser processado.
         :param column_types: Dicionário contendo mapeamento de colunas para tipos de dados.
         :return: DataFrame com tipos de dados convertidos.
         """
-        return df.astype(column_types)
-
+        try:
+            return df.astype(column_types)
+        except ValueError:
+            JsonData.get_numeric_erros(df,column_types,name)
+            return df
+        
     def create_geodataframes(self, file_name, runs=1):
         """
         Cria GeoDataFrames a partir de um arquivo de entrada e coleta estatísticas.
@@ -90,7 +108,7 @@ class JsonData:
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',
                                      use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
                 start_conversion_time = time.time()
-                gdf_converted = self.convert_data_types(gdf_, table.data_types)
+                gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
 
                 load_times.append(start_conversion_time - start_time)
