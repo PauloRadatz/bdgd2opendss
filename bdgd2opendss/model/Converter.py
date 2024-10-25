@@ -349,12 +349,12 @@ def convert_tfascon_conn_load(case):
         "AN": "Wye",
         "BN": "Wye",
         "CN": "Wye",
-        "AB": "Wye",
-        "BC": "Wye",
-        "CA": "Wye",
-        "ABN": "Wye",
-        "BCN": "Wye",
-        "CAN": "Wye",
+        "AB": "Delta",
+        "BC": "Delta",
+        "CA": "Delta",
+        "ABN": "Delta",
+        "BCN": "Delta",
+        "CAN": "Delta",
         "ABC": "Delta",
         "ABCN": "Delta"
     }

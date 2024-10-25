@@ -18,9 +18,10 @@ import numpy
 import geopandas as gpd
 from tqdm import tqdm
 
-from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn, convert_tfascon_phases, convert_tfascon_phases_load
+from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn_load, convert_tfascon_phases, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv, list_dsativ
+from bdgd2opendss.model.Transformer import Transformer
+from bdgd2opendss.model.Circuit import Circuit
 
 from dataclasses import dataclass
 
@@ -138,14 +139,25 @@ class PVsystem:
     def transformer(self, value):
         self._transformer = value
     
-    def full_string(self) -> str:
-        if self.kv < 1 and (self.sit_ativ == "DS" or self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
-            return("")
+    def adapting_string_variables_pvsystem(self): #TODO implementar as tensões de 254 
+        if self.kv < 1:
+            if self.phases == '1' and self.conn == 'Wye':
+                kv = Transformer.sec_phase_kv(trload=self.transformer)      
+            else:
+                kv = Transformer.sec_line_kv(trload=self.transformer)
+            return(kv)
         else:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+            return(Circuit.kvbase())
+    
+    def full_string(self) -> str:
+        if self.kv < 1:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
+                return("")
+        kv = PVsystem.adapting_string_variables_pvsystem(self)
+        return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
-                f'kv={self.kv} '
+                f'kv={kv} '
                 f'pf={self.pf} '
                 f'pmpp={self.pmpp} '
                 f'kva={numpy.ceil(self.pmpp)} '
@@ -153,13 +165,14 @@ class PVsystem:
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
 
     def __repr__(self):
-        if self.sit_ativ == "DS" or self.transformer in list_dsativ:
-            return("")
-        else:
-            return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+        if self.kv < 1:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
+                return("")
+        kv = PVsystem.adapting_string_variables_pvsystem()
+        return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
                 f'conn={self.conn} '
-                f'kv={self.kv} '
+                f'kv={kv} '
                 f'pf={self.pf} '
                 f'pmpp={self.pmpp} '
                 f'kva={numpy.ceil(self.pmpp)} '
@@ -201,11 +214,6 @@ class PVsystem:
         """
         for mapping_key, mapping_value in value.items():
             setattr(pvsystem_, f"_{mapping_key}", row[mapping_value])
-            if mapping_key == "transformer":
-                try:
-                    setattr(pvsystem_, f"_kv", dicionario_kv[row[mapping_value]])
-                except KeyError:
-                    ...
 
     @staticmethod
     def _process_indirect_mapping(pvsystem_, value, row):

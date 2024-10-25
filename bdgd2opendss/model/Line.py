@@ -215,7 +215,7 @@ class Line:
     def pattern_segment(self):
 
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus1, self.bus2 = self.bus1, self.bus2
+            self.bus1, self.bus2 = self.bus2, self.bus1
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -225,7 +225,7 @@ class Line:
     def pattern_switch(self):
 
         if self.prefix_name == "CMT":
-            self.bus1, self.bus2 = self.bus1, self.bus2
+            self.bus1, self.bus2 = self.bus2, self.bus1
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \

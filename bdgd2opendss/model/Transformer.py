@@ -12,19 +12,20 @@
 # Não remover a linha de importação abaixo
 import copy
 import re
-from typing import Any
+from typing import Any, Optional
 import numpy
 
 import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
-from bdgd2opendss.model.Circuit import kv
+from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.core.Utils import create_output_file
 
 from dataclasses import dataclass
 
 dicionario_kv = {}
+dict_phase_kv = {}
 list_dsativ = []
 # mtkv = []
 
@@ -281,49 +282,40 @@ class Transformer:
         """
         if self.sit_ativ == "DS":
             return("")
-
-        self.kv1 = float(kv[0])
-        if self.MRT == 1:
-            if '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
-                kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2/2} {self.kv2/2}'
-                kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
-                conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
-            else:
-                kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2/numpy.sqrt(3):.3f}'
-                kvas = f'{self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" '
-                conns = f'{self.conn_p} {self.conn_s} '
-            MRT = self.pattern_MRT()
+        if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
+            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.3f}'
         else:
-            if self.Tip_Lig == 'T':
-                kvs = f'{self.kv1} {self.kv2}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
-                kvas = f'{self.kvas} {self.kvas}'
-                conns = f'{self.conn_p} {self.conn_s}'
-            elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
-                if self.phases == 1 or '4' in self.bus1_nodes:
-                    kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2/2} {self.kv2/2}'
-                else:
-                    kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
-                kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
-                conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
-            elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
-                if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
-                    if self.phases == 1 or '4' in self.bus1_nodes:
-                        kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2/numpy.sqrt(3):.3f}'
-                    else:
-                        kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.3f}'                    
-                else:
-                    if self.phases == 1 or '4' in self.bus1_nodes:
-                        kvs = f'{self.kv1/numpy.sqrt(3):.3f} {self.kv2}'
-                    else:
-                        kvs = f'{self.kv1} {self.kv2}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
-                kvas = f'{self.kvas} {self.kvas}'
-                conns = f'{self.conn_p} {self.conn_s}'
+            self.kv1 = f'{float(Circuit.kvbase())}'
+
+        if self.MRT == 1:
+            MRT = self.pattern_MRT()
+        else: 
             MRT = ""
+
+        if self.Tip_Lig == 'T':
+            kvs = f'{self.kv1} {self.kv2}'
+            buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
+            kvas = f'{self.kvas} {self.kvas}'
+            conns = f'{self.conn_p} {self.conn_s}'
+        elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
+            kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
+            kvas = f'{self.kvas} {self.kvas} {self.kvas}'
+            buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
+            conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
+        elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
+            if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
+                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.3f}'                    
+            else:
+                kvs = f'{self.kv1} {self.kv2}'
+            buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
+            kvas = f'{self.kvas} {self.kvas}'
+            conns = f'{self.conn_p} {self.conn_s}'
+        else:
+            kvs = f'{self.kv1} {self.kv2}'
+            buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
+            kvas = f'{self.kvas} {self.kvas}'
+            conns = f'{self.conn_p} {self.conn_s}'
+
         kva = self.kvas
         # kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])
         taps = ' '.join([f'{self.tap}' for _ in range(self.windings)])
@@ -379,8 +371,32 @@ class Transformer:
                 f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={float(self.noloadloss)/(10*float(kva)):.6f}\n'
                 f'{MRT}'
                 f'{self.pattern_reactor(self.Tip_Lig)}')
-
-
+        
+    def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de fase
+        if trload == None:
+            if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
+                dict_phase_kv[transformer] = kv2/2 
+            elif kv2 != 0.38 and not ((len(bus2_nodes) == 5 and '4' in bus2_nodes) or (len(bus2_nodes) == 3 and '4' not in bus2_nodes)):#verificar a função
+                dict_phase_kv[transformer] = kv2  
+            else: 
+                dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
+        else:
+            return(dict_phase_kv[trload])
+    
+    def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de fase
+        if trload == None:
+            dicionario_kv[transformer] = kv2
+        else:
+            return(dicionario_kv[trload])
+    
+    @staticmethod    
+    def dict_kv():
+        return(dicionario_kv)
+    
+    @staticmethod    
+    def list_dsativ():
+        return(list_dsativ)
+        
     @staticmethod
     def _process_static(transformer_, value):
         """
@@ -415,9 +431,10 @@ class Transformer:
         for mapping_key, mapping_value in value.items():
             setattr(transformer_, f"_{mapping_key}", row[mapping_value])
             if mapping_key == "transformer":#modificação - 08/08
-                dicionario_kv[row[mapping_value]] = getattr(transformer_,"kv2")
+                Transformer.sec_line_kv(transformer=row[mapping_value],kv2=getattr(transformer_,"kv2"))
             if mapping_key == "sit_ativ" and row[mapping_value] == "DS":
                 list_dsativ.append(getattr(transformer_, f'_transformer'))
+        
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):
@@ -439,12 +456,15 @@ class Transformer:
         If the value is not a list, the method directly sets the corresponding attribute on
         the transformer object using the value from the row.
         """
+        
         for mapping_key, mapping_value in value.items():
             if isinstance(mapping_value, list):
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
                 param_value = row[param_name]
                 setattr(transformer_, f"_{mapping_key}", function_(str(param_value)))
+                if mapping_key == 'bus3_nodes':
+                    Transformer.sec_phase_kv(getattr(transformer_, f'_transformer'),getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)))
                 if mapping_key == 'kvas' and function_(str(param_value)) == 'Invalid case':
                     setattr(transformer_, f"_{mapping_key}", getattr(transformer_,"_kva"))
             else:
