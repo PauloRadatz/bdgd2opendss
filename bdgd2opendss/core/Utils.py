@@ -115,7 +115,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
-    if len(output_folder) > 0:
+    if output_folder is not None:
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')
@@ -187,7 +187,7 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
-    if len(output_folder) > 0:
+    if output_folder is not None:
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')
@@ -230,7 +230,7 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
         separado por caracteres newline. Se ocorrer algum erro, ele será exibido.
 
     """
-    if len(output_folder) > 0:
+    if output_folder is not None:
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')

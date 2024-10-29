@@ -90,6 +90,10 @@ class Circuit:
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
 
     @staticmethod
+    def kvbase():
+        return(kv[0])
+
+    @staticmethod
     def _process_static(circuit_, value):
         """Static method to process the static configuration for a Circuit object.
 

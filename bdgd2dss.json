@@ -425,7 +425,7 @@
                     ],
                     "bus_nodes": [
                         "FAS_CON",
-                        "convert_tfascon_bus_prim"
+                        "convert_tfascon_bus"
                     ],
                     "kv": [
                         "TEN_FORN",
@@ -571,7 +571,7 @@
                     ],
                     "conn":[
                         "FAS_CON",
-                        "convert_tfascon_conn"
+                        "convert_tfascon_conn_load"
                     ],
                     "bus_nodes":[
                         "FAS_CON",
@@ -617,7 +617,7 @@
                     ],
                     "conn":[
                         "FAS_CON",
-                        "convert_tfascon_conn"
+                        "convert_tfascon_conn_load"
                     ],
                     "bus_nodes":[
                         "FAS_CON",

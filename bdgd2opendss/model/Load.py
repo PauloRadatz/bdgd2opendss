@@ -20,8 +20,9 @@ from tqdm import tqdm
 
 
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
-from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv, list_dsativ #modificação 08/08
+from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
+from bdgd2opendss.model.Circuit import Circuit
 
 import numpy as np
 
@@ -314,43 +315,44 @@ class Load:
     def transformer(self, value: str):
         self._transformer = value
     
-    def adapting_string_variables_load(self): #TODO implementar as tensões de 254 
-        # x=create_voltage_bases(dicionario_kv)
-        if self.phases == '1':
-            if float(self.kv) == 0.24 or float(self.kv) == 0.44:
-                kv = float(self.kv)/2
-            else: #verificar a maior tensão de linha das voltage bases para definir isso aqui (se 0.380 fazer isso, se não, não fazer)
-                kv = round(self.kv/np.sqrt(3),3)       
+    def adapting_string_variables_load(self): #TODO implementar as tensões de 254
+        if self.kv < 1: 
+            if self.phases == '1' and self.conn == 'Wye':
+                kv = Transformer.sec_phase_kv(trload=self.transformer)      
+            else:
+                kv = Transformer.sec_line_kv(trload=self.transformer)
+            return(kv)
         else:
-            kv = float(self.kv)
-        return(kv)
+            return(Circuit.kvbase())
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
-            return("")
-        else:
-            kv = Load.adapting_string_variables_load(self)
-            return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+        if self.kv < 1:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys() or float(self.kw) == 0: #remove as cargas desativadas
+                return("")
+        
+        kv = Load.adapting_string_variables_load(self)
+        return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
                 
             
     def __repr__(self):
-        if self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys(): #remove as cargas desativadas
-            return("")
-        else:
-            kv = Load.adapting_string_variables_load(self)
-            return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+        if self.kv < 1:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys() or float(self.kw) == 0: #remove as cargas desativadas
+                return("")
+        
+        kv = Load.adapting_string_variables_load(self)
+        return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
@@ -410,11 +412,7 @@ class Load:
         """
         for mapping_key, mapping_value in value.items():
             setattr(load_, f"_{mapping_key}", row[mapping_value])
-            if mapping_key == "transformer":
-                try:
-                    setattr(load_, f"_kv", dicionario_kv[row[mapping_value]])
-                except KeyError:
-                    continue
+
 
     @staticmethod
     def _process_indirect_mapping(load_, value, row):
