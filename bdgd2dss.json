@@ -400,7 +400,6 @@
                     "load": "PN_CON",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
-                    "sit_ativ": "SIT_ATIV",
                     "energia_01": "ENE_01",
                     "energia_02": "ENE_02",
                     "energia_03": "ENE_03",
@@ -587,8 +586,7 @@
                     "transformer":"UNI_TR_MT",
                     "PVsys": "CEG_GD",
                     "bus1": "PAC",
-                    "pmpp": "POT_INST",
-                    "sit_ativ": "SIT_ATIV"
+                    "pmpp": "POT_INST"
                 },
                 "calculated":{
 
@@ -879,8 +877,7 @@
                     "ENE_10",
                     "ENE_11",
                     "ENE_12",
-                    "CTMT",
-                    "SIT_ATIV"
+                    "CTMT"
                 ],
                 "type": {
                     "PN_CON": "category",
@@ -891,7 +888,6 @@
             },
             "UCBT_tab": {
                 "columns": [
-                    "PN_CON",
                     "PAC",
                     "FAS_CON",
                     "TEN_FORN",
@@ -911,12 +907,9 @@
                     "ENE_12",
                     "CTMT",
                     "RAMAL",
-                    "DAT_CON",
-                    "SUB",
-                    "SIT_ATIV"
+                    "DAT_CON"
                 ],
                 "type": {
-                    "PN_CON": "category",
                     "FAS_CON": "category",
                     "TEN_FORN": "category"
                 },
@@ -942,8 +935,7 @@
                     "ENE_11",
                     "ENE_12",
                     "CTMT",
-                    "COD_ID",
-                    "SIT_ATIV"
+                    "COD_ID"
                 ],
                 "type": {
                     "FAS_CON": "category",
