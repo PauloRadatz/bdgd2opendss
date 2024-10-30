@@ -4,17 +4,22 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv
-from bdgd2opendss.model.Circuit import kv
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, create_dfs_coords, create_output_feeder_coords, inner_entities_tables
+#from bdgd2opendss.model.KVBase import KVBase
+from bdgd2opendss.model.Transformer import  dicionario_kv
+# from bdgd2opendss.model.Circuit import kv # OLD CODE
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
-from bdgd2opendss.core import Utils
+#from bdgd2opendss.core import Utils # OLD CODE
 
-@dataclass
+# @dataclass # OLD CODE. Case it is not a dataclass anymore...
 class Case:
-    #_id: str = "" # OLD CODE alterado p/ feeder
-    _circuitos: list[Circuit] = field(init=False)
+
+    _circuit: Circuit
+
+    # TODO comentei estruturas nao utilizadas
+    '''
+    _circuit: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
     _lines_SSDBT: list[Line] = field(init=False)
     _lines_SSDMT: list[Line] = field(init=False)
@@ -23,7 +28,10 @@ class Case:
     _transformers: list[Transformer] = field(init=False)
     _regcontrols: list[RegControl] = field(init=False)
     _loads: list[Load] = field(init=False)
+    _MVloads: list[Load] = field(init=False)
     _PVsystems: list[PVsystem] = field(init=False)
+    '''
+
     _dfs: dict = field(init=False)
 
     def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
@@ -38,13 +46,20 @@ class Case:
         # init list
         self.list_files_name = []
 
+        # this object keeps track of the kVBase
+        self._kVbaseDic = KVBase()
+
+        # reads BDGD gdb files and populates the object Case
+        self.PopulaCase()
+
+    ''' # TODO comentei estruturas nao utilizadas
     @property
     def circuitos(self):
-        return self._circuitos
+        return self.#_circuit
 
     @circuitos.setter
     def circuitos(self, value):
-        self._circuitos = value
+        self.#_circuit = value
 
     @property
     def line_codes(self):
@@ -111,8 +126,9 @@ class Case:
         self._dfs = value
 
     def circuit_names(self):
-        if self._circuitos is not None:
+        if self.#_circuit is not None:
             return [c.circuit for c in self.circuitos]
+    '''
 
     def line_code_names(self):
         return [l.linecode for l in self.line_codes]
@@ -163,22 +179,23 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-        y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
-        y.sort()
-        #  TODO do jeito que esta, a variavel kv (declarada na classe circuit) entra neste metodo como 1 variavel global
-        #   A mesma questao ocorre com a variavel dicionario_kv idealmente devemos refatorar e acessar estas variaveis por metodos jah
-        #   que esta classe ja possui as variaveis _circuitos e _transformers (idealmente os metodos podem chegar o preecnhimento da variavel e
-        #   qualquer dependencia (temporal) de se executar o circuit e transformer antes). Eg _circuitos.GetKv()
-        y.append(kv[0])
-        voltagebases = " ".join(str(z) for z in set(y))
 
+        # TODO 1. CONSERTAR !! O codigo dos IF e ELSE ESTAO IGUAIS !!!
+        #  Qual eh a ideia ? Processar o redirect da "GD" diferente ?
+
+        # TODO 2. Vejo como fragil esta solucao de atrelar algo (que nao sei o que eh) ao nome do arquivo, neste caso GD.
+        #  NA verdade o if deveria verificar o parametro do usuario se ele vai gerar as GDs ou nao
         for i in file_names:
             if i[:2] == "GD":
                 master = master + f'!Redirect "{i}"\n'
             else:
                 master = master + f'Redirect "{i}"\n'
-        master = master + f'''Set mode = daily
-Set Voltagebases = [{voltagebases}]
+
+        # get voltage base string
+        vBase_str = self._kVbaseDic.get_kVbase_str()
+
+        master += f'''Set mode = daily
+Set Voltagebases = [{vBase_str}]
 Calc Voltagebases
 Set tolerance = 0.0001
 Set maxcontroliter = 10
@@ -208,7 +225,7 @@ buscoords buscoords.csv'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        # TODO de fato quebrou, gerando excpetion: UnboundLocalError: local variable 'indice' referenced before assignment
+        # TODO de fato quebrou, gerando excetion: UnboundLocalError: local variable 'indice' referenced before assignment
         #  Correcao temporaria. Inicializei indice abaixo
         indice = 0
 
@@ -234,32 +251,32 @@ buscoords buscoords.csv'''
 
                 self.output_master(tip_dia=tip_dia, mes=mes, file_names=file_names)
 
-    # this method populates Case object with data from BDGD
+    # this method populates Case object with data from BDGD .gdb files
     def PopulaCase(self):
 
-        self.GenGeographicCoord()
+        # self.GenGeographicCoord()
 
         self.Populates_CTMT()
 
-        self.Populates_SEGCON()
+        #self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
 
-        self.Populates_Entity()
+        # self.Populates_Entity()
 
-        self.Populates_UNREMT()
+        #self.Populates_UNREMT()
 
-        self.Popula_CRVCRG()
+        #self.Popula_CRVCRG()
 
-        self.Populates_UCBT()
+        #self.Populates_UCBT()
 
-        self.Populates_PIP()
+        #self.Populates_PIP()
 
-        self.Populates_UCMT()
+        #self.Populates_UCMT()
 
-        self.Populates_UGBT()
+        #self.Populates_UGBT()
 
-        self.Populates_UGMT()
+        #self.Populates_UGMT()
 
         # creates dss files
         self.output_master(self.list_files_name)
@@ -269,21 +286,25 @@ buscoords buscoords.csv'''
     def GenGeographicCoord(self):
 
         if settings.gerCoord:
-            #
-            gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
+            gdf_SSDMT, gdf_SSDBT = create_dfs_coords(self.folder_bdgd, self.feeder)
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
             #
-            Utils.create_output_feeder_coords(df_coords, self.feeder, output_folder=self.output_folder)
+            create_output_feeder_coords(df_coords, self.feeder, output_folder=self.output_folder)
 
     # CTMT
-    def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
+    # TODO colocar o local e a pasta criada no create from json. // ja foi feito??
+    def Populates_CTMT(self):
 
         alimentador = self.feeder
 
         try:
-            circuitos, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query(
-                "COD_ID==@alimentador"), pastadesaida=self.output_folder)
+            # TODO remover variavel de retorno que nao eusada p/ nada...
+            self._kVbaseDic, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
+                                                                         self._kVbaseDic,
+                                                                         pastadesaida=self.output_folder)
+
+            # TODO lets try to move all these calling to one place
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -301,7 +322,9 @@ buscoords buscoords.csv'''
             print("Error in SEGCON.\n")
 
     # UCBT
-    def Popula_UCBT(self,alimentador):
+    def Popula_UCBT(self):
+
+        alimentador = self.feeder
 
         if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
             
@@ -345,7 +368,7 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         # do the merge before checking if result set is empty
-        merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
+        merged_dfs = inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
 
@@ -369,13 +392,14 @@ buscoords buscoords.csv'''
 
         alimentador = self.feeder
 
-        merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
+        merged_dfs = inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
 
-                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
+                self._kVbaseDic, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, self._kVbaseDic, pastadesaida=self.output_folder)
+
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -439,6 +463,9 @@ buscoords buscoords.csv'''
     def Populates_UCMT(self):
 
         alimentador = self.feeder
+
+        # TODO temporary solution
+
 
         if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
             dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))

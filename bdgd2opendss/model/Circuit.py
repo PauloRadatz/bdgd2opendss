@@ -3,18 +3,21 @@
 # Não remover a linha de importação abaixo
 from typing import Any, List
 import geopandas as gpd
+
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tten
+from bdgd2opendss.model.KVBase import KVBase
 from bdgd2opendss.core.Utils import create_output_file
-
 from dataclasses import dataclass
 
-# TODO vide TO DO em case/output_master
-kv = []
+# TODO finish the refactory
+_kVbaseStr = []
 
 @dataclass
 class Circuit:
+
+    ''' # TODO comentei estruturas nao utilizadas
     _arquivo: str = ""
     _circuit: str = ""
     _basekv: float = 0.0
@@ -38,14 +41,6 @@ class Circuit:
     @arquivo.setter
     def arquivo(self, value):
         self._arquivo = value
-
-    @property
-    def basekv(self) -> float:
-        return self._basekv
-
-    @basekv.setter
-    def basekv(self, value):
-        self._basekv = value
 
     @property
     def pu(self) -> float:
@@ -79,7 +74,6 @@ class Circuit:
     def x1(self, value):
         self._x1 = value
 
-
     def full_string(self) -> str:
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
@@ -88,10 +82,17 @@ class Circuit:
     def __repr__(self):
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
+   '''
 
     @staticmethod
-    def kvbase():
-        return(kv[0])
+    def getKVBase_circuit_str():
+
+        # if is empty informs user
+        if not _kVbaseStr:
+            print(f"\nError: {_kVbaseStr} is empty.")
+
+        return(_kVbaseStr)
+        #return(kv[0]) # OLD CODE
 
     @staticmethod
     def _process_static(circuit_, value):
@@ -150,12 +151,12 @@ class Circuit:
                 param_value = row[param_name]
                 setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigingo para string para encontrar valor no dicionario
                 if mapping_key == 'basekv':
-                    kv.append(function_(str(param_value)))
+                    _kVbaseStr.append(function_(str(param_value)))
             else:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @classmethod
-    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida:str = "") -> List:
+    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, _kVbaseDic: KVBase, pastadesaida:str = "") -> List:
         """Class method to create a list of Circuit objects from JSON data and a GeoDataFrame.
 
         Args:
@@ -204,8 +205,11 @@ class Circuit:
             circuits.append(circuit_)
             progress_bar.set_description(f"Processing Circuit {_+1}")
 
-
-
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
 
-        return circuits, file_name
+        # TODO solucao temporaria
+        # copys _kVbaseStr to return
+        _kVbaseDic._kVbaseStr = _kVbaseStr
+
+        # OBS: changed signature
+        return _kVbaseDic, file_name

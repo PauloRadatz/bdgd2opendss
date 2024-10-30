@@ -249,7 +249,7 @@ class Transformer:
     @fase.setter
     def fase(self, value):
         self._fase = value
-    
+
     @property
     def sit_ativ(self):
         return self._sit_ativ
@@ -257,7 +257,7 @@ class Transformer:
     @sit_ativ.setter
     def sit_ativ(self, value):
         self._sit_ativ = value
-    
+
 
     def adapting_string_variables(self):
 
@@ -283,13 +283,13 @@ class Transformer:
         if self.sit_ativ == "DS":
             return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.3f}'
+            self.kv1 = f'{float(Circuit.getKVBase_circuit_str() / numpy.sqrt(3)):.3f}'
         else:
-            self.kv1 = f'{float(Circuit.kvbase())}'
+            self.kv1 = f'{float(Circuit.getKVBase_circuit_str())}'
 
         if self.MRT == 1:
             MRT = self.pattern_MRT()
-        else: 
+        else:
             MRT = ""
 
         if self.Tip_Lig == 'T':
@@ -304,7 +304,7 @@ class Transformer:
             conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
         elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
             if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
-                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.3f}'                    
+                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.3f}'
             else:
                 kvs = f'{self.kv1} {self.kv2}'
             buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
@@ -343,7 +343,7 @@ class Transformer:
             return("")
         else:
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
- 
+
             return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
@@ -360,7 +360,7 @@ class Transformer:
             return("")
         else:
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
- 
+
             return (f'New \"Transformer.TRF_{self.transformer}{self.fase}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
@@ -371,32 +371,34 @@ class Transformer:
                 f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={float(self.noloadloss)/(10*float(kva)):.6f}\n'
                 f'{MRT}'
                 f'{self.pattern_reactor(self.Tip_Lig)}')
-        
+
     def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de fase
         if trload == None:
             if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
-                dict_phase_kv[transformer] = kv2/2 
+                dict_phase_kv[transformer] = kv2/2
             elif kv2 != 0.38 and not ((len(bus2_nodes) == 5 and '4' in bus2_nodes) or (len(bus2_nodes) == 3 and '4' not in bus2_nodes)):#verificar a função
-                dict_phase_kv[transformer] = kv2  
-            else: 
+                dict_phase_kv[transformer] = kv2
+            else:
                 dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
         else:
             return(dict_phase_kv[trload])
-    
+
     def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de fase
         if trload == None:
             dicionario_kv[transformer] = kv2
         else:
             return(dicionario_kv[trload])
-    
-    @staticmethod    
+
+    '''
+    @staticmethod
     def dict_kv():
         return(dicionario_kv)
-    
-    @staticmethod    
+    '''
+
+    @staticmethod
     def list_dsativ():
         return(list_dsativ)
-        
+
     @staticmethod
     def _process_static(transformer_, value):
         """
@@ -434,7 +436,7 @@ class Transformer:
                 Transformer.sec_line_kv(transformer=row[mapping_value],kv2=getattr(transformer_,"kv2"))
             if mapping_key == "sit_ativ" and row[mapping_value] == "DS":
                 list_dsativ.append(getattr(transformer_, f'_transformer'))
-        
+
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):
@@ -456,7 +458,7 @@ class Transformer:
         If the value is not a list, the method directly sets the corresponding attribute on
         the transformer object using the value from the row.
         """
-        
+
         for mapping_key, mapping_value in value.items():
             if isinstance(mapping_value, list):
                 param_name, function_name = mapping_value
@@ -515,18 +517,17 @@ class Transformer:
         return transformer_
 
     @staticmethod
-    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida: str = ""):
-        transformers = []
-        transformer_config = json_data['elements']['Transformer']['UNTRMT']
+    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, kVbaseDic: Any, pastadesaida: str = ""):
 
+        lstTransformers = []
+        transformer_config = json_data['elements']['Transformer']['UNTRMT']
 
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Transformer", unit=" transformers", ncols=100)
         for _, row in progress_bar:
             transformer_ = Transformer._create_transformer_from_row(transformer_config, row)
-            transformers.append(transformer_)
+            lstTransformers.append(transformer_)
             progress_bar.set_description(f"Processing transformer {_ + 1}")
 
-        file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
+        file_name = create_output_file(lstTransformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
 
-        return transformers, file_name
-    
+        return kVbaseDic, file_name

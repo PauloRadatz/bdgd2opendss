@@ -58,7 +58,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
         for feeder in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
 
             case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
-            case.PopulaCase()
+            #case.PopulaCase() # OLD CODE
 
     else :
 
@@ -70,4 +70,4 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
                 continue
 
             case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
-            case.PopulaCase()
+            #case.PopulaCase() # OLD CODE
