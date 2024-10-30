@@ -65,6 +65,7 @@ class Load:
     _energia_09: str = ''
     _energia_10: str = ''
     _energia_11: str = ''
+    _energia_12: str = ''
 
     @property
     def feeder(self):
@@ -316,7 +317,7 @@ class Load:
         self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
-        if self.kv < 1: 
+        if "MT" not in self.entity: 
             if self.phases == '1' and self.conn == 'Wye':
                 kv = Transformer.sec_phase_kv(trload=self.transformer)      
             else:
@@ -326,32 +327,40 @@ class Load:
             return(Circuit.kvbase())
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        if self.kv < 1:
-            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys() or float(self.kw) == 0: #remove as cargas desativadas
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+            return("")
+            
+        if "MT" not in self.entity:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         
         kv = Load.adapting_string_variables_load(self)
-        return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
-                f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'New \"Load.{self.entity}_{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
                 
             
     def __repr__(self):
-        if self.kv < 1:
-            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys() or float(self.kw) == 0: #remove as cargas desativadas
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+            return("")
+            
+        if "MT" not in self.entity:
+            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         
         kv = Load.adapting_string_variables_load(self)
-        return f'New \"Load.{self.entity}_{self.load}_{self.id}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
-                f'New \"Load.{self.entity}_{self.load}_{self.id}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'New \"Load.{self.entity}_{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'

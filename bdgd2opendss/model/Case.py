@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 from dataclasses import dataclass, field
+import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
@@ -303,7 +304,7 @@ buscoords buscoords.csv'''
     def Popula_UCBT(self,alimentador):
 
         if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
+            
             try:
                 _loads, fileName = Load.create_load_from_json(self._jsonData,
                                                               self._dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
@@ -399,11 +400,13 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
+            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+            df_ucbt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
+                'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                                  self.dfs['UCBT_tab']['gdf'].query(
-                                                                      "CTMT==@alimentador"),
+                                                                  df_ucbt,
                                                                   self.dfs['CRVCRG']['gdf'], 'UCBT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
@@ -438,11 +441,13 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
+            dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
+            df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+                'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                                  self.dfs['UCMT_tab']['gdf'].query(
-                                                                      "CTMT==@alimentador"),
+                                                                  df_ucmt,
                                                                   self.dfs['CRVCRG']['gdf'], 'UCMT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
