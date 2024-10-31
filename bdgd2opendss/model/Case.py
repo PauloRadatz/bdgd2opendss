@@ -5,7 +5,7 @@ import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, create_dfs_coords, create_output_feeder_coords, inner_entities_tables
-#from bdgd2opendss.model.KVBase import KVBase
+from bdgd2opendss.model.KVBase import KVBase
 from bdgd2opendss.model.Transformer import  dicionario_kv
 # from bdgd2opendss.model.Circuit import kv # OLD CODE
 from bdgd2opendss.model import BusCoords
@@ -15,9 +15,14 @@ from bdgd2opendss.core.Settings import settings
 # @dataclass # OLD CODE. Case it is not a dataclass anymore...
 class Case:
 
-    _circuit: Circuit
+    # _circuit: Circuit # OLD CODE
+    _dfs: dict = field(init=False)
 
-    # TODO comentei estruturas nao utilizadas
+    @property
+    def dfs(self):
+        return self._dfs
+
+    # TODO estruturas nao utilizadas, por hora comentadas.
     '''
     _circuit: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
@@ -32,9 +37,8 @@ class Case:
     _PVsystems: list[PVsystem] = field(init=False)
     '''
 
-    _dfs: dict = field(init=False)
+    def __init__(self, jsonData: dict, geodataframes: dict, folder_bdgd, feeder, output_folder):
 
-    def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
         self._jsonData = jsonData
         self._dfs = geodataframes
         self.folder_bdgd = folder_bdgd
@@ -53,6 +57,10 @@ class Case:
         self.PopulaCase()
 
     ''' # TODO comentei estruturas nao utilizadas
+    @dfs.setter
+    def dfs(self, value: dict):
+        self._dfs = value
+
     @property
     def circuitos(self):
         return self.#_circuit
@@ -116,14 +124,6 @@ class Case:
     @pvsystems.setter
     def pvsystems(self, value):  # mozart
         self._PVsystems = value
-
-    @property
-    def dfs(self):
-        return self._dfs
-
-    @dfs.setter
-    def dfs(self, value: dict):
-        self._dfs = value
 
     def circuit_names(self):
         if self.#_circuit is not None:
@@ -253,30 +253,31 @@ buscoords buscoords.csv'''
 
     # this method populates Case object with data from BDGD .gdb files
     def PopulaCase(self):
-
-        # self.GenGeographicCoord()
+        '''
+        self.GenGeographicCoord()
 
         self.Populates_CTMT()
 
-        #self.Populates_SEGCON()
+        self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
 
-        # self.Populates_Entity()
+        self.Populates_Entity()
 
-        #self.Populates_UNREMT()
+        # An error occurred: unsupported operand type(s) for /: 'float' and 'str'
+        # self.Populates_UNREMT()
 
-        #self.Popula_CRVCRG()
+        self.Popula_CRVCRG()
+        '''
+        self.Populates_UCMT()
 
-        #self.Populates_UCBT()
+        self.Populates_UCBT()
 
-        #self.Populates_PIP()
+        self.Populates_PIP()
 
-        #self.Populates_UCMT()
+        self.Populates_UGBT()
 
-        #self.Populates_UGBT()
-
-        #self.Populates_UGMT()
+        self.Populates_UGMT()
 
         # creates dss files
         self.output_master(self.list_files_name)
@@ -299,8 +300,8 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         try:
-            # TODO remover variavel de retorno que nao eusada p/ nada...
-            self._kVbaseDic, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
+
+            self._kVbaseDic, fileName = Circuit.create_circuit_from_json(self._jsonData, self.dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
                                                                          self._kVbaseDic,
                                                                          pastadesaida=self.output_folder)
 
@@ -326,12 +327,12 @@ buscoords buscoords.csv'''
 
         alimentador = self.feeder
 
-        if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            
+        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+
             try:
                 _loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                              self._dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                              self._dfs['CRVCRG']['gdf'], 'UCBT_tab')
+                                                              self.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
+                                                              self.dfs['CRVCRG']['gdf'], 'UCBT_tab')
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -412,7 +413,7 @@ buscoords buscoords.csv'''
     def Popula_CRVCRG(self):
 
         try:
-            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
+            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self.dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -424,10 +425,16 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
-            df_ucbt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
-                'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
-                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
+
+            dfs = pd.DataFrame(self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+
+            # obs: the loads are group by the COD_ID
+            df_ucbt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg(
+                {'FAS_CON': 'last', 'TEN_FORN': 'last', 'TIP_CC': 'last', 'UNI_TR_MT': 'last',
+                 'CTMT': 'last', 'RAMAL': 'last', 'DAT_CON': 'last', 'ENE_01': 'sum', 'ENE_02': 'sum', 'ENE_03': 'sum',
+                 'ENE_04': 'sum', 'ENE_05': 'sum',
+                 'ENE_06': 'sum', 'ENE_07': 'sum', 'ENE_08': 'sum', 'ENE_09': 'sum', 'ENE_10': 'sum', 'ENE_11': 'sum',
+                 'ENE_12': 'sum'})  # criar um dicionário 'last'
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucbt,
@@ -464,14 +471,21 @@ buscoords buscoords.csv'''
 
         alimentador = self.feeder
 
-        # TODO temporary solution
-
-
         if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
+
+            dfs = pd.DataFrame(self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
+
+            df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+                'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
+
+            # TODO ?? criar um dicionário 'last'
+            '''
             df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
-                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})# TODO ?? criar um dicionário 'last'
+            '''
+
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucmt,

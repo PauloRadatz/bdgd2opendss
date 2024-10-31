@@ -78,7 +78,7 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "line": "COD_ID",
-                    "linecode": "TIP_CND", 
+                    "linecode": "TIP_CND",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -142,7 +142,7 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "line": "COD_ID",
-                    "linecode": "TIP_CND", 
+                    "linecode": "TIP_CND",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -213,8 +213,8 @@
                     "bus3": "PAC_3",
                     "transformer": "COD_ID",
                     "kvas": "POT_NOM",
-                    "tap": "TAP", 
-                    "feeder": "CTMT", 
+                    "tap": "TAP",
+                    "feeder": "CTMT",
                     "MRT": "MRT"
                 },
                 "indirect_mapping": {
@@ -297,7 +297,7 @@
         "RegControl": {
             "EQRE": {
                 "arquivo": "Regulador_Tensao",
-                "static": { 
+                "static": {
                     "windings": 2,
                     "band": 2
                 },
@@ -307,7 +307,7 @@
                     "transformer": "COD_ID",
                     "vreg": "TEN_REG",
                     "prefix_transformer": "LIG_FAS_P",
-                    "xhl": "XHL", 
+                    "xhl": "XHL",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping":{
@@ -334,7 +334,7 @@
                     "conn_s": [
                         "LIG_FAS_S",
                         "convert_tfascon_conn"
-                    ]                    
+                    ]
                 },
                 "calculated": {
                     "ptratio": ["TEN_REG", "*100"],
@@ -348,9 +348,9 @@
                         "POT_NOM","/1000)","* 100"
                     ]
                 }
-                
+
             }
-                        
+
         },
         "Load": {
             "UCMT_tab": {
@@ -362,6 +362,7 @@
                     "status": "variable"
                 },
                 "direct_mapping": {
+                    "codid": "COD_ID",
                     "bus1": "PAC",
                     "load": "PN_CON",
                     "daily": "TIP_CC",
@@ -399,11 +400,11 @@
                     ]
                 },
                 "calculated": {
-                },  
+                },
                 "interactive": {
                     "tip_dias": ["DU", "SA", "DO"]
                 }
-                
+
             },
             "UCBT_tab": {
                 "arquivo": "Cargas_BT",
@@ -414,6 +415,7 @@
                     "status": "variable"
                 },
                 "direct_mapping": {
+                    "codid": "COD_ID",
                     "bus1": "PAC",
                     "load": "RAMAL",
                     "data_con": "DAT_CON",
@@ -452,11 +454,11 @@
                     ]
                 },
                 "calculated": {
-                },  
+                },
                 "interactive": {
                     "tip_dias": ["DU", "SA", "DO"]
                 }
-                
+
             },
             "PIP": {
                 "arquivo": "Cargas_IP",
@@ -559,18 +561,18 @@
             "CRVCRG": {
                 "columns": [
                     "COD_ID", "TIP_DIA", "GRU_TEN", "POT_01", "POT_02", "POT_03", "POT_04", "POT_05", "POT_06", "POT_07", "POT_08",
-                    "POT_09", "POT_10", "POT_11", "POT_12", "POT_13", "POT_14", "POT_15", "POT_16", "POT_17", "POT_18", "POT_19", 
-                    "POT_20", "POT_21", "POT_22", "POT_23", "POT_24", "POT_25", "POT_26", "POT_27", "POT_28", "POT_29", "POT_30", 
-                    "POT_31", "POT_32", "POT_33", "POT_34", "POT_35", "POT_36", "POT_37", "POT_38", "POT_39", "POT_40", "POT_41", 
-                    "POT_42", "POT_43", "POT_44", "POT_45", "POT_46", "POT_47", "POT_48", "POT_49", "POT_50", "POT_51", "POT_52", 
-                    "POT_53", "POT_54", "POT_55", "POT_56", "POT_57", "POT_58", "POT_59", "POT_60", "POT_61", "POT_62", "POT_63", 
-                    "POT_64", "POT_65", "POT_66", "POT_67", "POT_68", "POT_69", "POT_70", "POT_71", "POT_72", "POT_73", "POT_74", 
-                    "POT_75", "POT_76", "POT_77", "POT_78", "POT_79", "POT_80", "POT_81", "POT_82", "POT_83", "POT_84", "POT_85", 
+                    "POT_09", "POT_10", "POT_11", "POT_12", "POT_13", "POT_14", "POT_15", "POT_16", "POT_17", "POT_18", "POT_19",
+                    "POT_20", "POT_21", "POT_22", "POT_23", "POT_24", "POT_25", "POT_26", "POT_27", "POT_28", "POT_29", "POT_30",
+                    "POT_31", "POT_32", "POT_33", "POT_34", "POT_35", "POT_36", "POT_37", "POT_38", "POT_39", "POT_40", "POT_41",
+                    "POT_42", "POT_43", "POT_44", "POT_45", "POT_46", "POT_47", "POT_48", "POT_49", "POT_50", "POT_51", "POT_52",
+                    "POT_53", "POT_54", "POT_55", "POT_56", "POT_57", "POT_58", "POT_59", "POT_60", "POT_61", "POT_62", "POT_63",
+                    "POT_64", "POT_65", "POT_66", "POT_67", "POT_68", "POT_69", "POT_70", "POT_71", "POT_72", "POT_73", "POT_74",
+                    "POT_75", "POT_76", "POT_77", "POT_78", "POT_79", "POT_80", "POT_81", "POT_82", "POT_83", "POT_84", "POT_85",
                     "POT_86", "POT_87", "POT_88", "POT_89", "POT_90", "POT_91", "POT_92", "POT_93", "POT_94", "POT_95", "POT_96"
                 ],
                 "type": {
                     "COD_ID": "category",
-                    "TIP_DIA": "category", 
+                    "TIP_DIA": "category",
                     "GRU_TEN": "category"
                 },
                 "ignore_geometry": "False"
@@ -618,11 +620,11 @@
                     "POT_NOM",
                     "PER_FER",
                     "PER_TOT",
-                    "CTMT", 
-                    "TIP_TRAFO", 
-                    "MRT", 
-                    "FAS_CON_P", 
-                    "FAS_CON_S", 
+                    "CTMT",
+                    "TIP_TRAFO",
+                    "MRT",
+                    "FAS_CON_P",
+                    "FAS_CON_S",
                     "FAS_CON_T"
 
                 ],
@@ -642,10 +644,10 @@
                     "TEN_TER",
                     "POT_NOM",
                     "PER_FER",
-                    "PER_TOT", 
+                    "PER_TOT",
                     "LIG_FAS_P",
                     "LIG_FAS_S",
-                    "LIG_FAS_T", 
+                    "LIG_FAS_T",
                     "UNI_TR_MT"
                 ],
                 "type": {
@@ -686,8 +688,8 @@
                     "POT_NOM",
                     "PER_FER",
                     "PER_TOT",
-                    "XHL", 
-                    "TEN_REG", 
+                    "XHL",
+                    "TEN_REG",
                     "UN_RE"
                 ],
                 "type": {
@@ -734,11 +736,12 @@
             },
             "UCMT_tab": {
                 "columns": [
+                    "COD_ID",
                     "PN_CON",
                     "PAC",
                     "FAS_CON",
                     "TEN_FORN",
-                    "TIP_CC", 
+                    "TIP_CC",
                     "ENE_01",
                     "ENE_02",
                     "ENE_03",
@@ -750,10 +753,11 @@
                     "ENE_09",
                     "ENE_10",
                     "ENE_11",
-                    "ENE_12", 
+                    "ENE_12",
                     "CTMT"
                 ],
                 "type": {
+                    "COD_ID": "category",
                     "PN_CON": "category",
                     "FAS_CON": "category",
                     "TEN_FORN": "category"
@@ -762,6 +766,7 @@
             },
             "UCBT_tab": {
                 "columns": [
+                    "COD_ID",
                     "PN_CON",
                     "PAC",
                     "FAS_CON",
@@ -779,18 +784,20 @@
                     "ENE_09",
                     "ENE_10",
                     "ENE_11",
-                    "ENE_12", 
-                    "CTMT", 
-                    "RAMAL", 
+                    "ENE_12",
+                    "CTMT",
+                    "RAMAL",
                     "DAT_CON"
                 ],
                 "type": {
+                    "COD_ID": "category",
                     "PN_CON": "category",
                     "FAS_CON": "category",
                     "TEN_FORN": "category"
                 },
                 "ignore_geometry": "False"
-            },  "PIP": {
+            },
+            "PIP": {
                 "columns": [
                     "PAC",
                     "FAS_CON",
@@ -808,8 +815,8 @@
                     "ENE_09",
                     "ENE_10",
                     "ENE_11",
-                    "ENE_12", 
-                    "CTMT", 
+                    "ENE_12",
+                    "CTMT",
                     "COD_ID"
                 ],
                 "type": {

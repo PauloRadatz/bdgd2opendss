@@ -17,14 +17,7 @@ _kVbaseStr = []
 @dataclass
 class Circuit:
 
-    ''' # TODO comentei estruturas nao utilizadas
-    _arquivo: str = ""
     _circuit: str = ""
-    _basekv: float = 0.0
-    _pu: float = 0.0
-    _bus1: str = ""
-    _r1: float = 0.0000
-    _x1: float = 0.0001
 
     @property
     def circuit(self) -> str:
@@ -33,6 +26,14 @@ class Circuit:
     @circuit.setter
     def circuit(self, value):
         self._circuit = f"Circuit.{value}"
+
+    ''' # TODO comentei estruturas nao utilizadas
+    _arquivo: str = ""
+    _basekv: float = 0.0
+    _pu: float = 0.0
+    _bus1: str = ""
+    _r1: float = 0.0000
+    _x1: float = 0.0001
 
     @property
     def arquivo(self) -> str:
@@ -77,7 +78,6 @@ class Circuit:
     def full_string(self) -> str:
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
-
 
     def __repr__(self):
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
@@ -165,7 +165,7 @@ class Circuit:
             dataframe (gpd.geodataframe.GeoDataFrame): A GeoDataFrame containing circuit-related data.
 
         Returns:
-            List[cls]: A list of Circuit objects created from the given JSON data and GeoDataFrame.
+            List[cls]:
 
         This method iterates through the rows of the given GeoDataFrame, processes the JSON data,
         and creates Circuit objects accordingly. It updates the progress bar description with the
@@ -205,10 +205,10 @@ class Circuit:
             circuits.append(circuit_)
             progress_bar.set_description(f"Processing Circuit {_+1}")
 
-        file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
+        file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida,feeder=circuit_.circuit)
 
         # TODO solucao temporaria
-        # copys _kVbaseStr to return
+        # copys _kVbaseStr to object
         _kVbaseDic._kVbaseStr = _kVbaseStr
 
         # OBS: changed signature

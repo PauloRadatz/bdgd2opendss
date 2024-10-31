@@ -860,6 +860,7 @@
             },
             "UCMT_tab": {
                 "columns": [
+                    "COD_ID",
                     "PN_CON",
                     "PAC",
                     "FAS_CON",
@@ -888,6 +889,7 @@
             },
             "UCBT_tab": {
                 "columns": [
+                    "COD_ID",
                     "PAC",
                     "FAS_CON",
                     "TEN_FORN",

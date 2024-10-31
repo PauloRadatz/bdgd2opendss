@@ -315,26 +315,28 @@ class Load:
     @transformer.setter
     def transformer(self, value: str):
         self._transformer = value
-    
+
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
-        if "MT" not in self.entity: 
+
+        if "MT" not in self.entity:
+
             if self.phases == '1' and self.conn == 'Wye':
-                kv = Transformer.sec_phase_kv(trload=self.transformer)      
+                kv = Transformer.sec_phase_kv(trload=self.transformer)
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
             return(kv)
         else:
-            return(Circuit.kvbase())
+            return(Circuit.getKVBase_circuit_str())
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
-        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06)
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
-            
+
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
-        
+
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
@@ -344,17 +346,17 @@ class Load:
                 f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
-                
-            
+
+
     def __repr__(self):
-        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06)
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
-            
+
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
-        
+
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
@@ -383,7 +385,7 @@ class Load:
 
             return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(qt_tipdia_mes(tip_dia, mes)*24*fc)/1000)
 
-        except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
+        except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD
 
             print("There's no corresponding loadshape for this load")
 

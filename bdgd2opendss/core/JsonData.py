@@ -58,7 +58,7 @@ class JsonData:
         :return: Dicionário contendo informações das tabelas a serem processadas.
         """
         return self.tables
-    
+
     def get_numeric_erros(df,column_types,name): #TODO criar um log txt explicitando os erros
         list_error = []
         for column in df.columns:
@@ -78,7 +78,7 @@ class JsonData:
 
         #     if not os.path.exists(f'dss_models_output/{feeder}'):
         #         os.mkdir(f'dss_models_output/{feeder}')
-                
+
         #         path = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
         #     else:
         #         path = os.path.join(output_directory, f'Erros_de_preenchimento_{feeder}.txt')
@@ -86,8 +86,8 @@ class JsonData:
         #     with open(path,'w') as output:
         #         for k in list_error:
         #             output.write(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {k}'+"\n")
-        #     return f'Log de erros criado em {path}'        
-    
+        #     return f'Log de erros criado em {path}'
+
     @staticmethod
     def convert_data_types(df, column_types, name): #TODO mostrar quais são os elementos com erro de preenchimento
         """
@@ -101,7 +101,7 @@ class JsonData:
         except ValueError:
             JsonData.get_numeric_erros(df,column_types,name)
             return df
-        
+
     def create_geodataframes(self, file_name, runs=1):
         """
         Cria GeoDataFrames a partir de um arquivo de entrada e coleta estatísticas.
@@ -120,6 +120,10 @@ class JsonData:
             for _ in range(runs):
                 start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
+
+                if (table.name == "UCMT_tab"):
+                    debug=0
+
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                      include_fields=table.columns, columns=table.columns,
                                      ignore_geometry=table.ignore_geometry, engine='pyogrio',
