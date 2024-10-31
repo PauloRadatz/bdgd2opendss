@@ -274,7 +274,7 @@ buscoords buscoords.csv'''
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
             #
-            Utils.create_output_feeder_coords(df_coords, self.feeder, output_folder=self.output_folder)
+            Utils.create_output_feeder_coords(df_coords, feeder=self.feeder, output_folder=self.output_folder)
 
     # CTMT
     def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
