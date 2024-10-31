@@ -291,7 +291,11 @@ buscoords buscoords.csv'''
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
             #
+<<<<<<< HEAD
             create_output_feeder_coords(df_coords, self.feeder, output_folder=self.output_folder)
+=======
+            Utils.create_output_feeder_coords(df_coords, feeder=self.feeder, output_folder=self.output_folder)
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
 
     # CTMT
     # TODO colocar o local e a pasta criada no create from json. // ja foi feito??
@@ -325,10 +329,15 @@ buscoords buscoords.csv'''
     # UCBT
     def Popula_UCBT(self):
 
+<<<<<<< HEAD
         alimentador = self.feeder
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
+=======
+        if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+            
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
             try:
                 _loads, fileName = Load.create_load_from_json(self._jsonData,
                                                               self.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
@@ -425,6 +434,7 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+<<<<<<< HEAD
 
             dfs = pd.DataFrame(self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
 
@@ -435,6 +445,12 @@ buscoords buscoords.csv'''
                  'ENE_04': 'sum', 'ENE_05': 'sum',
                  'ENE_06': 'sum', 'ENE_07': 'sum', 'ENE_08': 'sum', 'ENE_09': 'sum', 'ENE_10': 'sum', 'ENE_11': 'sum',
                  'ENE_12': 'sum'})  # criar um dicionário 'last'
+=======
+            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+            df_ucbt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
+                'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucbt,
@@ -486,6 +502,12 @@ buscoords buscoords.csv'''
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})# TODO ?? criar um dicionário 'last'
             '''
 
+=======
+            dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
+            df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+                'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucmt,

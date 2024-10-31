@@ -317,9 +317,13 @@ class Load:
         self._transformer = value
 
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
+<<<<<<< HEAD
 
         if "MT" not in self.entity:
 
+=======
+        if "MT" not in self.entity: 
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
             if self.phases == '1' and self.conn == 'Wye':
                 kv = Transformer.sec_phase_kv(trload=self.transformer)
             else:
@@ -329,10 +333,17 @@ class Load:
             return(Circuit.getKVBase_circuit_str())
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
+<<<<<<< HEAD
         if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06)
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
 
+=======
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+            return("")
+            
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
@@ -349,10 +360,17 @@ class Load:
 
 
     def __repr__(self):
+<<<<<<< HEAD
         if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06)
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
 
+=======
+        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
+            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+            return("")
+            
+>>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
