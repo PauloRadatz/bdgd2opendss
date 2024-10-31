@@ -119,6 +119,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')
+                output_directory = f'{output_folder}\{feeder}'
             else:
                 output_directory = f'{output_folder}\{feeder}'
         except FileNotFoundError:
@@ -191,6 +192,7 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')
+                output_directory = f'{output_folder}\{feeder}'
             else:
                 output_directory = f'{output_folder}\{feeder}'
         except FileNotFoundError:
@@ -234,6 +236,7 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
         try:
             if not os.path.exists(f'{output_folder}\{feeder}'):
                 os.mkdir(f'{output_folder}\{feeder}')
+                output_directory = f'{output_folder}\{feeder}'
             else:
                 output_directory = f'{output_folder}\{feeder}'
         except FileNotFoundError:
@@ -251,7 +254,6 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
         if not os.path.exists(f'dss_models_output/{feeder}'):
             os.mkdir(f'dss_models_output/{feeder}')
         output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-
     dir_path = os.path.join(output_directory, f'{filename}.csv')
     # dir_path = os.path.join(output_directory, f'{filename}_{feeder}.csv')
 
