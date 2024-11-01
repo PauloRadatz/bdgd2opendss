@@ -9,29 +9,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 if __name__ == '__main__':
 
-    # CEMIG 4950
-    # CPFL 63
-    # EQUATORIAL CEEE
-    # Creluz 1 CRELUZ-D_598_2022-12-31_V11_20230831-0921.gdb
-    # Creluz 2 CRELUZ-D_598_2022-12-31_V11_20230831-0921.gdb
-
     script_path = os.path.dirname(os.path.abspath(__file__))
     bdgd_file_path = pathlib.Path(script_path, "bdgd2opendss", "sample", "raw", "aneel", "Creluz-D_598_2023-12-31_V11_20240715-1111.gdb")
     lst_feeders = ["1_3PAS_1"]
-    pasta_de_saida = r'F:\DropboxZecao\Dropbox\0doutorado\GitHub\bdgd2opendss\output'
-    #You can choose a output folder here for dss files generated. If you don'))t choose, there's a default folder.
+    pasta_de_saida = "" #You can choose a output folder here for dss files generated. If you don't choose, there's a default folder.
 
     # You can change setting below if needed
     settings.limitRamal30m = False
 
-    ''' #
-    bdgd_file_path = r"F:\DropboxZecao\Dropbox\0CEMIG\0_BDGDs\_CPFL\CPFL_Paulista_63_2023-12-31_V11_20240508.gdb"
-    lst_feeders = ["ABR07"]
-
-    bdgd_file_path = r"F:\DropboxZecao\Dropbox\0CEMIG\0_BDGDs\CEEE_Equatorial_5707_2023-12-31_V11_20240423-1557.gdb"
-    lst_feeders = ["PAL5_57"]
-    '''
-
     bdgd.run(bdgd_file_path=bdgd_file_path, output_folder=pasta_de_saida, all_feeders=False, lst_feeders=lst_feeders)
-
-    # lst = bdgd.get_feeder_list(bdgd_file_path)
