@@ -1,14 +1,13 @@
-from dataclasses import dataclass
+# -*- encoding: utf-8 -*-
 
-# @dataclass
 class KVBase:
 
     LV_kVbase = {}  # Dic
-    MV_kVbase = []  # List
+    MV_kVbase: float
 
     def __init__(self):
-        self.LV_kVbase = {}
-        self.MV_kVbase = []
+        self.LV_kVbase = {} # Dic
+        self.MV_kVbase = 13.8
 
     # @staticmethod
     def create_voltage_bases(self,dicionario_kv):  # remover as tensões de secundário de fase aqui
@@ -39,12 +38,9 @@ class KVBase:
         # cria lista de tensoes de base na baixa tensao
         LV_KVBase_lst = self.create_voltage_bases(self.LV_kVbase)
 
-        # y.sort() # OLD CODE sort jah eh feito internamente no metodo
-
         # TODO which one should be first: MV(medium voltages) or LV (low voltage) ?
-        # y.append(kv[0]) # OLD CODE
-        # concat
-        kVbase_lst = self.MV_kVbase + LV_KVBase_lst
+        kVbase_lst = [str(self.MV_kVbase)]
+        kVbase_lst += LV_KVBase_lst
 
         # string com voltages bases
         voltagebases = " ".join(str(z) for z in set(kVbase_lst))

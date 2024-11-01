@@ -3,21 +3,39 @@
 # Não remover a linha de importação abaixo
 from typing import Any, List
 import geopandas as gpd
-
 from tqdm import tqdm
-
 from bdgd2opendss.model.Converter import convert_tten
 from bdgd2opendss.model.KVBase import KVBase
 from bdgd2opendss.core.Utils import create_output_file
 from dataclasses import dataclass
 
-# TODO finish the refactory
-_kVbaseStr = []
-
 @dataclass
 class Circuit:
 
     _circuit: str = ""
+    _basekv: float = 0.0
+    _pu: float = 0.0
+    _bus1: str = ""
+    _r1: float = 0.0000
+    _x1: float = 0.0001
+
+    '''  # TODO comentei estruturas nao utilizadas
+    _arquivo: str = ""
+    @property
+    def arquivo(self) -> str:
+        return self._arquivo
+
+    @arquivo.setter
+    def arquivo(self, value):
+        self._arquivo = value
+    '''
+    @property
+    def basekv(self) -> str:
+        return self._basekv
+
+    @basekv.setter
+    def basekv(self, value):
+        self._basekv = value
 
     @property
     def circuit(self) -> str:
@@ -26,22 +44,6 @@ class Circuit:
     @circuit.setter
     def circuit(self, value):
         self._circuit = f"Circuit.{value}"
-
-    ''' # TODO comentei estruturas nao utilizadas
-    _arquivo: str = ""
-    _basekv: float = 0.0
-    _pu: float = 0.0
-    _bus1: str = ""
-    _r1: float = 0.0000
-    _x1: float = 0.0001
-
-    @property
-    def arquivo(self) -> str:
-        return self._arquivo
-
-    @arquivo.setter
-    def arquivo(self, value):
-        self._arquivo = value
 
     @property
     def pu(self) -> float:
@@ -82,17 +84,17 @@ class Circuit:
     def __repr__(self):
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
-   '''
 
+    '''
     @staticmethod
-    def getKVBase_circuit_str():
+    def getKVBase_circuit():
 
         # if is empty informs user
-        if not _kVbaseStr:
-            print(f"\nError: {_kVbaseStr} is empty.")
+        if not _kVbase_GLOBAL:
+            print(f"\nError: {_kVbase_GLOBAL} is empty.")
 
-        return(_kVbaseStr)
-        #return(kv[0]) # OLD CODE
+        return(_kVbase_GLOBAL[0])
+    '''
 
     @staticmethod
     def _process_static(circuit_, value):
@@ -149,9 +151,14 @@ class Circuit:
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
                 param_value = row[param_name]
-                setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigingo para string para encontrar valor no dicionario
+                setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigindo para string para encontrar valor no dicionario
+
                 if mapping_key == 'basekv':
-                    _kVbaseStr.append(function_(str(param_value)))
+
+                    # TODO solucao temporaria. Por enquanto tenho 2 variaveis armazenando o kVBase...
+                    kvTmp = function_(str(param_value))
+                    circuit_.basekv = kvTmp
+
             else:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
@@ -203,12 +210,16 @@ class Circuit:
                 elif key == "static":
                     cls._process_static(circuit_, value)
             circuits.append(circuit_)
-            progress_bar.set_description(f"Processing Circuit {_+1}")
+            progress_bar.set_description(f"Processing Circuit {_+1} ")
+
+        print("\n")
 
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida,feeder=circuit_.circuit)
 
-        # TODO solucao temporaria
-        _kVbaseObj._kVbaseStr = _kVbaseStr
+        # TODO solucao temporaria. Por hora, convivemos com 2 variaveis kvBase
+
+        # puts MV_kVBase in the returned object
+        _kVbaseObj.MV_kVbase = circuit_.basekv
 
         # OBS: changed signature
         return _kVbaseObj, file_name

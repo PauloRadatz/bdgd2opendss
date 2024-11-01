@@ -1,33 +1,21 @@
 # -*- encoding: utf-8 -*-
-"""
- * Project Name: main.py
- * Created by migueldcga
- * Date: 02/11/2023
- * Time: 23:53
- *
- * Edited by:
- * Date:
- * Time:
-"""
+
 # Não remover a linha de importação abaixo
 import copy
 import re
+from idlelib.pyparse import trans
 from typing import Any, Optional
 import numpy
-
 import geopandas as gpd
 from tqdm import tqdm
-
-from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
-from bdgd2opendss.model.Circuit import Circuit
+from bdgd2opendss.model.Converter import convert_tpotrtv, convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.core.Utils import create_output_file
-
 from dataclasses import dataclass
 
-dicionario_kv = {}
+dicionario_kv = {} # TODO terminar refactory
 dict_phase_kv = {}
 list_dsativ = []
-# mtkv = []
+# mtkv = [] # OLD CODE
 
 @dataclass
 class Transformer:
@@ -185,7 +173,6 @@ class Transformer:
     def kv3(self, value):
         self._kv3 = value
 
-
     @property
     def windings(self):
         return self._windings
@@ -280,12 +267,15 @@ class Transformer:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 =
         """
+        # TODO refactory
+        global _kVbase_GLOBAL
+
         if self.sit_ativ == "DS":
             return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            self.kv1 = f'{float(Circuit.getKVBase_circuit_str() / numpy.sqrt(3)):.3f}'
+            self.kv1 = f'{float(_kVbase_GLOBAL / numpy.sqrt(3)) :.3f}'
         else:
-            self.kv1 = f'{float(Circuit.getKVBase_circuit_str())}'
+            self.kv1 = f'{float(_kVbase_GLOBAL)}'
 
         if self.MRT == 1:
             MRT = self.pattern_MRT()
@@ -317,7 +307,7 @@ class Transformer:
             conns = f'{self.conn_p} {self.conn_s}'
 
         kva = self.kvas
-        # kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])
+        #kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])
         taps = ' '.join([f'{self.tap}' for _ in range(self.windings)])
 
 
@@ -514,6 +504,10 @@ class Transformer:
 
     @staticmethod
     def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, kVbaseObj: Any, pastadesaida: str = ""):
+
+        # TODO
+        global _kVbase_GLOBAL
+        _kVbase_GLOBAL = kVbaseObj.MV_kVbase
 
         lstTransformers = []
         transformer_config = json_data['elements']['Transformer']['UNTRMT']

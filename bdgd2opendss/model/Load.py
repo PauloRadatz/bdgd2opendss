@@ -8,15 +8,10 @@ from typing import Any
 import pandas
 import geopandas as gpd
 from tqdm import tqdm
-
-
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file
-from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
-from bdgd2opendss.model.Circuit import Circuit
-
+from bdgd2opendss.model.Transformer import Transformer
 import numpy as np
-
 from dataclasses import dataclass
 
 @dataclass
@@ -181,7 +176,7 @@ class Load:
     @property
     def load_DO(self):
         return self._load_DO
-
+    '''
     @load_DO.setter
     def load_DO(self, value: float):
         self._load_DO = value
@@ -201,7 +196,7 @@ class Load:
     @load_DU.setter
     def load_DU(self, value: float):
         self._load_DU = value
-
+    '''
     @property
     def energia_01(self) -> str:
         return self._energia_01
@@ -315,12 +310,15 @@ class Load:
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
             return(kv)
+
         else:
-            # TODO refactory
-            return(Circuit.getKVBase_circuit_str())
+            # TODO terminar refactory
+            global _kVbase_GLOBAL
+            return(_kVbase_GLOBAL)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
 
+        # does not generate load with no energy consumption
         if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06)
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
@@ -329,7 +327,9 @@ class Load:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
 
+        # gets kvBase
         kv = Load.adapting_string_variables_load(self)
+
         return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
@@ -539,7 +539,12 @@ class Load:
         return load_
 
     @staticmethod
-    def create_load_from_json(json_data: dict, dataframe: gpd.geodataframe.GeoDataFrame, crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida: str = ""):
+    def create_load_from_json(json_data: dict, dataframe: gpd.geodataframe.GeoDataFrame, crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str,
+                              kVbaseObj: Any, pastadesaida: str = ""):
+
+        # TODO terminar refactory
+        global _kVbase_GLOBAL
+        _kVbase_GLOBAL = kVbaseObj.MV_kVbase
 
         DU_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
         DO_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
@@ -571,8 +576,6 @@ class Load:
                             SA_meses[mes].append(new_load)
                         elif i =="DO":
                             DO_meses[mes].append(new_load)
-
-
 
             progress_bar.set_description(f"Processing load {entity} {_ + 1}")
 
