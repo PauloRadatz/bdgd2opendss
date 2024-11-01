@@ -1,14 +1,5 @@
 # -*- encoding: utf-8 -*-
-"""
- * Project Name: Load.py
- * Created by migueldcga
- * Date: 30/10/2023
- * Time: 23:53
- *
- * Edited by:
- * Date:
- * Time:
-"""
+
 # Não remover a linha de importação abaixo
 import copy
 import re
@@ -187,7 +178,6 @@ class Load:
     def tip_dia(self, value: float):
         self._tip_dia = value
 
-
     @property
     def load_DO(self):
         return self._load_DO
@@ -326,6 +316,7 @@ class Load:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
             return(kv)
         else:
+            # TODO refactory
             return(Circuit.getKVBase_circuit_str())
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
@@ -548,7 +539,7 @@ class Load:
         return load_
 
     @staticmethod
-    def create_load_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame,crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida: str = ""):
+    def create_load_from_json(json_data: dict, dataframe: gpd.geodataframe.GeoDataFrame, crv_dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida: str = ""):
 
         DU_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
         DO_meses = {"01": [],"02": [],"03": [],"04": [],"05": [],"06": [],"07": [],"08": [],"09": [],"10": [],"11": [],"12": []}
@@ -589,4 +580,4 @@ class Load:
         Load._create_output_load_files(SA_meses, "SA", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
         Load._create_output_load_files(DO_meses, "DO", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
 
-        return DU_meses, file_name
+        return load_, file_name

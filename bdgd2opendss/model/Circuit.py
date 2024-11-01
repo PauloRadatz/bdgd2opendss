@@ -156,7 +156,7 @@ class Circuit:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @classmethod
-    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, _kVbaseDic: KVBase, pastadesaida:str = "") -> List:
+    def create_circuit_from_json(cls, json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, _kVbaseObj: KVBase, pastadesaida:str = "") -> List:
         """Class method to create a list of Circuit objects from JSON data and a GeoDataFrame.
 
         Args:
@@ -208,8 +208,7 @@ class Circuit:
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida,feeder=circuit_.circuit)
 
         # TODO solucao temporaria
-        # copys _kVbaseStr to object
-        _kVbaseDic._kVbaseStr = _kVbaseStr
+        _kVbaseObj._kVbaseStr = _kVbaseStr
 
         # OBS: changed signature
-        return _kVbaseDic, file_name
+        return _kVbaseObj, file_name

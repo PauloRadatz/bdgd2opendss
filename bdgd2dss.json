@@ -310,7 +310,7 @@
                         "convert_tfascon_conn"
                     ]
                 },
-                "calculated":{        
+                "calculated":{
                 }
             },
             "UNTRMT_R": {
@@ -376,7 +376,7 @@
                         "convert_tfascon_conn"
                     ],
                     "ptratio": [
-                        "REL_TP", 
+                        "REL_TP",
                         "convert_ptratio"
                     ]
                 },
@@ -889,10 +889,7 @@
             },
             "UCBT_tab": {
                 "columns": [
-<<<<<<< HEAD
                     "COD_ID",
-=======
->>>>>>> 705874b37fafeae04ef28f1410f1bef54c0ccb19
                     "PAC",
                     "FAS_CON",
                     "TEN_FORN",
@@ -919,7 +916,7 @@
                     "TEN_FORN": "category"
                 },
                 "ignore_geometry": "False"
-            },  
+            },
             "PIP": {
                 "columns": [
                     "PAC",

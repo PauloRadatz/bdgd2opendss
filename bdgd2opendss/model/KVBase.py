@@ -1,57 +1,52 @@
 from dataclasses import dataclass
 
-@dataclass
+# @dataclass
 class KVBase:
 
-    # MV KVbase
-    kv = []
-
-    # LV KVbase
-    dicionario_kv = {}
+    LV_kVbase = {}  # Dic
+    MV_kVbase = []  # List
 
     def __init__(self):
-        self.kv = {}
-        self.dicionario_kv = {}
+        self.LV_kVbase = {}
+        self.MV_kVbase = []
 
-    def get_kVbase_str():
-
-        # gets LV(low voltage) kVbases
-        # lvLVbaseDic = self._transformer.getkVbaseDic()
-
-        # cria lista de tensoes de base na baixa tensao
-        lvLVbaseDic = create_voltage_bases(dicionario_kv)
-
-        # y.sort() # OLD CODE sort jah eh feito internamente no metodo
-
-        # gets MV(low voltage) kVbases
-        kVbaseDic = kv
-
-        # y.append(kv[0]) # OLD CODE
-
-        # TODO which one should be first: MV(medium voltages) or LV (low voltage) ?
-
-        # concat
-        kVbaseDic += lvLVbaseDic
-
-        # string com voltages bases
-        voltagebases = " ".join(str(z) for z in set(kVbaseDic))
-
-        return voltagebases
-
-    @staticmethod
-    def create_voltage_bases(dicionario_kv):  # remover as tensões de secundário de fase aqui
+    # @staticmethod
+    def create_voltage_bases(self,dicionario_kv):  # remover as tensões de secundário de fase aqui
         lista = []
 
         # TODO evitar tomar decisoes
-        for value in dicionario_kv.values():  # dicionario_kv.values() usar
+        for value in dicionario_kv.values():
+
             if value >= 0.22:
                 lista.append(value)
             else:
                 ...
+
         x = set(lista)
+
+        # TODO se empty ?
         if max(lista) == '0.38':
+
             try:
                 x.remove('0.22')
+
             except KeyError:
                 ...
         return (list(x))
+
+    def get_kVbase_str(self):
+
+        # cria lista de tensoes de base na baixa tensao
+        LV_KVBase_lst = self.create_voltage_bases(self.LV_kVbase)
+
+        # y.sort() # OLD CODE sort jah eh feito internamente no metodo
+
+        # TODO which one should be first: MV(medium voltages) or LV (low voltage) ?
+        # y.append(kv[0]) # OLD CODE
+        # concat
+        kVbase_lst = self.MV_kVbase + LV_KVBase_lst
+
+        # string com voltages bases
+        voltagebases = " ".join(str(z) for z in set(kVbase_lst))
+
+        return voltagebases

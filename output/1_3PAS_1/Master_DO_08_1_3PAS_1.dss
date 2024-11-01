@@ -1,0 +1,24 @@
+clear
+Redirect "CircuitoMT_1_3PAS_1.dss"
+Redirect "Arranjos_1_3PAS_1.dss"
+Redirect "Transformador_MTBT_1_3PAS_1.dss"
+Redirect "Trecho_MT_1_3PAS_1.dss"
+Redirect "Chave_MT_1_3PAS_1.dss"
+Redirect "EnergyMeters_1_3PAS_1.dss"
+Redirect "Trecho_BT_1_3PAS_1.dss"
+Redirect "Ramais_BT_1_3PAS_1.dss"
+Redirect "CurvaCarga_1_3PAS_1.dss"
+Redirect "Cargas_MT_DO08_1_3PAS_1.dss"
+Redirect "Cargas_BT_DO08_1_3PAS_1.dss"
+Redirect "Cargas_IP_DO08_1_3PAS_1.dss"
+!Redirect "GD_BT_1_3PAS_1.dss"
+!Redirect "GD_MT_1_3PAS_1.dss"
+Set mode = daily
+Set Voltagebases = [0.38 0.22 0.44]
+Calc Voltagebases
+Set tolerance = 0.0001
+Set maxcontroliter = 10
+!Set algorithm = newton
+!Solve mode = direct
+Solve
+buscoords buscoords.csv

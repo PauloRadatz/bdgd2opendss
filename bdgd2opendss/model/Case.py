@@ -23,6 +23,10 @@ class Case:
     def dfs(self):
         return self._dfs
 
+    @property
+    def jsonData(self):
+        return self._jsonData
+
     # TODO estruturas nao utilizadas, por hora comentadas.
     '''
     _circuit: list[Circuit] = field(init=False)
@@ -51,13 +55,13 @@ class Case:
         # init list
         self.list_files_name = []
 
-        # this object keeps track of the kVBase
-        self._kVbaseDic = KVBase()
+        # this object will keep track of the kVBase
+        self._kVbaseObj = KVBase()
 
         # reads BDGD gdb files and populates the object Case
         self.PopulaCase()
 
-    ''' # TODO comentei estruturas nao utilizadas
+    ''' # TODO comentei codigo nao utilizado
     @dfs.setter
     def dfs(self, value: dict):
         self._dfs = value
@@ -129,7 +133,6 @@ class Case:
     def circuit_names(self):
         if self.#_circuit is not None:
             return [c.circuit for c in self.circuitos]
-    '''
 
     def line_code_names(self):
         return [l.linecode for l in self.line_codes]
@@ -155,6 +158,7 @@ class Case:
     # TODO Warning Unresolved attribute reference 'PVsystems' for class 'Case'
     def pvsystems_names(self):
         return [pv.pvsystem for pv in self.pvsystems]
+    '''
 
     # TODO Warning Expected to return 'str', got no return
     def rename_linecode_string(linecode_, i, input_str: str) -> str:
@@ -175,7 +179,9 @@ class Case:
             nphases_value = match.group(2)
             return f'New "Linecode.{linecode_num}_{nphases_value}" nphases={nphases_value}'
 
+        # TODO ERRO Unresolved reference 're' /Suponho q temos q adicionar 1 pacote de RegExp no requirements
         setattr(linecode_, f"_linecode_{i}", re.sub(pattern, repl, input_str))
+
 
     def output_master(self, file_names, tip_dia="", mes=""):
 
@@ -193,7 +199,7 @@ class Case:
                 master = master + f'Redirect "{i}"\n'
 
         # get voltage base string
-        vBase_str = self._kVbaseDic.get_kVbase_str()
+        vBase_str = self._kVbaseObj.get_kVbase_str()
 
         master += f'''Set mode = daily
 Set Voltagebases = [{vBase_str}]
@@ -254,8 +260,8 @@ buscoords buscoords.csv'''
 
     # this method populates Case object with data from BDGD .gdb files
     def PopulaCase(self):
-        '''
-        self.GenGeographicCoord()
+
+        #self.GenGeographicCoord()
 
         self.Populates_CTMT()
 
@@ -265,11 +271,12 @@ buscoords buscoords.csv'''
 
         self.Populates_Entity()
 
-        # An error occurred: unsupported operand type(s) for /: 'float' and 'str'
-        # self.Populates_UNREMT()
+        # TODO erro na BDGD CPFL
+        #  An error occurred: unsupported operand type(s) for /: 'float' and 'str'
+        self.Populates_UNREMT()
 
         self.Popula_CRVCRG()
-        '''
+
         self.Populates_UCMT()
 
         self.Populates_UCBT()
@@ -302,8 +309,8 @@ buscoords buscoords.csv'''
 
         try:
 
-            self._kVbaseDic, fileName = Circuit.create_circuit_from_json(self._jsonData, self.dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
-                                                                         self._kVbaseDic,
+            self._kVbaseObj, fileName = Circuit.create_circuit_from_json(self.jsonData, self.dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
+                                                                         self._kVbaseObj,
                                                                          pastadesaida=self.output_folder)
 
             # TODO lets try to move all these calling to one place
@@ -316,7 +323,8 @@ buscoords buscoords.csv'''
     def Populates_SEGCON(self):
 
         try:
-            self.line_codes, fileName = LineCode.create_linecode_from_json(self._jsonData, self.dfs['SEGCON']['gdf'],
+
+            line_codes_tmp, fileName = LineCode.create_linecode_from_json(self.jsonData, self.dfs['SEGCON']['gdf'],
                                                                            self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
@@ -331,9 +339,10 @@ buscoords buscoords.csv'''
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                _loads, fileName = Load.create_load_from_json(self._jsonData,
+                loads_tmp, fileName = Load.create_load_from_json(self.jsonData,
                                                               self.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
                                                               self.dfs['CRVCRG']['gdf'], 'UCBT_tab')
+
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -352,12 +361,14 @@ buscoords buscoords.csv'''
             if not self.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
 
                 try:
-                    self._lines_SSDMT, fileName, aux_em = Line.create_line_from_json(self._jsonData,
+                    lines_tmp, fileName, aux_em = Line.create_line_from_json(self.jsonData,
                                                                                     self.dfs[entity]['gdf'].query(
                                                                                         "CTMT==@alimentador"),
                                                                                     entity, ramal_30m=settings.limitRamal30m, pastadesaida=self.output_folder)
 
+                    # TODO we can concat fileName + aux_em inside create_line_from_json ans return a List[str]
                     self.list_files_name.append(fileName)
+
                     if aux_em != "":
                         self.list_files_name.append(aux_em)
 
@@ -377,7 +388,8 @@ buscoords buscoords.csv'''
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
             try:
-                self.regcontrols, fileName = RegControl.create_regcontrol_from_json(self._jsonData, merged_dfs,pastadesaida=self.output_folder)
+                regcontrols_tmp, fileName = RegControl.create_regcontrol_from_json(self.jsonData, merged_dfs,pastadesaida=self.output_folder)
+
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -400,7 +412,7 @@ buscoords buscoords.csv'''
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
 
-                self._kVbaseDic, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, self._kVbaseDic, pastadesaida=self.output_folder)
+                self._kVbaseObj, fileName = Transformer.create_transformer_from_json(self.jsonData, merged_dfs, self._kVbaseObj, pastadesaida=self.output_folder)
 
                 self.list_files_name.append(fileName)
 
@@ -414,7 +426,8 @@ buscoords buscoords.csv'''
     def Popula_CRVCRG(self):
 
         try:
-            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self.dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
+            load_shapes_tmp, fileName = LoadShape.create_loadshape_from_json(self.jsonData, self.dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
+
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -427,18 +440,18 @@ buscoords buscoords.csv'''
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
-
             dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
 
-            # obs: the loads are group by the COD_ID
-            df_ucbt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
+            # DEBUG print(dfs.columns)
+
+            df_ucbt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
 
             try:
-                self.loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                                  df_ucbt,
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab',pastadesaida=self.output_folder)
+                loads_tmp, fileName = Load.create_load_from_json(self.jsonData, df_ucbt, self.dfs['CRVCRG']['gdf'],
+                                                                 'UCBT_tab',pastadesaida=self.output_folder)
+
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -455,7 +468,7 @@ buscoords buscoords.csv'''
         if not self.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                loads_tmp, fileName = Load.create_load_from_json(self.jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
                                                                   self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
@@ -475,15 +488,17 @@ buscoords buscoords.csv'''
 
             dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
 
+            # DEBUG print(dfs.columns)
+
             # TODO ?? criar um dicionário 'last'
-            df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+            df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
 
             try:
-                self.loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                                  df_ucmt,
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab',pastadesaida=self.output_folder)
+                loads_tmp, fileName = Load.create_load_from_json(self.jsonData, df_ucmt, self.dfs['CRVCRG']['gdf'],
+                                                                 'UCMT_tab', pastadesaida=self.output_folder)
+
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -499,7 +514,7 @@ buscoords buscoords.csv'''
         if not self.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                pvsystems_tmp, fileName = PVsystem.create_pvsystem_from_json(self.jsonData,
                                                                               self.dfs['UGBT_tab']['gdf'].query(
                                                                                   "CTMT==@alimentador"), 'UGBT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
@@ -518,7 +533,7 @@ buscoords buscoords.csv'''
         if not self.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                pvsystems_tmp, fileName = PVsystem.create_pvsystem_from_json(self.jsonData,
                                                                               self.dfs['UGMT_tab']['gdf'].query(
                                                                                   "CTMT==@alimentador"), 'UGMT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)

@@ -389,11 +389,9 @@ class Transformer:
         else:
             return(dicionario_kv[trload])
 
-    '''
     @staticmethod
     def dict_kv():
         return(dicionario_kv)
-    '''
 
     @staticmethod
     def list_dsativ():
@@ -499,8 +497,6 @@ class Transformer:
 
             setattr(transformer_, f"_{mapping_key}", param_value)
 
-
-
     @staticmethod
     def _create_transformer_from_row(transformer_config, row):
         transformer_ = Transformer()
@@ -517,7 +513,7 @@ class Transformer:
         return transformer_
 
     @staticmethod
-    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, kVbaseDic: Any, pastadesaida: str = ""):
+    def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, kVbaseObj: Any, pastadesaida: str = ""):
 
         lstTransformers = []
         transformer_config = json_data['elements']['Transformer']['UNTRMT']
@@ -530,4 +526,7 @@ class Transformer:
 
         file_name = create_output_file(lstTransformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
 
-        return kVbaseDic, file_name
+        # TODO solucao temporaria
+        kVbaseObj.LV_kVbase = dicionario_kv
+
+        return kVbaseObj, file_name
