@@ -140,22 +140,26 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
         output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
     if object_lists != "":
-
+        if file_name == 'Cargas_BT_IP':
+            k = 'a' #anexação de arquivo
+            file_name = ""
+        else:
+            k = 'w' #sobre-escrevendo o arquivo
+            file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-
             path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
 
             try:
-                with open(path, "w") as file:
+                with open(path, k) as file:
                     for string in object_list:
                         file.write(string.full_string() + "\n")
 
-                # print(f'O arquivo {file_name}_{feeder} foi gerado\n')
+                    # print(f'O arquivo {file_name}_{feeder} foi gerado\n')
             except Exception as e:
                 print(f"An error occurred: {str(e)}")
 
         return f'{file_names[0]}_{feeder}.dss'
-
+    
     else:
 
         path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')

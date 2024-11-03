@@ -490,11 +490,10 @@ class Load:
 
         for key, value in dict_loads_tip_day.items():
 
-            load_file_names.append(f'{name}_{tip_day}{key}')
+            load_file_names.append(f'{name[:9]}_{tip_day}{key}')
             load_lists.append(value)
 
-
-        return create_output_file(object_lists=load_lists, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
+        return create_output_file(object_lists=load_lists,file_name=name, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
 
     @staticmethod
     def compute_pre_kw(dataframe: gpd.geodataframe.GeoDataFrame):

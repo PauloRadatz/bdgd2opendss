@@ -492,7 +492,7 @@
 
             },
             "PIP": {
-                "arquivo": "Cargas_IP",
+                "arquivo": "Cargas_BT_IP",
                 "static": {
                     "pf": 0.92,
                     "vminpu": 0.92,
