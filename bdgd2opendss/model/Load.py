@@ -337,11 +337,11 @@ class Load:
 
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
                 
@@ -357,11 +357,11 @@ class Load:
         
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}_{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
@@ -552,7 +552,7 @@ class Load:
 
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        load_config = json_data['elements']['Load'][entity]
+        load_config = json_data['elements']['Load'][entity] #adicionar a entidade PIP aqui(criar uma nova entrada opcional)
         interactive = load_config.get('interactive')
         crv_dataframe = Load.compute_pre_kw(crv_dataframe)
         # dataframe = dataframe.head(200)

@@ -283,7 +283,7 @@ class Transformer:
         if self.sit_ativ == "DS":
             return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.3f}'
+            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3))}'
         else:
             self.kv1 = f'{float(Circuit.kvbase())}'
 
@@ -304,7 +304,7 @@ class Transformer:
             conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
         elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
             if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
-                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.3f}'                    
+                kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3)}'                    
             else:
                 kvs = f'{self.kv1} {self.kv2}'
             buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
