@@ -427,7 +427,7 @@ buscoords buscoords.csv'''
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
                                                                   self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
-                self.list_files_name.append(fileName)
+                #self.list_files_name.append(fileName) #já está sendo criado dentro do arquivo cargasBT 
 
             except UnboundLocalError:
                 print("Error in PIP\n")
