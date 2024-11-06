@@ -5,8 +5,6 @@ import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
-from bdgd2opendss.model.Transformer import dicionario_kv
-from bdgd2opendss.model.Circuit import kv
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
@@ -163,13 +161,13 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-        y = create_voltage_bases(dicionario_kv) #cria lista de tensões de base na baixa tensão
+        y = create_voltage_bases(Transformer.dict_kv()) #cria lista de tensões de base na baixa tensão
         y.sort()
         #  TODO do jeito que esta, a variavel kv (declarada na classe circuit) entra neste metodo como 1 variavel global
         #   A mesma questao ocorre com a variavel dicionario_kv idealmente devemos refatorar e acessar estas variaveis por metodos jah
         #   que esta classe ja possui as variaveis _circuitos e _transformers (idealmente os metodos podem chegar o preecnhimento da variavel e
         #   qualquer dependencia (temporal) de se executar o circuit e transformer antes). Eg _circuitos.GetKv()
-        y.append(kv[0])
+        y.append(Circuit.kvbase())
         voltagebases = " ".join(str(z) for z in set(y))
 
         for i in file_names:

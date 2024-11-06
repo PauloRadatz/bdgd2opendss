@@ -23,6 +23,7 @@ from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, conv
 from bdgd2opendss.core.Utils import create_output_file
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
+import math
 
 import numpy as np
 
@@ -334,14 +335,14 @@ class Load:
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
-
+        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"'
                 
@@ -354,14 +355,14 @@ class Load:
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
-
+        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
         kv = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv} kw = {float(self.kw)/2:.7f} '\
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"'
 
