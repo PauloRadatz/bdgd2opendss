@@ -4,24 +4,38 @@
 from typing import Any, List
 import geopandas as gpd
 from tqdm import tqdm
-
 from bdgd2opendss.model.Converter import convert_tten
+from bdgd2opendss.model.KVBase import KVBase
 from bdgd2opendss.core.Utils import create_output_file
-
 from dataclasses import dataclass
-
-# TODO vide TO DO em case/output_master
-kv = []
 
 @dataclass
 class Circuit:
-    _arquivo: str = ""
+
     _circuit: str = ""
     _basekv: float = 0.0
     _pu: float = 0.0
     _bus1: str = ""
     _r1: float = 0.0000
     _x1: float = 0.0001
+
+    '''  # TODO comentei estruturas nao utilizadas
+    _arquivo: str = ""
+    @property
+    def arquivo(self) -> str:
+        return self._arquivo
+
+    @arquivo.setter
+    def arquivo(self, value):
+        self._arquivo = value
+    '''
+    @property
+    def basekv(self) -> str:
+        return self._basekv
+
+    @basekv.setter
+    def basekv(self, value):
+        self._basekv = value
 
     @property
     def circuit(self) -> str:
@@ -30,22 +44,6 @@ class Circuit:
     @circuit.setter
     def circuit(self, value):
         self._circuit = f"Circuit.{value}"
-
-    @property
-    def arquivo(self) -> str:
-        return self._arquivo
-
-    @arquivo.setter
-    def arquivo(self, value):
-        self._arquivo = value
-
-    @property
-    def basekv(self) -> float:
-        return self._basekv
-
-    @basekv.setter
-    def basekv(self, value):
-        self._basekv = value
 
     @property
     def pu(self) -> float:
@@ -79,19 +77,24 @@ class Circuit:
     def x1(self, value):
         self._x1 = value
 
-
     def full_string(self) -> str:
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
-
 
     def __repr__(self):
         return f"New \"Circuit.{self.circuit}\" basekv={self.basekv} pu={self.pu} " \
                f"bus1=\"{self.bus1}\" r1={self.r1} x1={self.x1}"
 
+    '''
     @staticmethod
-    def kvbase():
-        return(kv[0])
+    def getKVBase_circuit():
+
+        # if is empty informs user
+        if not _kVbase_GLOBAL:
+            print(f"\nError: {_kVbase_GLOBAL} is empty.")
+
+        return(_kVbase_GLOBAL[0])
+    '''
 
     @staticmethod
     def _process_static(circuit_, value):
@@ -148,14 +151,19 @@ class Circuit:
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
                 param_value = row[param_name]
-                setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigingo para string para encontrar valor no dicionario
+                setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigindo para string para encontrar valor no dicionario
+
                 if mapping_key == 'basekv':
-                    kv.append(function_(str(param_value)))
+
+                    # TODO solucao temporaria. Por enquanto tenho 2 variaveis armazenando o kVBase...
+                    kvTmp = function_(str(param_value))
+                    circuit_.basekv = kvTmp
+
             else:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @classmethod
-    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida:str = "") -> List:
+    def create_circuit_from_json(cls, json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, _kVbaseObj: KVBase, pastadesaida:str = "") -> List:
         """Class method to create a list of Circuit objects from JSON data and a GeoDataFrame.
 
         Args:
@@ -164,7 +172,7 @@ class Circuit:
             dataframe (gpd.geodataframe.GeoDataFrame): A GeoDataFrame containing circuit-related data.
 
         Returns:
-            List[cls]: A list of Circuit objects created from the given JSON data and GeoDataFrame.
+            List[cls]:
 
         This method iterates through the rows of the given GeoDataFrame, processes the JSON data,
         and creates Circuit objects accordingly. It updates the progress bar description with the
@@ -202,10 +210,16 @@ class Circuit:
                 elif key == "static":
                     cls._process_static(circuit_, value)
             circuits.append(circuit_)
-            progress_bar.set_description(f"Processing Circuit {_+1}")
+            progress_bar.set_description(f"Processing Circuit {_+1} ")
 
+        print("\n")
 
+        file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida,feeder=circuit_.circuit)
 
-        file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
+        # TODO solucao temporaria. Por hora, convivemos com 2 variaveis kvBase
 
-        return circuits, file_name
+        # puts MV_kVBase in the returned object
+        _kVbaseObj.MV_kVbase = circuit_.basekv
+
+        # OBS: changed signature
+        return _kVbaseObj, file_name

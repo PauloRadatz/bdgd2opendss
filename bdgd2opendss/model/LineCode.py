@@ -1,29 +1,18 @@
 # -*- encoding: utf-8 -*-
-"""
- * Project Name: main.py
- * Created by migueldcga
- * Date: 25/10/2023
- * Time: 18:55
- *
- * Edited by:
- * Date:
- * Time:
-"""
+
 # Não remover a linha de importação abaixo
 import copy
 import re
 from typing import Any
 import geopandas as gpd
 from tqdm import tqdm
-
 from bdgd2opendss.model.Converter import convert_tten
 from bdgd2opendss.core.Utils import create_output_file
-
 from dataclasses import dataclass
-
 
 @dataclass
 class LineCode:
+
     _basefreq: float = 60
     _units: str = "km"
     _linecode: str = ""
@@ -160,10 +149,7 @@ class LineCode:
             nphases_value = match.group(2)
             return f'New "Linecode.{linecode_num}_{nphases_value}" nphases={nphases_value}'
 
-
         setattr(linecode_, f"_linecode_{i}", re.sub(pattern, repl, input_str))
-
-
 
     @staticmethod
     def _create_linecode_from_row(linecode_config, row):
