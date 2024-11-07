@@ -180,6 +180,15 @@ class Case:
 
         master = "clear\n"
 
+        y = create_voltage_bases(Transformer.dict_kv()) #cria lista de tensões de base na baixa tensão
+        y.sort()
+        #  TODO do jeito que esta, a variavel kv (declarada na classe circuit) entra neste metodo como 1 variavel global
+        #   A mesma questao ocorre com a variavel dicionario_kv idealmente devemos refatorar e acessar estas variaveis por metodos jah
+        #   que esta classe ja possui as variaveis _circuitos e _transformers (idealmente os metodos podem chegar o preecnhimento da variavel e
+        #   qualquer dependencia (temporal) de se executar o circuit e transformer antes). Eg _circuitos.GetKv()
+        y.append(Circuit.kvbase())
+        voltagebases = " ".join(str(z) for z in set(y))
+
         # TODO 1. CONSERTAR !! O codigo dos IF e ELSE ESTAO IGUAIS !!!
         #  Qual eh a ideia ? Processar o redirect da "GD" diferente ?
 
@@ -461,9 +470,8 @@ buscoords buscoords.csv'''
             try:
                 loads_tmp, fileName = Load.create_load_from_json(self.jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
-                                                                  self.dfs['CRVCRG']['gdf'], 'PIP', self._kVbaseObj,
-                                                                  pastadesaida=self.output_folder)
-                self.list_files_name.append(fileName)
+                                                                  self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
+                #self.list_files_name.append(fileName) #já está sendo criado dentro do arquivo cargasBT 
 
             except UnboundLocalError:
                 print("Error in PIP\n")

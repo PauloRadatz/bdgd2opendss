@@ -255,23 +255,23 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "bus3": "PAC_3",
-                    "fase": "FAS_CON",
+                    "fase": "LIG_FAS_P",
                     "tap": "TAP",
                     "feeder": "CTMT",
                     "MRT": "MRT",
                     "Tip_Lig": "TIP_TRAFO",
                     "totalloss": "PER_TOT",
-                    "noloadloss": "PER_FER"
+                    "noloadloss": "PER_FER",
+                    "banco": "BANC"
                 },
                 "indirect_mapping": {
-                    "kva": "POT_NOM",
-                    "kvas": [
-                        "POT_NOM",
-                        "convert_tpotaprt"
-                    ],
                     "phases": [
                         "LIG_FAS_P",
                         "convert_tfascon_phases_trafo"
+                    ],
+                    "kvas": [
+                        "POT_NOM",
+                        "convert_tpotaprt"
                     ],
                     "bus1_nodes": [
                         "LIG_FAS_P",
@@ -492,7 +492,7 @@
 
             },
             "PIP": {
-                "arquivo": "Cargas_IP",
+                "arquivo": "Cargas_BT_IP",
                 "static": {
                     "pf": 0.92,
                     "vminpu": 0.92,
@@ -741,14 +741,14 @@
                     "TAP",
                     "PER_FER",
                     "PER_TOT",
-                    "POT_NOM",
                     "CTMT",
                     "TIP_TRAFO",
                     "MRT",
                     "FAS_CON_P",
                     "FAS_CON_S",
                     "FAS_CON_T",
-                    "TEN_LIN_SE"
+                    "TEN_LIN_SE",
+                    "BANC"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -761,7 +761,6 @@
                 "columns": [
                     "COD_ID",
                     "POT_NOM",
-                    "FAS_CON",
                     "TEN_PRI",
                     "TEN_SEC",
                     "TEN_TER",
@@ -772,7 +771,6 @@
                 ],
                 "type": {
                     "COD_ID": "category",
-                    "FAS_CON": "category",
                     "LIG_FAS_P": "category",
                     "LIG_FAS_S": "category",
                     "LIG_FAS_T": "category",

@@ -10,7 +10,11 @@ import geopandas as gpd
 from tqdm import tqdm
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file
-from bdgd2opendss.model.Transformer import Transformer
+
+from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
+from bdgd2opendss.model.Circuit import Circuit
+import math
+
 import numpy as np
 from dataclasses import dataclass
 
@@ -326,19 +330,18 @@ class Load:
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
-
-        # gets kvBase
+        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
         kv = Load.adapting_string_variables_load(self)
+        return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
 
-        return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
-                f'New \"Load.{self.entity}_{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
+                f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
 
     def __repr__(self):
 
@@ -349,16 +352,18 @@ class Load:
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
+              
+        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
 
         kv = Load.adapting_string_variables_load(self)
-        return f'New \"Load.{self.entity}_{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+        return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
-                f'New \"Load.{self.entity}_{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.3f} kw = {float(self.kw)/2:.7f} '\
+                f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"\n !{self.transformer}'
+                f'daily="{self.daily}_{self.tip_dia}"'
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
@@ -485,11 +490,10 @@ class Load:
 
         for key, value in dict_loads_tip_day.items():
 
-            load_file_names.append(f'{name}_{tip_day}{key}')
+            load_file_names.append(f'{name[:9]}_{tip_day}{key}')
             load_lists.append(value)
 
-
-        return create_output_file(object_lists=load_lists, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
+        return create_output_file(object_lists=load_lists,file_name=name, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
 
     @staticmethod
     def compute_pre_kw(dataframe: gpd.geodataframe.GeoDataFrame):
@@ -519,9 +523,9 @@ class Load:
 
         load_ = Load()
         if entity != "PIP":
-            setattr(load_, "_entity", entity[2] + entity[3])
+            setattr(load_, "_entity", f'{entity[2] + entity[3]}_')
         else:
-            setattr(load_, "_entity", "IP")
+            setattr(load_, "_entity", "BT_IP")
 
         setattr(load_, "_id", id)
 
@@ -552,7 +556,7 @@ class Load:
 
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        load_config = json_data['elements']['Load'][entity]
+        load_config = json_data['elements']['Load'][entity] #adicionar a entidade PIP aqui(criar uma nova entrada opcional)
         interactive = load_config.get('interactive')
         crv_dataframe = Load.compute_pre_kw(crv_dataframe)
         # dataframe = dataframe.head(200)
