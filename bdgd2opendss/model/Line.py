@@ -40,6 +40,7 @@ class Line:
     _length: float = 0.0
     _prefix_name: str = ""
     _transformer: str = ""
+    _estado: str = ""
 
     _entity: str =''
 
@@ -211,11 +212,18 @@ class Line:
     def transformer(self, value: str):
         self._transformer = value
 
+    @property
+    def estado(self):
+        return self._estado
+
+    @estado.setter
+    def estado(self, value: str):
+        self._estado = value
 
     def pattern_segment(self):
 
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus1, self.bus2 = self.bus2, self.bus1
+            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso. No alimentador 1_PAL2_2 os buses estão trocados
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -227,10 +235,18 @@ class Line:
         if self.prefix_name == "CMT":
             self.bus1, self.bus2 = self.bus2, self.bus1
 
-        return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
-        f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
-        f'r1={self.r1} r0={self.r0} x1={self.x1} x0={self.x0} c1={self.c1} c0={self.c0}  ' \
-        f'switch = {self.switch} length={self.length:.5f}'
+        if self.estado == 'A':
+            return  f'!New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
+            f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
+            f'r1={self.r1} r0={self.r0} x1={self.x1} x0={self.x0} c1={self.c1} c0={self.c0}  ' \
+            f'switch = {self.switch} length={self.length:.5f}' \
+            f'\n !Chave MT em estado ABERTO!'
+            
+        else:
+            return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
+            f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
+            f'r1={self.r1} r0={self.r0} x1={self.x1} x0={self.x0} c1={self.c1} c0={self.c0}  ' \
+            f'switch = {self.switch} length={self.length:.5f}'
 
     def pattern_energymeter(self):
 
@@ -380,7 +396,7 @@ class Line:
         for _, row in progress_bar:
             line_ = Line._create_line_from_row(line_config, row)
 
-            if line_.prefix_name == "CMT":
+            if line_.prefix_name == "CMT" and line_.estado != "A":
                 energymeters.append(line_.pattern_energymeter())
 
             lines.append(line_)

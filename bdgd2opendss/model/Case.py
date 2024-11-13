@@ -1,29 +1,19 @@
 # -*- encoding: utf-8 -*-
 
-from dataclasses import field
+from dataclasses import dataclass, field
 import pandas as pd
+
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core import Utils
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, create_dfs_coords, create_output_feeder_coords, inner_entities_tables
-from bdgd2opendss.model.KVBase import KVBase
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
+from bdgd2opendss.core import Utils
+#from bdgd2opendss.model.KVBase import KVBase
 
+@dataclass
 class Case:
-
-    _dfs: dict = field(init=False)
-
-    @property
-    def dfs(self):
-        return self._dfs
-
-    @property
-    def jsonData(self):
-        return self._jsonData
-
-    # TODO estruturas nao utilizadas, por hora comentadas.
-    '''
-    _circuit: list[Circuit] = field(init=False)
+    #_id: str = "" # OLD CODE alterado p/ feeder
+    _circuitos: list[Circuit] = field(init=False)
     _line_codes: list[LineCode] = field(init=False)
     _lines_SSDBT: list[Line] = field(init=False)
     _lines_SSDMT: list[Line] = field(init=False)
@@ -32,12 +22,10 @@ class Case:
     _transformers: list[Transformer] = field(init=False)
     _regcontrols: list[RegControl] = field(init=False)
     _loads: list[Load] = field(init=False)
-    _MVloads: list[Load] = field(init=False)
     _PVsystems: list[PVsystem] = field(init=False)
-    '''
+    _dfs: dict = field(init=False)
 
-    def __init__(self, jsonData: dict, geodataframes: dict, folder_bdgd, feeder, output_folder):
-
+    def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
         self._jsonData = jsonData
         self._dfs = geodataframes
         self.folder_bdgd = folder_bdgd
@@ -49,24 +37,13 @@ class Case:
         # init list
         self.list_files_name = []
 
-        # this object will keep track of the kVBase
-        self._kVbaseObj = KVBase()
-
-        # reads BDGD gdb files and populates the object Case
-        self.PopulaCase()
-
-    ''' # TODO comentei codigo nao utilizado
-    @dfs.setter
-    def dfs(self, value: dict):
-        self._dfs = value
-
     @property
     def circuitos(self):
-        return self.#_circuit
+        return self._circuitos
 
     @circuitos.setter
     def circuitos(self, value):
-        self.#_circuit = value
+        self._circuitos = value
 
     @property
     def line_codes(self):
@@ -124,8 +101,16 @@ class Case:
     def pvsystems(self, value):  # mozart
         self._PVsystems = value
 
+    @property
+    def dfs(self):
+        return self._dfs
+
+    @dfs.setter
+    def dfs(self, value: dict):
+        self._dfs = value
+
     def circuit_names(self):
-        if self.#_circuit is not None:
+        if self._circuitos is not None:
             return [c.circuit for c in self.circuitos]
 
     def line_code_names(self):
@@ -152,7 +137,6 @@ class Case:
     # TODO Warning Unresolved attribute reference 'PVsystems' for class 'Case'
     def pvsystems_names(self):
         return [pv.pvsystem for pv in self.pvsystems]
-    '''
 
     # TODO Warning Expected to return 'str', got no return
     def rename_linecode_string(linecode_, i, input_str: str) -> str:
@@ -173,13 +157,11 @@ class Case:
             nphases_value = match.group(2)
             return f'New "Linecode.{linecode_num}_{nphases_value}" nphases={nphases_value}'
 
-        # TODO ERRO Unresolved reference 're' /Suponho q temos q adicionar 1 pacote de RegExp no requirements
         setattr(linecode_, f"_linecode_{i}", re.sub(pattern, repl, input_str))
 
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-
         y = create_voltage_bases(Transformer.dict_kv()) #cria lista de tensões de base na baixa tensão
         y.sort()
         #  TODO do jeito que esta, a variavel kv (declarada na classe circuit) entra neste metodo como 1 variavel global
@@ -189,22 +171,13 @@ class Case:
         y.append(Circuit.kvbase())
         voltagebases = " ".join(str(z) for z in set(y))
 
-        # TODO 1. CONSERTAR !! O codigo dos IF e ELSE ESTAO IGUAIS !!!
-        #  Qual eh a ideia ? Processar o redirect da "GD" diferente ?
-
-        # TODO 2. Vejo como fragil esta solucao de atrelar algo (que nao sei o que eh) ao nome do arquivo, neste caso GD.
-        #  NA verdade o if deveria verificar o parametro do usuario se ele vai gerar as GDs ou nao
         for i in file_names:
             if i[:2] == "GD":
                 master = master + f'!Redirect "{i}"\n'
             else:
                 master = master + f'Redirect "{i}"\n'
-
-        # get voltage base string
-        vBase_str = self._kVbaseObj.get_kVbase_str()
-
-        master += f'''Set mode = daily
-Set Voltagebases = [{vBase_str}]
+        master = master + f'''Set mode = daily
+Set Voltagebases = [{voltagebases}]
 Calc Voltagebases
 Set tolerance = 0.0001
 Set maxcontroliter = 10
@@ -234,7 +207,7 @@ buscoords buscoords.csv'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        # TODO de fato quebrou, gerando excetion: UnboundLocalError: local variable 'indice' referenced before assignment
+        # TODO de fato quebrou, gerando excpetion: UnboundLocalError: local variable 'indice' referenced before assignment
         #  Correcao temporaria. Inicializei indice abaixo
         indice = 0
 
@@ -260,7 +233,7 @@ buscoords buscoords.csv'''
 
                 self.output_master(tip_dia=tip_dia, mes=mes, file_names=file_names)
 
-    # this method populates Case object with data from BDGD .gdb files
+    # this method populates Case object with data from BDGD
     def PopulaCase(self):
 
         self.GenGeographicCoord()
@@ -273,17 +246,15 @@ buscoords buscoords.csv'''
 
         self.Populates_Entity()
 
-        # TODO erro na BDGD CPFL
-        #  An error occurred: unsupported operand type(s) for /: 'float' and 'str'
         self.Populates_UNREMT()
 
         self.Popula_CRVCRG()
 
-        self.Populates_UCMT()
-
         self.Populates_UCBT()
 
         self.Populates_PIP()
+
+        self.Populates_UCMT()
 
         self.Populates_UGBT()
 
@@ -297,25 +268,21 @@ buscoords buscoords.csv'''
     def GenGeographicCoord(self):
 
         if settings.gerCoord:
-            gdf_SSDMT, gdf_SSDBT = create_dfs_coords(self.folder_bdgd, self.feeder)
+            #
+            gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
             #
             Utils.create_output_feeder_coords(df_coords, feeder=self.feeder, output_folder=self.output_folder)
 
     # CTMT
-    # TODO colocar o local e a pasta criada no create from json. // ja foi feito??
-    def Populates_CTMT(self):
+    def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
 
         alimentador = self.feeder
 
         try:
-
-            self._kVbaseObj, fileName = Circuit.create_circuit_from_json(self.jsonData, self.dfs['CTMT']['gdf'].query("COD_ID==@alimentador"),
-                                                                         self._kVbaseObj,
-                                                                         pastadesaida=self.output_folder)
-
-            # TODO lets try to move all these calling to one place
+            circuitos, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query(
+                "COD_ID==@alimentador"), pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -325,8 +292,7 @@ buscoords buscoords.csv'''
     def Populates_SEGCON(self):
 
         try:
-
-            line_codes_tmp, fileName = LineCode.create_linecode_from_json(self.jsonData, self.dfs['SEGCON']['gdf'],
+            self.line_codes, fileName = LineCode.create_linecode_from_json(self._jsonData, self.dfs['SEGCON']['gdf'],
                                                                            self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
@@ -334,17 +300,14 @@ buscoords buscoords.csv'''
             print("Error in SEGCON.\n")
 
     # UCBT
-    def Popula_UCBT(self):
+    def Popula_UCBT(self,alimentador):
 
-        alimentador = self.feeder
-
-        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
+        if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+            
             try:
-                loads_tmp, fileName = Load.create_load_from_json(self.jsonData,
-                                                              self.dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                              self.dfs['CRVCRG']['gdf'], 'UCBT_tab')
-
+                _loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                              self._dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
+                                                              self._dfs['CRVCRG']['gdf'], 'UCBT_tab')
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -363,12 +326,12 @@ buscoords buscoords.csv'''
             if not self.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
 
                 try:
-                    lines_tmp, fileName, aux_em = Line.create_line_from_json(self.jsonData, self.dfs[entity]['gdf'].query("CTMT==@alimentador"),
-                                                                             entity, ramal_30m=settings.limitRamal30m, pastadesaida=self.output_folder)
+                    self._lines_SSDMT, fileName, aux_em = Line.create_line_from_json(self._jsonData,
+                                                                                    self.dfs[entity]['gdf'].query(
+                                                                                        "CTMT==@alimentador"),
+                                                                                    entity, ramal_30m=settings.limitRamal30m, pastadesaida=self.output_folder)
 
-                    # TODO we can concat fileName + aux_em inside create_line_from_json ans return a List[str]
                     self.list_files_name.append(fileName)
-
                     if aux_em != "":
                         self.list_files_name.append(aux_em)
 
@@ -381,15 +344,14 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         # do the merge before checking if result set is empty
-        merged_dfs = inner_entities_tables(self.dfs['EQRE']['gdf'],
+        merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
-
+        Utils.adapt_regulators_names(merged_dfs)
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
             try:
-                regcontrols_tmp, fileName = RegControl.create_regcontrol_from_json(self.jsonData, merged_dfs, pastadesaida=self.output_folder)
-
+                self.regcontrols, fileName = RegControl.create_regcontrol_from_json(self._jsonData, merged_dfs,pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -406,15 +368,13 @@ buscoords buscoords.csv'''
 
         alimentador = self.feeder
 
-        merged_dfs = inner_entities_tables(self.dfs['EQTRMT']['gdf'],
+        merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
-
-                self._kVbaseObj, fileName = Transformer.create_transformer_from_json(self.jsonData, merged_dfs,
-                                                                                     self._kVbaseObj, pastadesaida=self.output_folder)
-
+                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
+                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -427,9 +387,7 @@ buscoords buscoords.csv'''
     def Popula_CRVCRG(self):
 
         try:
-            load_shapes_tmp, fileName = LoadShape.create_loadshape_from_json(self.jsonData, self.dfs['CRVCRG']['gdf'],
-                                                                             self.feeder, pastadesaida=self.output_folder)
-
+            _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:
@@ -441,17 +399,15 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
             dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
-
             df_ucbt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
-
+            Utils.check_duplicate_loads_names(df_ucbt)
             try:
-                loads_tmp, fileName = Load.create_load_from_json(self.jsonData, df_ucbt, self.dfs['CRVCRG']['gdf'],
-                                                                 'UCBT_tab', self._kVbaseObj,pastadesaida=self.output_folder)
-
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                                  df_ucbt,
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -468,7 +424,7 @@ buscoords buscoords.csv'''
         if not self.dfs['PIP']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                loads_tmp, fileName = Load.create_load_from_json(self.jsonData,
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
                                                                   self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
                 #self.list_files_name.append(fileName) #já está sendo criado dentro do arquivo cargasBT 
@@ -485,20 +441,14 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-
             dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
-
-            # DEBUG print(dfs.columns)
-
-            # TODO ?? criar um dicionário 'last'
-            df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+            df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
-                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
-
+                'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
             try:
-                loads_tmp, fileName = Load.create_load_from_json(self.jsonData, df_ucmt, self.dfs['CRVCRG']['gdf'],
-                                                                 'UCMT_tab', self._kVbaseObj, pastadesaida=self.output_folder)
-
+                self.loads, fileName = Load.create_load_from_json(self._jsonData,
+                                                                  df_ucmt,
+                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab',pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -514,9 +464,9 @@ buscoords buscoords.csv'''
         if not self.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                pvsystems_tmp, fileName = PVsystem.create_pvsystem_from_json(self.jsonData,
-                                                                             self.dfs['UGBT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                                             'UGBT_tab', self._kVbaseObj, pastadesaida=self.output_folder)
+                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                                                                              self.dfs['UGBT_tab']['gdf'].query(
+                                                                                  "CTMT==@alimentador"), 'UGBT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -533,10 +483,9 @@ buscoords buscoords.csv'''
         if not self.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
 
             try:
-                pvsystems_tmp, fileName = PVsystem.create_pvsystem_from_json(self.jsonData,
-                                                                              self.dfs['UGMT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                                             'UGMT_tab', self._kVbaseObj,
-                                                                             pastadesaida=self.output_folder)
+                self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
+                                                                              self.dfs['UGMT_tab']['gdf'].query(
+                                                                                  "CTMT==@alimentador"), 'UGMT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:

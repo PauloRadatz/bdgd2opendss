@@ -14,12 +14,15 @@ import copy
 import re
 from typing import Any
 import numpy
+
 import geopandas as gpd
 from tqdm import tqdm
+
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn_load, convert_tfascon_phases, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
 from bdgd2opendss.model.Transformer import Transformer
 from bdgd2opendss.model.Circuit import Circuit
+
 from dataclasses import dataclass
 
 @dataclass
@@ -127,7 +130,7 @@ class PVsystem:
     @sit_ativ.setter
     def sit_ativ(self, value):
         self._sit_ativ = value
-
+    
     @property
     def transformer(self):
         return self._transformer
@@ -135,19 +138,17 @@ class PVsystem:
     @transformer.setter
     def transformer(self, value):
         self._transformer = value
-
-    def adapting_string_variables_pvsystem(self): #TODO implementar as tensões de 254
+    
+    def adapting_string_variables_pvsystem(self): #TODO implementar as tensões de 254 
         if self.kv < 1:
             if self.phases == '1' and self.conn == 'Wye':
-                kv = Transformer.sec_phase_kv(trload=self.transformer)
+                kv = Transformer.sec_phase_kv(trload=self.transformer)      
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
             return(kv)
         else:
-            # TODO terminar refactory
-            global _kVbase_GLOBAL
-            return(_kVbase_GLOBAL)
-
+            return(Circuit.kvbase())
+    
     def full_string(self) -> str:
         if self.kv < 1:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
@@ -178,7 +179,7 @@ class PVsystem:
                 f'irradiance={self.irradiance} \n'
                 f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
 
-
+            
     @staticmethod
     def _process_static(pvsystem_, value):
         """
@@ -287,12 +288,7 @@ class PVsystem:
         return pvsystem_
 
     @staticmethod
-    def create_pvsystem_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity:str, kVbaseObj: Any, pastadesaida: str = ""):
-
-        # TODO terminar refactory
-        global _kVbase_GLOBAL
-        _kVbase_GLOBAL = kVbaseObj.MV_kVbase
-
+    def create_pvsystem_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity:str, pastadesaida: str = ""):
         pvsystems = []
         pvsystem_config = json_data['elements']['PVsystem'][entity]
 
