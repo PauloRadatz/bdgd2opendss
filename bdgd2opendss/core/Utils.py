@@ -381,5 +381,26 @@ def standard_curves_pv():
                f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
                )
 
+def check_duplicate_loads_names(df_load):
+    valores_repetidos = df_load['RAMAL'][df_load['RAMAL'].duplicated(keep=False)].index
+    if len(valores_repetidos) >= 2:
+        count = 1
+        for index in valores_repetidos: #muda nome de cargas que tenha o mesmo ramal acrescentando um sufixo
+            df_load.loc[index,'RAMAL'] = f'{df_load.loc[index,'RAMAL']}{chr(count+64)}'
+            count += 1
+    else:
+        ...
 
+def adapt_regulators_names(df_tr): #Nomeia dinamicamente os reguladores que são bancos de transformadores
+    contagem_valores = df_tr['UN_RE'].value_counts().to_dict()
+    for value, quantidade in contagem_valores.items():
+        count = 0
+        count_index = 0
+        indices = df_tr[df_tr['UN_RE'] == value].index.tolist()
+        while count < quantidade:
+            df_tr.loc[indices[count_index],'UN_RE'] = f'{df_tr.loc[indices[count_index],'UN_RE']}{chr(count+65)}' #adiciona sufixos de letras ao final do nome assim como o geoperdas
+            count += 1
+            count_index += 1
+        else:
+            continue
 
