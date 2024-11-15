@@ -20,6 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tfascon_phases, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_ptratio
 from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.model.Circuit import Circuit
 
 from dataclasses import dataclass
 
@@ -56,6 +57,7 @@ class RegControl:
     _kvas: int = 0
     _totalloss: float = 0.0
     _noloadloss: float = 0.0
+    _banco: str = ""
 
     @property
     def feeder(self):
@@ -241,6 +243,14 @@ class RegControl:
     @buses.setter
     def buses(self, value):
         self._buses = value
+    
+    @property
+    def banco(self):
+        return self._banco
+
+    @banco.setter
+    def banco(self, value):
+        self._banco = value
 
 
     def adapting_string_variables(self):
@@ -264,73 +274,74 @@ class RegControl:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 
         """
-        if self.conn_p == 'Wye' and float(self.kv1) == 7.6:
-            kvs = "7.967 7.967"
-            kv = 7.967*1000
-        elif self.conn_p == 'Wye':
-            kvs = f'{self.kv1/np.sqrt(3):.2f} {self.kv1/np.sqrt(3):.2f}'
-            kv = self.kv1/np.sqrt(3)*1000
+        self.kv1 = Circuit.kvbase()
+        if self.conn_p == 'Wye':
+            kvs = f"{self.kv1/np.sqrt(3):.3f} {self.kv1/np.sqrt(3):.3f}"
+            kv = self.kv1*1000/np.sqrt(3)
         else:
             kvs = f'{self.kv1} {self.kv1}'
             kv = self.kv1*1000
+        
+        if self.bus2_nodes == '1.2' or self.bus2_nodes == '2.3' or self.bus2_nodes == '3.1' or self.bus2_nodes == '1.2.3':
+            ptratio = Circuit.kvbase()*10
+        else:
+            ptratio = Circuit.kvbase()*10/np.sqrt(3)
 
-        buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
+        buses = f'"{self.bus2}.{self.bus2_nodes}" "{self.bus1}.{self.bus1_nodes}"'
 
         kva = self.kvas
-        kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])
-        
+        kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])        
 
-
-        return buses, kvas, kvs, kv, kva
+        return buses, kvas, kvs, kv, kva, ptratio
 
     def pattern_reactor_reg(self):
         if self.conn_p == "Delta":
             return("")
         else:
-            return (f'New "Reactor.TRF_{self.prefix_transformer}{self.transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
-                f'New "Reactor.TRF_{self.prefix_transformer}{self.transformer}_S" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
+            return (f'New "Reactor.TRF_{self.transformer}{self.prefix_transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
+                f'New "Reactor.TRF_{self.transformer}{self.prefix_transformer}_S" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
         )
 
     def full_string(self) -> str:
 
         if self.buses == "":
-            self.buses, self.kvas, self.kvs, kv, kva = RegControl.adapting_string_variables(self)
+            self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
         return(
-    f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
+    f'New \"Transformer.REG_{self.transformer}{self.prefix_transformer[0]}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
     f'kvs=[{self.kvs}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
-    f'%loadloss={(self.totalloss - self.noloadloss)/(10*kva):.3f} %noloadloss={self.noloadloss/(10*kva):.3f}'
-    f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
+    f'%loadloss={(self.totalloss - self.noloadloss)/(1000*kva)} %noloadloss={self.noloadloss/(1000*kva)}'
+    f'\nNew \"Regcontrol.REG_{self.transformer}{self.prefix_transformer[0]}" transformer="REG_{self.transformer}{self.prefix_transformer[0]}" '
     f'winding={self.windings} '
-    f'vreg={self.ptratio} '
+    f'vreg={self.vreg*100} '
     f'band={self.band} '
-    f'ptratio={self.vreg*kv/self.ptratio:.4f} \n'
+    f'ptratio={ptratio} \n'
     f'{self.pattern_reactor_reg()}')
     
     def __repr__(self):
 
         if self.buses == "":
-            self.buses, self.kvas, self.kvs, kv, kva = RegControl.adapting_string_variables(self)
+            self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
         return(
-    f'New \"Transformer.{self.prefix_transformer}{self.transformer}" phases={self.phases} '
+    f'New \"Transformer.REG_{self.transformer}{self.prefix_transformer[0]}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
     f'kvs=[{self.kvs}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
-    f'%loadloss={(self.totalloss - self.noloadloss)/(10*kva):.3f} %noloadloss={self.noloadloss/(10*kva):.3f}'
-    f'\nNew \"Regcontrol.{self.prefix_transformer}{self.transformer}" transformer="{self.prefix_transformer}{self.transformer}" '
+    f'%loadloss={(self.totalloss - self.noloadloss)/(1000*kva)} %noloadloss={self.noloadloss/(1000*kva)}'
+    f'\nNew \"Regcontrol.REG_{self.transformer}{self.prefix_transformer[0]}" transformer="REG_{self.transformer}{self.prefix_transformer[0]}" '
     f'winding={self.windings} '
-    f'vreg={self.ptratio} '
+    f'vreg={self.vreg*100} '
     f'band={self.band} '
-    f'ptratio={self.vreg*kv/self.ptratio:.4f} \n'
+    f'ptratio={ptratio} \n'
     f'{self.pattern_reactor_reg()}')
 
 
@@ -367,6 +378,8 @@ class RegControl:
         """
         for mapping_key, mapping_value in value.items():
             setattr(regcontrol_, f"_{mapping_key}", row[mapping_value])
+            if mapping_key == 'banco' and row[mapping_value] == '0':
+                setattr(regcontrol_, f"_prefix_transformer", row[mapping_value])
 
     @staticmethod
     def _process_indirect_mapping(regcontrol_, value, row):
@@ -393,12 +406,7 @@ class RegControl:
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
                 param_value = row[param_name]
-                if mapping_key == 'ptratio':
-                    x = function_(str(param_value))
-                    setattr(regcontrol_, f"_{mapping_key}", x[0])
-                    setattr(regcontrol_, "_kv1", x[1])
-                else:
-                    setattr(regcontrol_, f"_{mapping_key}", function_(str(param_value)))
+                setattr(regcontrol_, f"_{mapping_key}", function_(str(param_value)))
             else:
                 setattr(regcontrol_, f"_{mapping_key}", row[mapping_value])
 

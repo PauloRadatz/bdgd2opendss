@@ -122,6 +122,7 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "line": "COD_ID",
+                    "estado": "P_N_OPE",
                     "feeder": "CTMT"
                 },
                 "indirect_mapping": {
@@ -310,7 +311,7 @@
                         "convert_tfascon_conn"
                     ]
                 },
-                "calculated":{
+                "calculated":{        
                 }
             },
             "UNTRMT_R": {
@@ -348,7 +349,8 @@
                     "xhl": "XHL",
                     "noloadloss": "PER_FER",
                     "totalloss": "PER_TOT",
-                    "feeder": "CTMT"
+                    "feeder": "CTMT",
+                    "banco":"BANC"
                 },
                 "indirect_mapping":{
                     "kvas": [
@@ -376,7 +378,7 @@
                         "convert_tfascon_conn"
                     ],
                     "ptratio": [
-                        "REL_TP",
+                        "REL_TP", 
                         "convert_ptratio"
                     ]
                 },
@@ -706,6 +708,7 @@
                     "FAS_CON",
                     "PAC_1",
                     "PAC_2",
+                    "P_N_OPE",
                     "CTMT"
                 ],
                 "type": {
@@ -789,6 +792,7 @@
                     "PAC_2",
                     "TIP_REGU",
                     "CTMT",
+                    "BANC",
                     "SIT_ATIV"
                 ],
                 "type": {
@@ -801,7 +805,6 @@
             },
             "EQRE": {
                 "columns": [
-                    "COD_ID",
                     "LIG_FAS_P",
                     "LIG_FAS_S",
                     "POT_NOM",
@@ -813,7 +816,6 @@
                     "REL_TP"
                 ],
                 "type": {
-                    "COD_ID": "category",
                     "LIG_FAS_P": "category",
                     "LIG_FAS_S": "category",
                     "POT_NOM": "category"
@@ -858,7 +860,6 @@
             },
             "UCMT_tab": {
                 "columns": [
-                    "COD_ID",
                     "PN_CON",
                     "PAC",
                     "FAS_CON",
@@ -914,7 +915,7 @@
                     "TEN_FORN": "category"
                 },
                 "ignore_geometry": "False"
-            },
+            },  
             "PIP": {
                 "columns": [
                     "PAC",
