@@ -3,10 +3,12 @@
 import json
 import os.path
 import pathlib
+from typing import Any, Optional
 
 import geopandas as gpd
 import pandas as pd
 
+cod_year_bdgd = None
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -152,7 +154,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
 
             try:
                 with open(path, k) as file:
@@ -163,11 +165,11 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             except Exception as e:
                 print(f"An error occurred: {str(e)}")
 
-        return f'{file_names[0]}_{feeder}.dss'
+        return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}.dss'
     
     else:
 
-        path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
 
         try:
             with open(path, "w") as file:
@@ -181,11 +183,11 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     else:
                         file.write(string.full_string() + "\n")
 
-            print(f'O arquivo {file_name}_{feeder} foi gerado\n')
+            print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder} foi gerado\n')
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
-        return f'{file_name}_{feeder}.dss'
+        return f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -221,12 +223,12 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
 
         output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
 
-    path = os.path.join(output_directory, f'{file_name}_{feeder}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{feeder} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -404,3 +406,13 @@ def adapt_regulators_names(df_tr): #Nomeia dinamicamente os reguladores que são
         else:
             continue
 
+def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None):
+    global cod_year_bdgd
+    if bdgd_file_path == None:
+        return(cod_year_bdgd)
+    else:
+        bdgd_name = bdgd_file_path.name
+        cod_bdgd = bdgd_name.split('_')[1]
+        ano_bdgd = bdgd_name.split('_')[2].replace("-", "")
+        cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
+        return(None)
