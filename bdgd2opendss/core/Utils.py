@@ -388,7 +388,7 @@ def check_duplicate_loads_names(df_load):
     if len(valores_repetidos) >= 2:
         count = 1
         for index in valores_repetidos: #muda nome de cargas que tenha o mesmo ramal acrescentando um sufixo
-            df_load.loc[index,'RAMAL'] = f'{df_load.loc[index,'RAMAL']}{chr(count+64)}'
+            df_load.loc[index,'RAMAL'] = f'{df_load.loc[index,"RAMAL"]}{chr(count+64)}'
             count += 1
     else:
         ...
@@ -400,7 +400,7 @@ def adapt_regulators_names(df_tr): #Nomeia dinamicamente os reguladores que são
         count_index = 0
         indices = df_tr[df_tr['UN_RE'] == value].index.tolist()
         while count < quantidade:
-            df_tr.loc[indices[count_index],'UN_RE'] = f'{df_tr.loc[indices[count_index],'UN_RE']}{chr(count+65)}' #adiciona sufixos de letras ao final do nome assim como o geoperdas
+            df_tr.loc[indices[count_index],'UN_RE'] = f'{df_tr.loc[indices[count_index],"UN_RE"]}{chr(count+65)}' #adiciona sufixos de letras ao final do nome assim como o geoperdas
             count += 1
             count_index += 1
         else:
@@ -411,7 +411,7 @@ def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None):
     if bdgd_file_path == None:
         return(cod_year_bdgd)
     else:
-        bdgd_name = bdgd_file_path.name
+        bdgd_name = pathlib.Path(bdgd_file_path).name
         cod_bdgd = bdgd_name.split('_')[1]
         ano_bdgd = bdgd_name.split('_')[2].replace("-", "")
         cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
