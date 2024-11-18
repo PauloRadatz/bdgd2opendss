@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
@@ -235,6 +235,7 @@ buscoords buscoords.csv'''
 
     # this method populates Case object with data from BDGD
     def PopulaCase(self):
+        get_cod_year_bdgd(self.folder_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
 
         self.GenGeographicCoord()
 

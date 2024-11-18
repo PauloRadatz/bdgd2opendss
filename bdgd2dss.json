@@ -94,7 +94,7 @@
                     ],
                     "suffix_linecode": [
                         "FAS_CON",
-                        "convert_tfascon_quant_fios"
+                        "convert_tfascon_phases"
                     ]
                 },
                 "calculated": {
