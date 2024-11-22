@@ -6,6 +6,7 @@ import warnings
 
 # Suppress RuntimeWarnings globally
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 if __name__ == '__main__':
 
