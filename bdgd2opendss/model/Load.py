@@ -19,10 +19,11 @@ import geopandas as gpd
 from tqdm import tqdm
 
 
-from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, qt_tipdia_mes, convert_tfascon_conn_load, convert_tfascon_phases_load
+from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, convert_tfascon_conn_load, convert_tfascon_phases_load
 from bdgd2opendss.core.Utils import create_output_file
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
+from bdgd2opendss.model.Count_days import return_day_type
 import math
 
 import numpy as np
@@ -373,8 +374,8 @@ class Load:
 
         try:
             for index, row in df.iterrows():
-                df.loc[index, "prop_pot_tipdia_mes"] = row["prop"]*qt_tipdia_mes(index,mes)
-
+                df.loc[index, "prop_pot_tipdia_mes"] = row["prop"]*return_day_type(index,mes)
+                
 
             prop_pot_mens_mes = df["prop_pot_tipdia_mes"][tip_dia]/(df["prop_pot_tipdia_mes"].sum())
 
@@ -382,7 +383,7 @@ class Load:
             pot_atv_max = max(df["pot_atv"][tip_dia])
             fc = pot_atv_media/pot_atv_max
 
-            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(qt_tipdia_mes(tip_dia, mes)*24*fc)/1000)
+            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(return_day_type(tip_dia, mes)*24*fc)/1000)
 
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
 

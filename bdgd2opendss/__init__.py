@@ -11,6 +11,7 @@ from bdgd2opendss.model.PVsystem import *
 from bdgd2opendss.model.Case import *
 from bdgd2opendss.core.Core import *
 from bdgd2opendss.model.BusCoords import *
+from bdgd2opendss.model.Count_days import *
 
 
 

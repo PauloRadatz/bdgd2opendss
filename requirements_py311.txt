@@ -37,3 +37,4 @@ pyarrow==17.0.0
 setuptools==67.2.0
 matplotlib==3.7.1
 -e .
+holidays==0.61
