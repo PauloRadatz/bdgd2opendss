@@ -99,6 +99,8 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
         for value in merged_dfs['UNI_TR_MT']:
             if pd.isna(value): #remove transformadores desativados que não estão com SIT_ATIV = DS na BDGD.
                 merged_dfs.loc[counter,"SIT_ATIV"] = "DS"
+            else:
+                merged_dfs.loc[counter,"SIT_ATIV"] = "AT"
             counter += 1 
         merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
     for column in merged_dfs.columns:
@@ -383,13 +385,19 @@ def standard_curves_pv():
                f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
                )
 
-def check_duplicate_loads_names(df_load):
-    valores_repetidos = df_load['RAMAL'][df_load['RAMAL'].duplicated(keep=False)].index
+def check_duplicate_loads_names(df_load, consumer_type: str = ""):
+    if consumer_type == 'BT':
+        column = 'RAMAL'
+    else:
+        column = 'PN_CON'
+    valores_repetidos = df_load[column][df_load[column].duplicated(keep=False)].index
     if len(valores_repetidos) >= 2:
-        count = 1
-        for index in valores_repetidos: #muda nome de cargas que tenha o mesmo ramal acrescentando um sufixo
-            df_load.loc[index,'RAMAL'] = f'{df_load.loc[index,"RAMAL"]}{chr(count+64)}'
-            count += 1
+        for valor in df_load[column][df_load[column].duplicated(keep=False)].unique():
+            count = 1 #colocar for valores in valores_repetidos antes daqui
+            index_repetido = df_load[column][df_load[column] == valor].index
+            for index in index_repetido: #muda nome de cargas que tenha o mesmo ramal acrescentando um sufixo
+                df_load.loc[index,column] = f'{df_load.loc[index,column]}_{count}'
+                count += 1
     else:
         ...
 

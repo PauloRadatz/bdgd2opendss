@@ -5,6 +5,7 @@ import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd
+from bdgd2opendss.model.Count_days import count_day_type
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
@@ -186,7 +187,7 @@ Set maxcontroliter = 10
 Solve
 buscoords buscoords.csv'''
 
-        create_master_file(file_name=f'Master_{tip_dia}_{mes}', feeder=self.feeder, master_content=master, output_folder=self.output_folder)
+        create_master_file(file_name=f'Master_{tip_dia}{mes}', feeder=self.feeder, master_content=master, output_folder=self.output_folder)
 
     def create_outputs_masters(self, file_names):
         """
@@ -236,6 +237,7 @@ buscoords buscoords.csv'''
     # this method populates Case object with data from BDGD
     def PopulaCase(self):
         get_cod_year_bdgd(self.folder_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
+        count_day_type(int(get_cod_year_bdgd()[0:4]))#calcula du,sa, do/feriados a partir do ano da BDGD
 
         self.GenGeographicCoord()
 
@@ -301,7 +303,7 @@ buscoords buscoords.csv'''
             print("Error in SEGCON.\n")
 
     # UCBT
-    def Popula_UCBT(self,alimentador):
+    def Popula_UCBT(self):
 
         if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
             
@@ -375,14 +377,16 @@ buscoords buscoords.csv'''
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
                 self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
-                self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
                 print("Error in UNTRMT.\n")
 
         else:
-            print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+            if self.dfs['EQTRMT']['gdf'].query("CTMT == @alimentador").empty:
+                print('No Transformers found for this feeder. \n')
+            else:
+                print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
 
     # CRVCRG
     def Popula_CRVCRG(self):
@@ -404,7 +408,8 @@ buscoords buscoords.csv'''
             df_ucbt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
-            Utils.check_duplicate_loads_names(df_ucbt)
+            Utils.check_duplicate_loads_names(df_ucbt,"BT") #deve-se passar o tipo de consumidor (BT ou MT)
+            
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucbt,
@@ -443,9 +448,10 @@ buscoords buscoords.csv'''
 
         if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
             dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
-            df_ucmt = pd.DataFrame(dfs).groupby('PAC', as_index=False).agg({'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
+            df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC': 'last', 'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
+            Utils.check_duplicate_loads_names(df_ucmt,"MT") #deve-se passar o tipo de consumidor (BT ou MT)
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucmt,

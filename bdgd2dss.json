@@ -263,7 +263,8 @@
                     "Tip_Lig": "TIP_TRAFO",
                     "totalloss": "PER_TOT",
                     "noloadloss": "PER_FER",
-                    "banco": "BANC"
+                    "banco": "BANC",
+                    "posse": "POS"
                 },
                 "indirect_mapping": {
                     "phases": [
@@ -751,11 +752,12 @@
                     "FAS_CON_S",
                     "FAS_CON_T",
                     "TEN_LIN_SE",
-                    "BANC"
+                    "BANC",
+                    "POS"
                 ],
                 "type": {
-                    "COD_ID": "category",
                     "CTMT": "category",
+                    "COD_ID":"category",
                     "TIP_TRAFO": "category"
                 },
                 "ignore_geometry": "False"
@@ -861,6 +863,7 @@
             "UCMT_tab": {
                 "columns": [
                     "PN_CON",
+                    "COD_ID",
                     "PAC",
                     "FAS_CON",
                     "TEN_FORN",
@@ -880,7 +883,6 @@
                     "CTMT"
                 ],
                 "type": {
-                    "PN_CON": "category",
                     "FAS_CON": "category",
                     "TEN_FORN": "category"
                 },
