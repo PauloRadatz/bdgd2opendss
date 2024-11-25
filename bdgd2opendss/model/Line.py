@@ -236,13 +236,20 @@ class Line:
         else:
             linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         return(linecode)
+    
+    def limitar_ramal(length): #settings (limitar ramal em 30 m)
+        if length > 0.03 and settings.intAdequarRamal:
+            new_lenght = 0.03
+            return(new_lenght)
+        else:
+            return(length)
            
     def pattern_segment(self):
 
         linecode = Line.neutraliza_rede_terceiros(self)
 
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso. 
+            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso.
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -383,8 +390,11 @@ class Line:
                     expression = f'{expression}{item}'
 
             param_value = eval(expression)
-
-            setattr(line_, f"_{mapping_key}", param_value)
+            if mapping_key == 'length' and getattr(line_,"_prefix_name") == 'RBT':
+                length = Line.limitar_ramal(param_value) #settings(limitar tamanho do ramal em 30m)
+                setattr(line_, f"_{mapping_key}", length)
+            else:
+                setattr(line_, f"_{mapping_key}", param_value)
 
 
 

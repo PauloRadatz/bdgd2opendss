@@ -28,7 +28,6 @@ from dataclasses import dataclass
 dicionario_kv = {}
 dict_phase_kv = {}
 list_dsativ = []
-list_cont = []
 
 @dataclass
 class Transformer:
@@ -51,6 +50,7 @@ class Transformer:
     _MRT: int = 0
     _Tip_Lig: str = ""
     _sit_ativ: str = ""
+    _posse: str = ""
 
 
     _phases: int = 0
@@ -253,12 +253,12 @@ class Transformer:
         self._sit_ativ = value
 
     @property
-    def banco(self):
-        return self._banco
+    def posse(self):
+        return self._posse
 
-    @banco.setter
-    def banco(self, value):
-        self._banco = value
+    @posse.setter
+    def posse(self, value: str):
+        self._posse = value
     
     def adapting_string_variables(self):
 
@@ -360,10 +360,15 @@ class Transformer:
         else:
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
 
-            if settings.intAdequarTapTrafo: #settings adequar taps de transformadores
+            if settings.intAdequarTapTrafo: #settings (adequar taps de transformadores)
                 taps = f'taps=[{self.taps}] '
             else:
                 taps = ""
+            if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
+                self.totalloss = 0
+                self.noloadloss = 0
+            else:
+                ...
  
             return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
                 f'windings={self.windings} '
@@ -455,15 +460,6 @@ class Transformer:
                 Transformer.sec_line_kv(transformer=row[mapping_value][:-1],kv2=getattr(transformer_,"kv2"))
             if mapping_key == "sit_ativ" and row[mapping_value] == "DS":
                 list_dsativ.append(getattr(transformer_, f'_transformer')[:-1])
-            # if mapping_key == 'banco' and getattr(transformer_,"sit_ativ") == 'AT':
-            #     if row[mapping_value] == '1':
-            #         list_cont.append(transformer_, f'_transformer')
-            #         new_name = adapt_trasnformers_names(getattr(transformer_, f'_transformer'),list_cont)
-            #         setattr(transformer_, f"_transformer", new_name)
-            #     else:
-            #         setattr(transformer_, f"_transformer", f'{getattr(transformer_, f'_transformer')}A')
-                    
-
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):
