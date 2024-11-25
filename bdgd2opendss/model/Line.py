@@ -20,6 +20,7 @@ from tqdm import tqdm
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file
 from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
+from bdgd2opendss.core.Settings import settings
 
 
 from dataclasses import dataclass
@@ -41,6 +42,7 @@ class Line:
     _prefix_name: str = ""
     _transformer: str = ""
     _estado: str = ""
+    _posse: str = ""
 
     _entity: str =''
 
@@ -220,14 +222,31 @@ class Line:
     def estado(self, value: str):
         self._estado = value
 
+    @property
+    def posse(self):
+        return self._posse
+
+    @posse.setter
+    def posse(self, value: str):
+        self._posse = value
+
+    def neutraliza_rede_terceiros(self): #settings (neutraliza rede de terceiros)
+        if self.posse != 'PD' and settings.intNeutralizarRedeTerceiros:
+            linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+        else:
+            linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
+        return(linecode)
+           
     def pattern_segment(self):
 
+        linecode = Line.neutraliza_rede_terceiros(self)
+
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso. No alimentador 1_PAL2_2 os buses estão trocados
+            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso. 
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
-        f'linecode="{self.linecode}_{self.suffix_linecode}" length={self.length:.5f} ' \
+        f'{linecode} length={self.length:.5f} ' \
         f'units={self.units}'
 
     def pattern_switch(self):

@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.model.Circuit import Circuit
-from bdgd2opendss.core.Utils import create_output_file, adapt_trasnformers_names
+from bdgd2opendss.core.Utils import create_output_file
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass

@@ -438,10 +438,11 @@ def limitar_tensao_superior(kvpu): #settings (Limitar tensão de barras e regula
         kvpu
     return(kvpu)
 
-def adequar_modelo_carga(int_model):
+def adequar_modelo_carga(int_model):#settings (Adequar modelo de carga)
     if int_model == 1:
         return(2,3)
     elif int_model == 2:
         return(1,1)
     else:
         return(3,3)
+
