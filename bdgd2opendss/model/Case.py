@@ -350,7 +350,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
-        Utils.adapt_regulators_names(merged_dfs)
+        Utils.adapt_regulators_names(merged_dfs,'regulator')
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
             try:
@@ -374,6 +374,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
+        Utils.adapt_regulators_names(merged_dfs,'transformer')
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
                 self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)

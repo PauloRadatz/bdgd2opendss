@@ -256,7 +256,6 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "bus3": "PAC_3",
-                    "fase": "LIG_FAS_P",
                     "tap": "TAP",
                     "feeder": "CTMT",
                     "MRT": "MRT",
@@ -757,7 +756,6 @@
                 ],
                 "type": {
                     "CTMT": "category",
-                    "COD_ID":"category",
                     "TIP_TRAFO": "category"
                 },
                 "ignore_geometry": "False"
