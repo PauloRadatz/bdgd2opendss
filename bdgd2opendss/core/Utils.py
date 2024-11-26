@@ -4,6 +4,7 @@ import json
 import os.path
 import pathlib
 from typing import Any, Optional
+import re
 
 import geopandas as gpd
 import pandas as pd
@@ -401,14 +402,18 @@ def check_duplicate_loads_names(df_load, consumer_type: str = ""):
     else:
         ...
 
-def adapt_regulators_names(df_tr): #Nomeia dinamicamente os reguladores que são bancos de transformadores
-    contagem_valores = df_tr['UN_RE'].value_counts().to_dict()
+def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os reguladores e transformadores que são formados em bancos
+    if type_trafo == 'transformer':
+        column = 'COD_ID'
+    else:
+        column = 'UN_RE'
+    contagem_valores = df_tr[column].value_counts().to_dict()
     for value, quantidade in contagem_valores.items():
         count = 0
         count_index = 0
-        indices = df_tr[df_tr['UN_RE'] == value].index.tolist()
+        indices = df_tr[df_tr[column] == value].index.tolist()
         while count < quantidade:
-            df_tr.loc[indices[count_index],'UN_RE'] = f'{df_tr.loc[indices[count_index],"UN_RE"]}{chr(count+65)}' #adiciona sufixos de letras ao final do nome assim como o geoperdas
+            df_tr.loc[indices[count_index],column] = f'{df_tr.loc[indices[count_index],column]}{chr(count+65)}' #adiciona sufixos de letras ao final do nome assim como o geoperdas
             count += 1
             count_index += 1
         else:
@@ -420,7 +425,24 @@ def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None):
         return(cod_year_bdgd)
     else:
         bdgd_name = pathlib.Path(bdgd_file_path).name
-        cod_bdgd = bdgd_name.split('_')[1]
-        ano_bdgd = bdgd_name.split('_')[2].replace("-", "")
+        nomes = re.search(r'(\d+)_([\d]+)-([\d]+)-([\d]+)', bdgd_name)
+        cod_bdgd = nomes.group(1)
+        ano_bdgd = nomes.group(2)+nomes.group(3)+nomes.group(4)
         cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
         return(None)
+    
+def limitar_tensao_superior(kvpu): #settings (Limitar tensão de barras e reguladores)
+    if kvpu > 1.05:
+        kvpu = 1.05
+    else:
+        kvpu
+    return(kvpu)
+
+def adequar_modelo_carga(int_model):#settings (Adequar modelo de carga)
+    if int_model == 1:
+        return(2,3)
+    elif int_model == 2:
+        return(1,1)
+    else:
+        return(3,3)
+

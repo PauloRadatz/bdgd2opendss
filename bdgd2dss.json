@@ -81,7 +81,8 @@
                     "bus2": "PAC_2",
                     "line": "COD_ID",
                     "linecode": "TIP_CND",
-                    "feeder": "CTMT"
+                    "feeder": "CTMT",
+                    "posse":"POS"
                 },
                 "indirect_mapping": {
                     "phases": [
@@ -150,7 +151,8 @@
                     "line": "COD_ID",
                     "linecode": "TIP_CND",
                     "transformer":"UNI_TR_MT",
-                    "feeder": "CTMT"
+                    "feeder": "CTMT",
+                    "posse":"POS"
                 },
                 "indirect_mapping": {
                     "phases": [
@@ -219,7 +221,8 @@
                     "line": "COD_ID",
                     "linecode": "TIP_CND",
                     "transformer":"UNI_TR_MT",
-                    "feeder": "CTMT"
+                    "feeder": "CTMT",
+                    "posse":"POS"
                 },
                 "indirect_mapping": {
                     "phases": [
@@ -256,7 +259,6 @@
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
                     "bus3": "PAC_3",
-                    "fase": "LIG_FAS_P",
                     "tap": "TAP",
                     "feeder": "CTMT",
                     "MRT": "MRT",
@@ -693,7 +695,8 @@
                     "PAC_2",
                     "TIP_CND",
                     "COMP",
-                    "CTMT"
+                    "CTMT",
+                    "POS"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -757,7 +760,6 @@
                 ],
                 "type": {
                     "CTMT": "category",
-                    "COD_ID":"category",
                     "TIP_TRAFO": "category"
                 },
                 "ignore_geometry": "False"
@@ -833,7 +835,8 @@
                     "TIP_CND",
                     "COMP",
                     "UNI_TR_MT",
-                    "CTMT"
+                    "CTMT",
+                    "POS"
                 ],
                 "type": {
                     "COD_ID": "category",
@@ -851,7 +854,8 @@
                     "TIP_CND",
                     "COMP",
                     "UNI_TR_MT",
-                    "CTMT"
+                    "CTMT",
+                    "POS"
                 ],
                 "type": {
                     "COD_ID": "category",

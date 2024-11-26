@@ -4,9 +4,10 @@
 from typing import Any, List
 import geopandas as gpd
 from tqdm import tqdm
+from bdgd2opendss.core.Settings import settings
 
 from bdgd2opendss.model.Converter import convert_tten
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior
 from bdgd2opendss.model.KVBase import KVBase
 from dataclasses import dataclass
 
@@ -122,6 +123,8 @@ class Circuit:
         attribute on the Circuit object using the value from the row.
         """
         for mapping_key, mapping_value in value.items():
+            if mapping_key == 'pu' and settings.intAdequarTensaoSuperior: #(setttings) limitar tensão superior de barras e reguladores
+                row[mapping_value] = limitar_tensao_superior(row[mapping_value])
             setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @staticmethod

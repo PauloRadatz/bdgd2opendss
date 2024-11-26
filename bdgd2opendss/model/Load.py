@@ -17,10 +17,11 @@ from typing import Any
 import pandas
 import geopandas as gpd
 from tqdm import tqdm
+from bdgd2opendss.core.Settings import settings
 
 
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, convert_tfascon_conn_load, convert_tfascon_phases_load
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file,adequar_modelo_carga
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.model.Count_days import return_day_type
@@ -319,14 +320,23 @@ class Load:
         self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
-        if "MT" not in self.entity: 
+        models = adequar_modelo_carga(settings.intAdequarModeloCarga)#settings adequar modelo de carga
+        if "MT" not in self.entity:
+            if settings.intAdequarTensaoCargasBT:#settings adequar tensão mínima das cargas BT
+                self.vminpu = 0.92
+            else:
+                self.vminpu = settings.dblVPUMin 
             if self.phases == '1' and self.conn == 'Wye':
                 kv = Transformer.sec_phase_kv(trload=self.transformer)      
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
-            return(kv)
+            return(kv,models)
         else:
-            return(Circuit.kvbase())
+            if settings.intAdequarTensaoCargasMT:#settings adequar tensão mínima das cargas MT
+                self.vminpu = 0.93
+            else:
+                self.vminpu = settings.dblVPUMin 
+            return(Circuit.kvbase(),models)
 
     def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
         if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
@@ -337,13 +347,13 @@ class Load:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
-        kv = Load.adapting_string_variables_load(self)
+        kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"'
                 
@@ -357,20 +367,20 @@ class Load:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
-        kv = Load.adapting_string_variables_load(self)
+        kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=2 kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model=3 kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}"'
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
         df = df.copy()
-        df["prop_pot_tipdia_mes"] = None #modificação feita por Mozart - 13/06 Às 12:55h
+        df["prop_pot_tipdia_mes"] = None 
 
         try:
             for index, row in df.iterrows():
