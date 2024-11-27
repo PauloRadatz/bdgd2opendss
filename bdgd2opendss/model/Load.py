@@ -49,6 +49,7 @@ class Load:
     _kv: str = ""
     _kw: str = ""
     _transformer: str = ""
+    _flag_limitcarga: str = "" #settings - Flag Limitar potência de cargas BT(potência ativa do transformador)
 
     _tip_dia: str = ""
     _load_DO: str = ""
@@ -345,7 +346,8 @@ class Load:
     def limitar_potencia_cargasBT(self): #settings - Limitar potência de cargas BT(potência ativa do transformador)
         loadbtkw = Transformer.dict_pot_tr(trload=self.transformer)
         if float(self.kw) > loadbtkw:
-            return(loadbtkw)
+            self._flag_limitcarga = '! Carga limitada'
+            return(loadbtkw*0.92)
         else:
             return(self.kw)
 
@@ -365,11 +367,11 @@ class Load:
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}" \n'\
+                f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga} \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"'
+                f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
                 
             
     def __repr__(self):
