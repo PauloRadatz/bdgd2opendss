@@ -190,7 +190,6 @@ class Load:
     def tip_dia(self, value: float):
         self._tip_dia = value
 
-
     @property
     def load_DO(self):
         return self._load_DO
@@ -320,25 +319,37 @@ class Load:
         self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
+
         models = adequar_modelo_carga(settings.intAdequarModeloCarga)#settings adequar modelo de carga
+
         if "MT" not in self.entity:
             if settings.intAdequarTensaoCargasBT:#settings adequar tensão mínima das cargas BT
                 self.vminpu = 0.92
             else:
                 self.vminpu = settings.dblVPUMin 
+
             if self.phases == '1' and self.conn == 'Wye':
                 kv = Transformer.sec_phase_kv(trload=self.transformer)      
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
+
             return(kv,models)
         else:
             if settings.intAdequarTensaoCargasMT:#settings adequar tensão mínima das cargas MT
                 self.vminpu = 0.93
             else:
                 self.vminpu = settings.dblVPUMin 
-            return(Circuit.kvbase(),models)
 
-    def full_string(self) -> str: #cargas de 2 ou 3 fases devem ter tensão de linha
+            return(Circuit.kvbase(),models)
+    
+    def limitar_potencia_cargasBT(self): #settings - Limitar potência de cargas BT(potência ativa do transformador)
+        loadbtkw = Transformer.dict_pot_tr(trload=self.transformer)
+        if float(self.kw) > loadbtkw:
+            return(loadbtkw)
+        else:
+            return(self.kw)
+
+    def full_string(self) -> str: 
         if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
             +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
             return("")
@@ -346,6 +357,9 @@ class Load:
         if "MT" not in self.entity:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
+            if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
+                self.kw = Load.limitar_potencia_cargasBT(self)
+            
         kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
         kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \

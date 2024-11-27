@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 dicionario_kv = {}
 dict_phase_kv = {}
+dict_pot_tr = {}
 list_dsativ = []
 
 @dataclass
@@ -418,7 +419,13 @@ class Transformer:
         if trload == None:
             dicionario_kv[transformer] = kv2
         else:
-            return(dicionario_kv[trload])#dicionario_kv[trload[:-1]]
+            return(dicionario_kv[trload])
+    
+    def dict_pot_tr(transformer:Optional[str] = None,kva:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
+        if trload == None:
+            dict_pot_tr[transformer] = kva
+        else:
+            return(dict_pot_tr[trload])
     
     @staticmethod    
     def dict_kv():
@@ -495,6 +502,8 @@ class Transformer:
                 setattr(transformer_, f"_{mapping_key}", function_(str(param_value)))
                 if mapping_key == 'bus3_nodes':
                     Transformer.sec_phase_kv(getattr(transformer_, f'_transformer')[:-1],getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)))
+                if mapping_key == 'kvas': #settings - limitar cargas BT (potencia atv do trafo): cria dicionário de trafos/potências
+                    Transformer.dict_pot_tr(getattr(transformer_, f'_transformer')[:-1],function_(str(param_value)))
             else:
                 setattr(transformer_, f"_{mapping_key}", row[mapping_value])
 
