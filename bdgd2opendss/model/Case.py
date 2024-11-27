@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd, create_df_trafos_vazios
 from bdgd2opendss.model.Count_days import count_day_type
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
@@ -375,6 +375,10 @@ buscoords buscoords.csv'''
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
         Utils.adapt_regulators_names(merged_dfs,'transformer')
+        #settings - criação de dataframe para eliminar transformadores em vazio
+        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+        Utils.create_df_trafos_vazios(dfs)
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
                 self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)

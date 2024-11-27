@@ -10,6 +10,7 @@ import geopandas as gpd
 import pandas as pd
 
 cod_year_bdgd = None
+tr_vazios = []
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -446,3 +447,13 @@ def adequar_modelo_carga(int_model):#settings (Adequar modelo de carga)
     else:
         return(3,3)
 
+def create_df_trafos_vazios(df_ucbt: Optional[pd.DataFrame] = None):
+    global tr_vazios
+    if df_ucbt is not None:
+        df_tr_cargas = pd.DataFrame(df_ucbt).groupby('UNI_TR_MT', as_index=True).agg({'ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+            'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
+        df_tr_cargas = df_tr_cargas.sum(axis=1)
+        tr_vazios = list(df_tr_cargas[df_tr_cargas == 0].index)
+    else:
+        return(tr_vazios)
+    

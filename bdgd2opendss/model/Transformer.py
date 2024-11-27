@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.model.Circuit import Circuit
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass
@@ -51,6 +51,7 @@ class Transformer:
     _Tip_Lig: str = ""
     _sit_ativ: str = ""
     _posse: str = ""
+    _coment: str = ""
 
 
     _phases: int = 0
@@ -64,7 +65,7 @@ class Transformer:
     _kvas: float = 0.0
     _noloadloss: float = 0.0
     _totalloss: float = 0.0
-    _banco: str = ""
+
 
 
     @property
@@ -348,29 +349,33 @@ class Transformer:
 
     def pattern_MRT(self):
 
-        return (f'New "Linecode.LC_MRT_TRF_{self.transformer}_1" nphases=1 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
-                f'New "Linecode.LC_MRT_TRF_{self.transformer}_2" nphases=2 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
-                f'New "Linecode.LC_MRT_TRF_{self.transformer}_3" nphases=3 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
-                f'New "Linecode.LC_MRT_TRF_{self.transformer}_4" nphases=4 basefreq=60 r1=15000 x1=0 units=km normamps=0\n' #alteração feita por Mozart - 26/06 às 11h
-                f'New "Line.Resist_MTR_TRF_{self.transformer}" phases=1 bus1="{self.bus1}.{self.bus1_nodes}" bus2="MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" linecode="LC_MRT_TRF_{self.transformer}_1" length=0.001 units=km\n')
+        return (f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_1" nphases=1 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
+                f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_2" nphases=2 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
+                f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_3" nphases=3 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
+                f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_4" nphases=4 basefreq=60 r1=15000 x1=0 units=km normamps=0\n' #alteração feita por Mozart - 26/06 às 11h
+                f'{self._coment}New "Line.Resist_MTR_TRF_{self.transformer}" phases=1 bus1="{self.bus1}.{self.bus1_nodes}" bus2="MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" linecode="LC_MRT_TRF_{self.transformer}_1" length=0.001 units=km \n')
 
     def full_string(self) -> str:
         if self.sit_ativ == 'DS':
             return("")
         else:
+            if settings.intAdequarTrafoVazio and self.transformer[:-1] in create_df_trafos_vazios(): #settings (comenta os transformadores vazios)
+                self._coment = '!'
+            else:
+                self._coment = ''
+
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
 
             if settings.intAdequarTapTrafo: #settings (adequar taps de transformadores)
                 taps = f'taps=[{self.taps}] '
             else:
                 taps = ""
+
             if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
                 self.totalloss = 0
                 self.noloadloss = 0
-            else:
-                ...
- 
-            return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
+
+            return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
                 f'conns=[{self.conns}] '
@@ -378,9 +383,9 @@ class Transformer:
                 f'{taps}'
                 f'kvas=[{self.kvas}] '
                 f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
-                f'{MRT}'
-                f'{self.pattern_reactor()}')
-
+                f'{self._coment}{self.pattern_reactor()}\n'
+                f'{MRT}')
+                
     def __repr__(self):
         if self.sit_ativ == 'DS':
             return("")
