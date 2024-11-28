@@ -72,22 +72,7 @@ class JsonData:
                             float(value)
                     except ValueError:
                         list_error.append(index)
-                        print(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {column}')
-        # if output_directory == None:
-        #     if not os.path.exists("dss_models_output"):
-        #         os.mkdir("dss_models_output")
-
-        #     if not os.path.exists(f'dss_models_output/{feeder}'):
-        #         os.mkdir(f'dss_models_output/{feeder}')
-                
-        #         path = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-        #     else:
-        #         path = os.path.join(output_directory, f'Erros_de_preenchimento_{feeder}.txt')
-
-        #     with open(path,'w') as output:
-        #         for k in list_error:
-        #             output.write(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {k}'+"\n")
-        #     return f'Log de erros criado em {path}'        
+                        print(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {column}')     
     
     @staticmethod
     def convert_data_types(df, column_types, name): #TODO mostrar quais são os elementos com erro de preenchimento

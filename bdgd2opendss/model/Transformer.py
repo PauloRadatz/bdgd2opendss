@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.model.Circuit import Circuit
-from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios
+from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios, perdas_trafos_abnt
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass
@@ -375,6 +375,10 @@ class Transformer:
             if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
                 self.totalloss = 0
                 self.noloadloss = 0
+
+            if settings.intUsaTrafoABNT:
+                self.totalloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'totalloss'))
+                self.noloadloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'noloadloss'))
 
             return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
                 f'windings={self.windings} '
