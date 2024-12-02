@@ -265,7 +265,6 @@
                     "Tip_Lig": "TIP_TRAFO",
                     "totalloss": "PER_TOT",
                     "noloadloss": "PER_FER",
-                    "banco": "BANC",
                     "posse": "POS"
                 },
                 "indirect_mapping": {

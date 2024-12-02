@@ -10,6 +10,7 @@ import geopandas as gpd
 import pandas as pd
 
 cod_year_bdgd = None
+tr_vazios = []
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -446,3 +447,89 @@ def adequar_modelo_carga(int_model):#settings (Adequar modelo de carga)
     else:
         return(3,3)
 
+def create_df_trafos_vazios(df_ucbt: Optional[pd.DataFrame] = None):
+    global tr_vazios
+    if df_ucbt is not None:
+        df_tr_cargas = pd.DataFrame(df_ucbt).groupby('UNI_TR_MT', as_index=True).agg({'ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+            'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
+        df_tr_cargas = df_tr_cargas.sum(axis=1)
+        tr_vazios = list(df_tr_cargas[df_tr_cargas == 0].index)
+    else:
+        return(tr_vazios)
+    
+def perdas_trafos_abnt(fases,kv,pot,perda):
+    if fases == '3':
+        if float(kv) < 15:
+            try:
+                file_tri_15kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_15kvmax.csv")
+                df_tri_15kv = pd.read_csv(file_tri_15kv, index_col=0)
+                return(df_tri_15kv.loc[pot,perda])
+            except:
+                if perda == 'noloadloss':
+                    loss = (-0.0023*pot**2 + 2.8531*pot + 43.333)
+                    return(loss)
+                else:
+                    loss = (-0.0095*pot**2 + 14.387*pot + 199.59)
+                    return(loss)
+        elif float(kv) < 24.2:
+            try:
+                file_tri_24kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_24.2kvmax.csv")
+                df_tri_24kv = pd.read_csv(file_tri_24kv, index_col=0)
+                return(df_tri_24kv.loc[pot,perda])
+            except:
+                if perda == 'noloadloss':
+                    loss = (-0.0032*pot**2 + 3.3031*pot + 38.568)
+                    return(loss)
+                else:
+                    loss = (-0.011*pot**2 + 15.375*pot + 208.34)
+                    return(loss)
+        else:
+            try:
+                file_tri_36kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_36.2kvmax.csv")
+                df_tri_36kv = pd.read_csv(file_tri_36kv, index_col=0)
+                return(df_tri_36kv.loc[pot,perda])
+            except:
+                if perda == 'noloadloss':
+                    loss = (-0.0028*pot**2 + 3.3095*pot + 47.499)
+                    return(loss)
+                else:
+                    loss = (-0.012*pot**2 + 16.277*pot + 223.18)
+                    return(loss)
+    else:
+        if float(kv) < 15:
+            try:
+                file_mono_15kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_15kvmax.csv")
+                df_mono_15kv = pd.read_csv(file_mono_15kv, index_col=0)
+                return(int(fases)*df_mono_15kv.loc[pot,perda])
+            except:
+                if perda == 'noloadloss':
+                    loss = int(fases)*(-0.0092*pot**2 + 3.0491*pot + 15.18)
+                    return(loss)
+                else:
+                    loss = int(fases)*(-0.0165*pot**2 + 13.848*pot + 83.37)
+                    return(loss)
+        elif float(kv) < 24.2:
+            try:
+                file_mono_24kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_24.2kvmax.csv")
+                df_mono_24kv = pd.read_csv(file_mono_24kv, index_col=0)
+                return(int(fases)*df_mono_24kv.loc[pot,perda])
+            except:
+                print('aqui')
+                if perda == 'noloadloss':
+                    loss = int(fases)*(-0.0113*pot**2 + 3.4321*pot + 17.717)
+                    return(loss)
+                else:
+                    loss = int(fases)*(-0.0503*pot**2 + 17.879*pot + 63.804)
+                    return(loss)
+        else:
+            try:
+                file_mono_36kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_36.2kvmax.csv")
+                df_mono_36kv = pd.read_csv(file_mono_36kv, index_col=0)
+                return(int(fases)*df_mono_36kv.loc[pot,perda])
+            except:
+                if perda == 'noloadloss':
+                    loss = int(fases)*(-0.0132*pot**2 + 3.6825*pot + 19.662)
+                    return(loss)
+                else:
+                    loss = int(fases)*(-0.054*pot**2 + 18.383*pot + 70.191)
+                    return(loss)

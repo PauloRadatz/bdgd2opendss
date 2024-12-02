@@ -72,22 +72,7 @@ class JsonData:
                             float(value)
                     except ValueError:
                         list_error.append(index)
-                        print(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {column}')
-        # if output_directory == None:
-        #     if not os.path.exists("dss_models_output"):
-        #         os.mkdir("dss_models_output")
-
-        #     if not os.path.exists(f'dss_models_output/{feeder}'):
-        #         os.mkdir(f'dss_models_output/{feeder}')
-                
-        #         path = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-        #     else:
-        #         path = os.path.join(output_directory, f'Erros_de_preenchimento_{feeder}.txt')
-
-        #     with open(path,'w') as output:
-        #         for k in list_error:
-        #             output.write(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {k}'+"\n")
-        #     return f'Log de erros criado em {path}'        
+                        print(f'Erro de preenchimento da BDGD localizado no elemento {name} de código {df.loc[index, "COD_ID"]} coluna {column}')     
     
     @staticmethod
     def convert_data_types(df, column_types, name): #TODO mostrar quais são os elementos com erro de preenchimento
@@ -122,9 +107,8 @@ class JsonData:
                 start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
                 gdf_ = gpd.read_file(file_name, layer=table.name,
-                                     include_fields=table.columns, columns=table.columns,
-                                     ignore_geometry=table.ignore_geometry, engine='pyogrio',
-                                     use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
+                                     columns=table.columns,ignore_geometry=table.ignore_geometry, 
+                                     engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
                 start_conversion_time = time.time()
                 gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
