@@ -368,7 +368,10 @@ class Transformer:
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
 
             if settings.intAdequarTapTrafo: #settings (adequar taps de transformadores)
-                taps = f'taps=[{self.taps}] '
+                if len(self.taps) < 8:
+                    taps = f'taps=[1.0 {self.taps[0:3]}] '
+                else:
+                    taps = f'taps=[1.0 {self.taps[0:3]} {self.taps[8:11]}] '
             else:
                 taps = ""
 
