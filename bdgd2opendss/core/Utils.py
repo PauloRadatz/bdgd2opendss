@@ -5,6 +5,7 @@ import os.path
 import pathlib
 from typing import Any, Optional
 import re
+import sys
 
 import geopandas as gpd
 import pandas as pd
@@ -563,28 +564,53 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
         return(sufixo_config)
 
 def create_output_folder(feeder, output_folder:Optional[str] = None):
-    if output_folder is not None:
-        try:
-            if not os.path.exists(f'{output_folder}\{feeder}'):
-                os.mkdir(f'{output_folder}\{feeder}')
-                output_directory = f'{output_folder}\{feeder}'
-            else:
-                output_directory = f'{output_folder}\{feeder}'
-        except FileNotFoundError:
+    if sys.platform == 'linux': #caso o usuário esteja usando por meio do sistema operacional Linux
+        if output_folder is not None:
+            try:
+                if not os.path.exists(f'{output_folder}/{feeder}'):
+                    os.mkdir(f'{output_folder}/{feeder}')
+                    output_directory = f'{output_folder}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}/{feeder}'
+            except FileNotFoundError:
+                if not os.path.exists("dss_models_output"):
+                    os.mkdir("dss_models_output")
+
+                if not os.path.exists(f'dss_models_output/{feeder}'):
+                    os.mkdir(f'dss_models_output/{feeder}')
+                    print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+                output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
+        else:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
 
             if not os.path.exists(f'dss_models_output/{feeder}'):
                 os.mkdir(f'dss_models_output/{feeder}')
-                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
     else:
-        if not os.path.exists("dss_models_output"):
-            os.mkdir("dss_models_output")
+        if output_folder is not None:
+            try:
+                if not os.path.exists(f'{output_folder}\{feeder}'):
+                    os.mkdir(f'{output_folder}\{feeder}')
+                    output_directory = f'{output_folder}\{feeder}'
+                else:
+                    output_directory = f'{output_folder}\{feeder}'
+            except FileNotFoundError:
+                if not os.path.exists("dss_models_output"):
+                    os.mkdir("dss_models_output")
 
-        if not os.path.exists(f'dss_models_output/{feeder}'):
-            os.mkdir(f'dss_models_output/{feeder}')
+                if not os.path.exists(f'dss_models_output/{feeder}'):
+                    os.mkdir(f'dss_models_output/{feeder}')
+                    print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+                output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+        else:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
 
-        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
     
     return(output_directory)
