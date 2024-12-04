@@ -517,8 +517,7 @@ class Load:
         load_lists= []
 
         for key, value in dict_loads_tip_day.items():
-
-            load_file_names.append(f'{name[:9]}_{tip_day}{key}')
+            load_file_names.append(f'{name[:8]}_{tip_day}{key}')
             load_lists.append(value)
 
         return create_output_file(object_lists=load_lists,file_name=name, file_names= load_file_names, feeder=feeder, output_folder=pastadesaida)
@@ -540,7 +539,8 @@ class Load:
         dataframe = dataframe.loc[:, ['COD_ID', 'TIP_DIA', 'loadshape', 'pot_atv']]
         dataframe.set_index('TIP_DIA', inplace=True)
 
-        dataframe['soma_pot'] = np.sum(np.array(dataframe['pot_atv'].tolist()), axis=1)
+        # dataframe['soma_pot'] = np.sum(np.array(dataframe['pot_atv'].tolist()), axis=1)
+        dataframe['soma_pot'] = dataframe['pot_atv'].apply(np.sum)
         pot_classe = dataframe['soma_pot'].sum()
         dataframe['prop'] = dataframe['soma_pot'] / pot_classe
         return dataframe
@@ -583,7 +583,7 @@ class Load:
 
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        load_config = json_data['elements']['Load'][entity] #adicionar a entidade PIP aqui(criar uma nova entrada opcional)
+        load_config = json_data['elements']['Load'][entity] 
         interactive = load_config.get('interactive')
         crv_dataframe = Load.compute_pre_kw(crv_dataframe)
         # dataframe = dataframe.head(200)

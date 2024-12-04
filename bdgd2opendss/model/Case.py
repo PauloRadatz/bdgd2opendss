@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
-from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd, create_df_trafos_vazios
+from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd, create_df_trafos_vazios,get_configuration
 from bdgd2opendss.model.Count_days import count_day_type
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
@@ -238,6 +238,7 @@ buscoords buscoords.csv'''
     def PopulaCase(self):
         get_cod_year_bdgd(self.folder_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
         count_day_type(int(get_cod_year_bdgd()[0:4]))#calcula du,sa, do/feriados a partir do ano da BDGD
+        get_configuration(feeder=self.feeder,output_folder=self.output_folder) #Identifica as configurações escolhidas pelo usuário e transforma em uma string
 
         self.GenGeographicCoord()
 

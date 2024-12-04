@@ -5,12 +5,16 @@ import os.path
 import pathlib
 from typing import Any, Optional
 import re
+import sys
 
 import geopandas as gpd
 import pandas as pd
+from bdgd2opendss.core.Settings import settings
 
 cod_year_bdgd = None
 tr_vazios = []
+lista_configurações = []
+sufixo_config = ""
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -126,39 +130,17 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
-    if output_folder is not None:
-        try:
-            if not os.path.exists(f'{output_folder}\{feeder}'):
-                os.mkdir(f'{output_folder}\{feeder}')
-                output_directory = f'{output_folder}\{feeder}'
-            else:
-                output_directory = f'{output_folder}\{feeder}'
-        except FileNotFoundError:
-            if not os.path.exists("dss_models_output"):
-                os.mkdir("dss_models_output")
-
-            if not os.path.exists(f'dss_models_output/{feeder}'):
-                os.mkdir(f'dss_models_output/{feeder}')
-                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-    else:
-        if not os.path.exists("dss_models_output"):
-            os.mkdir("dss_models_output")
-
-        if not os.path.exists(f'dss_models_output/{feeder}'):
-            os.mkdir(f'dss_models_output/{feeder}')
-
-        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
     if object_lists != "":
-        if file_name == 'Cargas_BT_IP':
+        if file_name == 'CargasBT_IP':
             k = 'a' #anexação de arquivo
             file_name = ""
         else:
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
 
             try:
                 with open(path, k) as file:
@@ -168,12 +150,11 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     # print(f'O arquivo {file_name}_{feeder} foi gerado\n')
             except Exception as e:
                 print(f"An error occurred: {str(e)}")
-
-        return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}.dss'
+        return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
     
     else:
 
-        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
 
         try:
             with open(path, "w") as file:
@@ -187,11 +168,11 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     else:
                         file.write(string.full_string() + "\n")
 
-            print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder} foi gerado\n')
+            print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado\n')
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
-        return f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss'
+        return f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -203,36 +184,14 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     separated by newline characters. If any error occurs, it will be displayed.
 
     """
-    if output_folder is not None:
-        try:
-            if not os.path.exists(f'{output_folder}\{feeder}'):
-                os.mkdir(f'{output_folder}\{feeder}')
-                output_directory = f'{output_folder}\{feeder}'
-            else:
-                output_directory = f'{output_folder}\{feeder}'
-        except FileNotFoundError:
-            if not os.path.exists("dss_models_output"):
-                os.mkdir("dss_models_output")
+    output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
-            if not os.path.exists(f'dss_models_output/{feeder}'):
-                os.mkdir(f'dss_models_output/{feeder}')
-                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-    else:
-        if not os.path.exists("dss_models_output"):
-            os.mkdir("dss_models_output")
-
-        if not os.path.exists(f'dss_models_output/{feeder}'):
-            os.mkdir(f'dss_models_output/{feeder}')
-
-        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-
-    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -247,28 +206,7 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
         separado por caracteres newline. Se ocorrer algum erro, ele será exibido.
 
     """
-    if output_folder is not None:
-        try:
-            if not os.path.exists(f'{output_folder}\{feeder}'):
-                os.mkdir(f'{output_folder}\{feeder}')
-                output_directory = f'{output_folder}\{feeder}'
-            else:
-                output_directory = f'{output_folder}\{feeder}'
-        except FileNotFoundError:
-            if not os.path.exists("dss_models_output"):
-                os.mkdir("dss_models_output")
-
-            if not os.path.exists(f'dss_models_output/{feeder}'):
-                os.mkdir(f'dss_models_output/{feeder}')
-                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-    else:
-        if not os.path.exists("dss_models_output"):
-            os.mkdir("dss_models_output")
-
-        if not os.path.exists(f'dss_models_output/{feeder}'):
-            os.mkdir(f'dss_models_output/{feeder}')
-        output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
     dir_path = os.path.join(output_directory, f'{filename}.csv')
     # dir_path = os.path.join(output_directory, f'{filename}_{feeder}.csv')
 
@@ -365,15 +303,15 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
     lista=[]
 
     # TODO evitar tomar decisoes
-    for value in dicionario_kv.values(): #dicionario_kv.values() usar
+    for value in dicionario_kv.values(): 
         if value >= 0.22:
             lista.append(value)
         else:
             ...
     x=set(lista)
-    if max(lista) == '0.38':
+    if max(lista) == 0.38:
         try:
-            x.remove('0.22')
+            x.remove(0.22)
         except KeyError:
             ...
     return(list(x))
@@ -420,7 +358,7 @@ def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os regulador
         else:
             continue
 
-def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None):
+def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código e o ano da BDGD 
     global cod_year_bdgd
     if bdgd_file_path == None:
         return(cod_year_bdgd)
@@ -533,3 +471,146 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                 else:
                     loss = int(fases)*(-0.054*pot**2 + 18.383*pot + 70.191)
                     return(loss)
+                
+def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None):
+    global sufixo_config
+    df_config = pd.DataFrame(columns=["Configuração", "Descrição"])
+    count = 0
+    if settings.intRealizaCnvrgcPNT:
+        sufixo_config = "N"
+        df_config.loc[count] = ['intRealizaCnvrgcPNT','Convergência de Perda Não Técnica']
+        count += 1
+    else:
+        sufixo_config = "-"
+    if settings.intUsaTrafoABNT:
+        sufixo_config = sufixo_config + "T"
+        df_config.loc[count] = ['intUsaTrafoABNT','Transformadores ABNT']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarTensaoCargasMT:
+        sufixo_config = sufixo_config + "M"
+        settings.intAdequarModeloCarga
+        df_config.loc[count] = ['intAdequarTensaoCargasMT','Adequação de Tensão Mínima das Cargas MT (0.93 pu)']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarTensaoCargasBT:
+        sufixo_config = sufixo_config + "B"
+        df_config.loc[count] = ['intAdequarTensaoCargasBT','Adequação de Tensão Mínima das Cargas BT (0.92 pu)']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarTensaoSuperior:
+        sufixo_config = sufixo_config + "S"
+        df_config.loc[count] = ['intAdequarTensaoSuperior','Limitar Máxima Tensão de Barras e Reguladores (1.05 pu)']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarRamal:
+        sufixo_config = sufixo_config + "R"
+        df_config.loc[count] = ['intAdequarRamal','Limitar o Ramal (30m)']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarModeloCarga == 1:
+        sufixo_config = sufixo_config + "1"
+        df_config.loc[count] = ['intAdequarModeloCarga = 1','Adequa modelo das cargas(model=2/model=3)']
+        count += 1
+    elif settings.intAdequarModeloCarga == 2:
+        sufixo_config = sufixo_config + "2"
+        df_config.loc[count] = ['intAdequarModeloCarga = 2','Adequa modelo das cargas(model=1/model=1)']
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "3"
+        df_config.loc[count] = ['intAdequarModeloCarga = 3','Adequa modelo das cargas(model=3/model=3)']
+        count += 1
+    if settings.intAdequarPotenciaCarga:
+        sufixo_config = sufixo_config + "P"
+        df_config.loc[count] = ['intAdequarPotenciaCarga', "Limitar Cargas BT (Potência ativa do transformador)"]
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarTrafoVazio:
+        sufixo_config = sufixo_config + "V"
+        df_config.loc[count] = ['intAdequarTrafoVazio', "Eliminar Transformadores Vazios"]
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intAdequarTapTrafo:
+        sufixo_config = sufixo_config + "T"
+        df_config.loc[count] = ['intAdequarTapTrafo', "Utilizar Tap nos Transformadores"]
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intNeutralizarTrafoTerceiros:
+        sufixo_config = sufixo_config + "T"
+        df_config.loc[count] = ['intNeutralizarTrafoTerceiros', "Neutralizar Transformadores de Terceiros"]
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    if settings.intNeutralizarRedeTerceiros:
+        sufixo_config = sufixo_config + "R"
+        df_config.loc[count] = ['intNeutralizarRedeTerceiros', "Neutralizar Redes de Terceiros (MT/BT)"]
+        count += 1
+    else:
+        sufixo_config = sufixo_config + "-"
+    df_config.loc[count] = ['dblVPUMin', f"Tensão mínima(pu)={settings.dblVPUMin}"]
+    if feeder is not None:
+        output_directory = create_output_folder(feeder,output_folder)
+        dir_path = os.path.join(output_directory, r'configurações.csv')
+        df_config.to_csv(dir_path,index=False)
+    else:
+        return(sufixo_config)
+
+def create_output_folder(feeder, output_folder:Optional[str] = None):
+    if sys.platform == 'linux': #caso o usuário esteja usando por meio do sistema operacional Linux
+        if output_folder is not None:
+            try:
+                if not os.path.exists(f'{output_folder}/{feeder}'):
+                    os.mkdir(f'{output_folder}/{feeder}')
+                    output_directory = f'{output_folder}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}/{feeder}'
+            except FileNotFoundError:
+                if not os.path.exists("dss_models_output"):
+                    os.mkdir("dss_models_output")
+
+                if not os.path.exists(f'dss_models_output/{feeder}'):
+                    os.mkdir(f'dss_models_output/{feeder}')
+                    print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+                output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
+        else:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
+
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
+    else:
+        if output_folder is not None:
+            try:
+                if not os.path.exists(f'{output_folder}\{feeder}'):
+                    os.mkdir(f'{output_folder}\{feeder}')
+                    output_directory = f'{output_folder}\{feeder}'
+                else:
+                    output_directory = f'{output_folder}\{feeder}'
+            except FileNotFoundError:
+                if not os.path.exists("dss_models_output"):
+                    os.mkdir("dss_models_output")
+
+                if not os.path.exists(f'dss_models_output/{feeder}'):
+                    os.mkdir(f'dss_models_output/{feeder}')
+                    print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
+                output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+        else:
+            if not os.path.exists("dss_models_output"):
+                os.mkdir("dss_models_output")
+
+            if not os.path.exists(f'dss_models_output/{feeder}'):
+                os.mkdir(f'dss_models_output/{feeder}')
+
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+    
+    return(output_directory)
