@@ -38,12 +38,14 @@ def create_energymeters(dataframe: gpd.geodataframe.GeoDataFrame, feeder, pastad
     if settings.cbMeterComplete:
         cont = 0
         while cont < len(df_aux_trafo):
-            df_aux_trafo['kv2'] = [Transformer.dict_kv().get(cod_id, 0) for cod_id in df_aux_trafo['COD_ID']]
-            medidor = name_em(df_aux_trafo['ELEM'].tolist()[cont],df_aux_trafo['COD_ID'].tolist()[cont],'completo',Circuit.kvbase(),df_aux_trafo['kv2'].tolist()[cont])
+            df_aux_trafo['kv1'] = [Transformer.dict_kv_pri().get(cod_id, 0) for cod_id in df_aux_trafo['COD_ID']]
+            df_aux_trafo['kv2'] = [Transformer.dict_kv().get(cod_id[:-1], 0) for cod_id in df_aux_trafo['COD_ID']]
+            medidor = name_em(df_aux_trafo['ELEM'].tolist()[cont],df_aux_trafo['COD_ID'].tolist()[cont],'completo',df_aux_trafo['kv1'].tolist()[cont],df_aux_trafo['kv2'].tolist()[cont])
             elemento = elem_em(df_aux_trafo['ELEM'].tolist()[cont],df_aux_trafo['COD_ID'].tolist()[cont])
             if medidor:
                 energymeters.append(f'New "Energymeter.{medidor}" element="{elemento}" terminal=1')
             cont += 1
+
         df_em_barramento = df_aux_tramo.loc[(df_aux_tramo['PAC_1']==Circuit.pac_ctmt()) | (df_aux_tramo['PAC_2']==Circuit.pac_ctmt())]
         cont = 0
         while cont < len(df_em_barramento):
