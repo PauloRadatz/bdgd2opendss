@@ -28,5 +28,5 @@ if __name__ == '__main__':
     # settings.intAdequarTrafoVazio = True # - comentar trafos a vazio 
     # settings.intAdequarPotenciaCarga = True # - Adequa potência das cargas BT a carga do transformador conectado
     # settings.intUsaTrafoABNT = False # - Usa as perdas dos transformadores da ABNT 5440
-    
+    # settings.cbMeterComplete = False # - (True) Criar medidores de energia nos transformadores MTMT e barramento/ (False) Cria só no barramento
     bdgd.run(bdgd_file_path=bdgd_file_path, all_feeders=False,lst_feeders=lst_feeders)
