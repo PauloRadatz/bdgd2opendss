@@ -13,8 +13,8 @@ from bdgd2opendss.core.Settings import settings
 
 cod_year_bdgd = None
 tr_vazios = []
-lista_configurações = []
 sufixo_config = ""
+
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -109,6 +109,7 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
                 merged_dfs.loc[counter,"SIT_ATIV"] = "AT"
             counter += 1 
         merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
+        merged_dfs['TEN_PRI'] = merged_dfs["TEN_PRI"].fillna(0).astype(int)
     for column in merged_dfs.columns:
         if column.endswith('_x'):
             merged_dfs.drop(columns=column, inplace=True)
@@ -131,7 +132,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
 
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
-
+    
     if object_lists != "":
         if file_name == 'CargasBT_IP':
             k = 'a' #anexação de arquivo
@@ -153,7 +154,6 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
         return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
     
     else:
-
         path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
 
         try:

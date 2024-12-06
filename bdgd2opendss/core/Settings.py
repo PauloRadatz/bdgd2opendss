@@ -31,5 +31,6 @@ class Settings:
     intNeutralizarRedeTerceiros: bool = field(default=False, metadata={"description": "Neutralizar Redes de Terceiros (MT/BT)"})
     intModeloConverge: bool = field(default=False, metadata={"description": "Modelo de Convergência"})
     dblVPUMin: float = field(default=0.5, metadata={"description": "Tensão Mínima(pu)"})
+    cbMeterComplete: bool = field(default=False, metadata={"description": "Medidores de Energia no barramento principal e transformadores"})
 
 settings = Settings()

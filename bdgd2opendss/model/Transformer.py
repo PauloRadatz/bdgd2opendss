@@ -26,6 +26,7 @@ from bdgd2opendss.core.Settings import settings
 from dataclasses import dataclass
 
 dicionario_kv = {}
+dicionario_kv_pri = {}
 dict_phase_kv = {}
 dict_pot_tr = {}
 list_dsativ = []
@@ -42,7 +43,7 @@ class Transformer:
     _suffix_bus2: str = ""
     _suffix_bus3: str = ""
     _transformer: str = ""
-    _kv1: float = 0.0
+    _kv1: str = ""
     _kv2: float = 0.0
     _kv3: float = 0.0
 
@@ -441,6 +442,9 @@ class Transformer:
     @staticmethod    
     def list_dsativ():
         return(list_dsativ)
+    
+    def dict_kv_pri():
+        return(dicionario_kv_pri)
         
     @staticmethod
     def _process_static(transformer_, value):
@@ -511,6 +515,8 @@ class Transformer:
                     Transformer.sec_phase_kv(getattr(transformer_, f'_transformer')[:-1],getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)))
                 if mapping_key == 'kvas': #settings - limitar cargas BT (potencia atv do trafo): cria dicionário de trafos/potências
                     Transformer.dict_pot_tr(getattr(transformer_, f'_transformer')[:-1],function_(str(param_value)))
+                if mapping_key == 'kv1':
+                    dicionario_kv_pri[getattr(transformer_, f'_transformer')] = function_(str(param_value))
             else:
                 setattr(transformer_, f"_{mapping_key}", row[mapping_value])
 
