@@ -614,3 +614,54 @@ def create_output_folder(feeder, output_folder:Optional[str] = None):
             output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
     
     return(output_directory)
+
+def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela auxiliar para definir a ordem 
+    alimentador = feeder
+    df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                            left_column='UNI_TR_MT', right_column='COD_ID')
+    adapt_regulators_names(df_trafo,'transformer')
+    df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ssdmt['ELEM'] = 'SEGMMT'
+    df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ssdbt['ELEM'] = 'SEGMBT'
+    df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ramalig['ELEM'] = 'RML'
+    df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador" or "P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_unsemt['ELEM'] = 'CHVMT'
+    df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_unsebt['ELEM'] = 'CHVBT'
+    df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_trafo['ELEM'] = 'TRAFO'
+    df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_regul['ELEM'] = 'REGUL'
+    df_aux_tramo = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul], ignore_index=True)
+    # pac_1_2 = df_aux_tramo[~df_aux_tramo['PAC_1'].isin(df_aux_tramo['PAC_2'])].index #criar rotina que verifica quais elementos estão isolados e os retira
+    # pac_2_1 = df_aux_tramo[~df_aux_tramo['PAC_2'].isin(df_aux_tramo['PAC_1'])].index
+    # resultado = pac_1_2[~pac_1_2.isin(pac_2_1)]
+    # for indice in resultado.tolist():
+    #     print(df_aux_tramo.loc[indice])
+    # print('aqui')
+    
+    return(df_aux_tramo,df_aux_trafo)
+
+def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
+
+    merged_dfs = pd.merge(dataframe_1, dataframe_2, left_on=left_column, right_on=right_column, how='inner')
+
+    for column in merged_dfs.columns:
+        if column.endswith('_x'):
+            merged_dfs.drop(columns=column, inplace=True)
+        elif column.endswith('_y'):
+            new_column_name = column[:-2]  # Remove the '_df2' suffix
+            merged_dfs.rename(columns={column: new_column_name}, inplace=True)
+    return(merged_dfs)
+
+def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
+    global seq 
+    if df_aux_tramo is not None:
+        if pac_ctmt in df_aux_tramo['PAC_1']:
+            seq = 'Direta'
+        else:
+            seq = 'Invertida'
+    else:
+        return(seq)

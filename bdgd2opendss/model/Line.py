@@ -18,10 +18,9 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
 from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 from bdgd2opendss.core.Settings import settings
-
 
 from dataclasses import dataclass
 
@@ -249,7 +248,8 @@ class Line:
         linecode = Line.neutraliza_rede_terceiros(self)
 
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso.
+            if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
+                self.bus2, self.bus1 = self.bus1, self.bus2 
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \

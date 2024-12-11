@@ -284,16 +284,23 @@ class Transformer:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 =
         """
-        global _kVbase_GLOBAL
 
         if self.sit_ativ == "DS":
             return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.13f}'
-            #self.kv1 = f'{float(_kVbase_GLOBAL/numpy.sqrt(3)):.13f}'
+            if self.kv2 > 1: #se já não for tensão de linha*** verificar esse se
+                self.kv1 = f'{float(self.kv1)/numpy.sqrt(3):.13f}'
+                if self.conn_s == 'Wye':
+                    self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
+            else:
+                self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.13f}'
         else:
-            self.kv1 = f'{float(Circuit.kvbase())}'
-
+            if self.kv2 < 1:
+                self.kv1 = f'{float(Circuit.kvbase())}'
+            else:
+                if self.conn_s == 'Wye':
+                    self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
+                    
         if self.MRT == 1: #Condições usadas pela geoperdas de declarar as tensões de secundário e primário de TRAFO
             if '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'

@@ -245,6 +245,9 @@ buscoords buscoords.csv'''
 
         self.Populates_CTMT()
 
+        df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
+        Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
+
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
@@ -253,7 +256,7 @@ buscoords buscoords.csv'''
 
         self.Populates_UNREMT()
         
-        self.Populates_energymeters()
+        self.Populates_energymeters(df_tramo,df_aux_trafo)
 
         self.Popula_CRVCRG()
 
@@ -506,7 +509,7 @@ buscoords buscoords.csv'''
         else:
             print("No UGMT found for this feeder. \n")
 
-    def Populates_energymeters(self):
+    def Populates_energymeters(self,df_aux_tramo,df_aux_trafo):
         alimentador = self.feeder
-        fileName = create_energymeters(self.dfs,self.feeder,self.output_folder)
+        fileName = create_energymeters(df_aux_tramo,df_aux_trafo,self.feeder,self.output_folder)
         self.list_files_name.append(fileName)
