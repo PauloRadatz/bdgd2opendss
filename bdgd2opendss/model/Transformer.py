@@ -26,6 +26,7 @@ from bdgd2opendss.core.Settings import settings
 from dataclasses import dataclass
 
 dicionario_kv = {}
+dicionario_kv_pri = {}
 dict_phase_kv = {}
 dict_pot_tr = {}
 list_dsativ = []
@@ -42,7 +43,7 @@ class Transformer:
     _suffix_bus2: str = ""
     _suffix_bus3: str = ""
     _transformer: str = ""
-    _kv1: float = 0.0
+    _kv1: str = ""
     _kv2: float = 0.0
     _kv3: float = 0.0
 
@@ -283,16 +284,23 @@ class Transformer:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 =
         """
-        global _kVbase_GLOBAL
 
         if self.sit_ativ == "DS":
             return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.13f}'
-            #self.kv1 = f'{float(_kVbase_GLOBAL/numpy.sqrt(3)):.13f}'
+            if self.kv2 > 1: #se já não for tensão de linha*** verificar esse se
+                self.kv1 = f'{float(self.kv1)/numpy.sqrt(3):.13f}'
+                if self.conn_s == 'Wye':
+                    self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
+            else:
+                self.kv1 = f'{float(Circuit.kvbase()/numpy.sqrt(3)):.13f}'
         else:
-            self.kv1 = f'{float(Circuit.kvbase())}'
-
+            if self.kv2 < 1:
+                self.kv1 = f'{float(Circuit.kvbase())}'
+            else:
+                if self.conn_s == 'Wye':
+                    self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
+                    
         if self.MRT == 1: #Condições usadas pela geoperdas de declarar as tensões de secundário e primário de TRAFO
             if '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
@@ -441,6 +449,9 @@ class Transformer:
     @staticmethod    
     def list_dsativ():
         return(list_dsativ)
+    
+    def dict_kv_pri():
+        return(dicionario_kv_pri)
         
     @staticmethod
     def _process_static(transformer_, value):
@@ -511,6 +522,8 @@ class Transformer:
                     Transformer.sec_phase_kv(getattr(transformer_, f'_transformer')[:-1],getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)))
                 if mapping_key == 'kvas': #settings - limitar cargas BT (potencia atv do trafo): cria dicionário de trafos/potências
                     Transformer.dict_pot_tr(getattr(transformer_, f'_transformer')[:-1],function_(str(param_value)))
+                if mapping_key == 'kv1':
+                    dicionario_kv_pri[getattr(transformer_, f'_transformer')] = function_(str(param_value))
             else:
                 setattr(transformer_, f"_{mapping_key}", row[mapping_value])
 

@@ -397,6 +397,7 @@ class Load:
     def calculate_kw(self, df, tip_dia="", mes="01"):
         df = df.copy()
         df["prop_pot_tipdia_mes"] = None 
+        #print('aqui')
 
         try:
             for index, row in df.iterrows():
@@ -409,7 +410,7 @@ class Load:
             pot_atv_max = max(df["pot_atv"][tip_dia])
             fc = pot_atv_media/pot_atv_max
 
-            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes*1000)/(return_day_type(tip_dia, mes)*24*fc)/1000)
+            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc))
 
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
 
@@ -524,7 +525,6 @@ class Load:
 
     @staticmethod
     def compute_pre_kw(dataframe: gpd.geodataframe.GeoDataFrame):
-
         dataframe['loadshape'] = None
         dataframe['pot_atv'] = None
 
@@ -538,7 +538,7 @@ class Load:
 
         dataframe = dataframe.loc[:, ['COD_ID', 'TIP_DIA', 'loadshape', 'pot_atv']]
         dataframe.set_index('TIP_DIA', inplace=True)
-
+        #print('aqui')
         # dataframe['soma_pot'] = np.sum(np.array(dataframe['pot_atv'].tolist()), axis=1)
         dataframe['soma_pot'] = dataframe['pot_atv'].apply(np.sum)
         pot_classe = dataframe['soma_pot'].sum()

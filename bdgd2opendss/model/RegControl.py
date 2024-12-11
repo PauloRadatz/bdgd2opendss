@@ -19,8 +19,9 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tfascon_phases, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_ptratio
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
 from bdgd2opendss.model.Circuit import Circuit
+
 
 from dataclasses import dataclass
 
@@ -287,7 +288,10 @@ class RegControl:
         else:
             ptratio = Circuit.kvbase()*10/np.sqrt(3)
 
-        buses = f'"{self.bus2}.{self.bus2_nodes}" "{self.bus1}.{self.bus1_nodes}"'
+        if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
+            buses = f'"{self.bus2}.{self.bus2_nodes}" "{self.bus1}.{self.bus1_nodes}"'
+        else:
+            buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
 
         kva = self.kvas
         kvas = ' '.join([f'{self.kvas}' for _ in range(self.windings)])        
