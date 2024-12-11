@@ -626,7 +626,7 @@ def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela 
     df_aux_ssdbt['ELEM'] = 'SEGMBT'
     df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_ramalig['ELEM'] = 'RML'
-    df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador" or "P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_unsemt['ELEM'] = 'CHVMT'
     df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_unsebt['ELEM'] = 'CHVBT'
@@ -635,13 +635,6 @@ def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela 
     df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_regul['ELEM'] = 'REGUL'
     df_aux_tramo = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul], ignore_index=True)
-    # pac_1_2 = df_aux_tramo[~df_aux_tramo['PAC_1'].isin(df_aux_tramo['PAC_2'])].index #criar rotina que verifica quais elementos estão isolados e os retira
-    # pac_2_1 = df_aux_tramo[~df_aux_tramo['PAC_2'].isin(df_aux_tramo['PAC_1'])].index
-    # resultado = pac_1_2[~pac_1_2.isin(pac_2_1)]
-    # for indice in resultado.tolist():
-    #     print(df_aux_tramo.loc[indice])
-    # print('aqui')
-    
     return(df_aux_tramo,df_aux_trafo)
 
 def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
