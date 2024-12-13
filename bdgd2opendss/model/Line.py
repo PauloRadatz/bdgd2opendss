@@ -18,10 +18,9 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
 from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 from bdgd2opendss.core.Settings import settings
-
 
 from dataclasses import dataclass
 
@@ -249,7 +248,8 @@ class Line:
         linecode = Line.neutraliza_rede_terceiros(self)
 
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
-            self.bus2, self.bus1 = self.bus1, self.bus2 #TODO dinamizar isso.
+            if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
+                self.bus2, self.bus1 = self.bus1, self.bus2 
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -416,27 +416,17 @@ class Line:
         return line_
 
     @staticmethod
-    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, ramal_30m = False, pastadesaida:str=""):
+    def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida:str=""):
 
         lines = []
-        energymeters = []
         line_config = json_data['elements']['Line'][entity]
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Line", unit=" lines", ncols=100)
         for _, row in progress_bar:
             line_ = Line._create_line_from_row(line_config, row)
-
-            if line_.prefix_name == "CMT" and line_.estado != "A":
-                energymeters.append(line_.pattern_energymeter())
 
             lines.append(line_)
             progress_bar.set_description(f"Processing Line {entity} {_ + 1}")
 
         file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder, output_folder=pastadesaida)
 
-        if energymeters != []:
-            EM_file_name = create_output_file(energymeters, "EnergyMeters", feeder=line_.feeder, output_folder=pastadesaida)
-
-        else:
-            EM_file_name = ""
-
-        return lines, file_name, EM_file_name
+        return lines, file_name

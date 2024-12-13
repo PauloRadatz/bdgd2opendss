@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 # TODO vide TO DO em case/output_master
 kv = []
-
+pac_ctmt = []
 @dataclass
 class Circuit:
     _arquivo: str = ""
@@ -93,6 +93,9 @@ class Circuit:
     @staticmethod
     def kvbase(): #retorna a tensão nominal do alimentador
         return(kv[0])
+    
+    def pac_ctmt(): #retorna o barramento do CTMT
+        return(pac_ctmt[0])
 
     @staticmethod
     def _process_static(circuit_, value):
@@ -125,6 +128,8 @@ class Circuit:
         for mapping_key, mapping_value in value.items():
             if mapping_key == 'pu' and settings.intAdequarTensaoSuperior: #(setttings) limitar tensão superior de barras e reguladores
                 row[mapping_value] = limitar_tensao_superior(row[mapping_value])
+            if mapping_key == 'bus1':#(settings) captura o PAC inicial para colocar os medidores de barramento
+                pac_ctmt.append(row[mapping_value])
             setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @staticmethod

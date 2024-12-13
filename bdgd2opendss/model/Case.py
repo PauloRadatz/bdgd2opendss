@@ -9,6 +9,7 @@ from bdgd2opendss.model.Count_days import count_day_type
 from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
+from bdgd2opendss.model.EnergyMeters import create_energymeters
 #from bdgd2opendss.model.KVBase import KVBase
 
 @dataclass
@@ -244,6 +245,9 @@ buscoords buscoords.csv'''
 
         self.Populates_CTMT()
 
+        df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
+        Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
+
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
@@ -251,6 +255,8 @@ buscoords buscoords.csv'''
         self.Populates_Entity()
 
         self.Populates_UNREMT()
+        
+        self.Populates_energymeters(df_tramo,df_aux_trafo)
 
         self.Popula_CRVCRG()
 
@@ -326,18 +332,15 @@ buscoords buscoords.csv'''
         alimentador = self.feeder
 
         for entity in ['SSDMT', 'UNSEMT', 'SSDBT', 'UNSEBT', 'RAMLIG']:
-
             if not self.dfs[entity]['gdf'].query("CTMT == @alimentador").empty:
 
                 try:
-                    self._lines_SSDMT, fileName, aux_em = Line.create_line_from_json(self._jsonData,
+                    self._lines_SSDMT, fileName = Line.create_line_from_json(self._jsonData,
                                                                                     self.dfs[entity]['gdf'].query(
                                                                                         "CTMT==@alimentador"),
-                                                                                    entity, ramal_30m=settings.limitRamal30m, pastadesaida=self.output_folder)
+                                                                                    entity, pastadesaida=self.output_folder)
 
                     self.list_files_name.append(fileName)
-                    if aux_em != "":
-                        self.list_files_name.append(aux_em)
 
                 except UnboundLocalError:
                     print(f"Error in {entity}.\n")
@@ -505,3 +508,8 @@ buscoords buscoords.csv'''
                 print("Error in UGBT_tab\n")
         else:
             print("No UGMT found for this feeder. \n")
+
+    def Populates_energymeters(self,df_aux_tramo,df_aux_trafo):
+        alimentador = self.feeder
+        fileName = create_energymeters(df_aux_tramo,df_aux_trafo,self.feeder,self.output_folder)
+        self.list_files_name.append(fileName)
