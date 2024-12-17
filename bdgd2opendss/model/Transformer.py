@@ -305,7 +305,7 @@ class Transformer:
             if '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
                 kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
+                buses = f'"MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}.{self.bus3_nodes}" '
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
                 if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
@@ -330,7 +330,7 @@ class Transformer:
             elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
                 kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus3}.{self.bus3_nodes}" '
+                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}.{self.bus3_nodes}" '
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
                 if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
