@@ -652,7 +652,7 @@ def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
 def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
     global seq 
     if df_aux_tramo is not None:
-        if pac_ctmt in df_aux_tramo['PAC_1']:
+        if pac_ctmt in df_aux_tramo['PAC_1'].values:
             seq = 'Direta'
         else:
             seq = 'Invertida'

@@ -250,6 +250,8 @@ class Line:
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
             if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
                 self.bus2, self.bus1 = self.bus1, self.bus2 
+            else:
+                self.bus1, self.bus2 = self.bus1, self.bus2
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -259,7 +261,10 @@ class Line:
     def pattern_switch(self):
 
         if self.prefix_name == "CMT":
-            self.bus1, self.bus2 = self.bus2, self.bus1
+            if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
+                self.bus2, self.bus1 = self.bus1, self.bus2 
+            else:
+                self.bus1, self.bus2 = self.bus1, self.bus2
 
         if self.estado == 'A':
             return  f'!New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
@@ -274,15 +279,7 @@ class Line:
             f'r1={self.r1} r0={self.r0} x1={self.x1} x0={self.x0} c1={self.c1} c0={self.c0}  ' \
             f'switch = {self.switch} length={self.length:.5f}'
 
-    def pattern_energymeter(self):
-
-        return f'New Energymeter.EM_{self.prefix_name}_{self.line} element=line.{self.prefix_name}_{self.line} terminal=1'
-
-
     def full_string(self) -> str:
-
-        # if em:
-        #     return self.pattern_energymeter()
         
         if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
@@ -295,8 +292,6 @@ class Line:
 
     def __repr__(self):
 
-        # if em:
-        #     return self.pattern_energymeter()
         if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
