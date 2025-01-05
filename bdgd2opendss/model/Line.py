@@ -18,7 +18,7 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
-from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs, elem_isolados
 from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 from bdgd2opendss.core.Settings import settings
 
@@ -281,7 +281,8 @@ class Line:
 
     def full_string(self) -> str:
         
-        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
+        if f'{self.prefix_name}_{self.line}' in elem_isolados(): #remove as linhas isoladas
+        #if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -292,7 +293,8 @@ class Line:
 
     def __repr__(self):
 
-        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
+        if f'{self.prefix_name}_{self.line}' in elem_isolados(): #remove as linhas isoladas
+        #if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":

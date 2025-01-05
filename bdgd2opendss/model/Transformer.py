@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.model.Circuit import Circuit
-from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios, perdas_trafos_abnt
+from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios, perdas_trafos_abnt, elem_isolados
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass
@@ -285,10 +285,8 @@ class Transformer:
 =
         """
 
-        if self.sit_ativ == "DS":
-            return("")
         if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
-            if self.kv2 > 1: #se já não for tensão de linha*** verificar esse se
+            if self.kv2 > 1: #TODO se já não for tensão de linha*** verificar esse se
                 self.kv1 = f'{float(self.kv1)/numpy.sqrt(3):.13f}'
                 if self.conn_s == 'Wye':
                     self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
@@ -365,42 +363,43 @@ class Transformer:
                 f'{self._coment}New "Line.Resist_MTR_TRF_{self.transformer}" phases=1 bus1="{self.bus1}.{self.bus1_nodes}" bus2="MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" linecode="LC_MRT_TRF_{self.transformer}_1" length=0.001 units=km \n')
 
     def full_string(self) -> str:
-        if self.sit_ativ == 'DS':
-            return("")
+        #if self.transformer in elem_isolados():
+        # if self.sit_ativ == 'DS':
+        #     return("")
+        # else:
+        if settings.intAdequarTrafoVazio and self.transformer[:-1] in create_df_trafos_vazios(): #settings (comenta os transformadores vazios)
+            self._coment = '!'
         else:
-            if settings.intAdequarTrafoVazio and self.transformer[:-1] in create_df_trafos_vazios(): #settings (comenta os transformadores vazios)
-                self._coment = '!'
+            self._coment = ''
+
+        self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT = Transformer.adapting_string_variables(self)
+
+        if settings.intAdequarTapTrafo: #settings (adequar taps de transformadores)
+            if len(self.taps) < 8:
+                taps = f'taps=[1.0 {self.taps[0:3]}] '
             else:
-                self._coment = ''
+                taps = f'taps=[1.0 {self.taps[0:3]} {self.taps[8:11]}] '
+        else:
+            taps = ""
 
-            self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
+        if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
+            self.totalloss = 0
+            self.noloadloss = 0
 
-            if settings.intAdequarTapTrafo: #settings (adequar taps de transformadores)
-                if len(self.taps) < 8:
-                    taps = f'taps=[1.0 {self.taps[0:3]}] '
-                else:
-                    taps = f'taps=[1.0 {self.taps[0:3]} {self.taps[8:11]}] '
-            else:
-                taps = ""
+        if settings.intUsaTrafoABNT:
+            self.totalloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'totalloss'))
+            self.noloadloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'noloadloss'))
 
-            if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
-                self.totalloss = 0
-                self.noloadloss = 0
-
-            if settings.intUsaTrafoABNT:
-                self.totalloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'totalloss'))
-                self.noloadloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'noloadloss'))
-
-            return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
-                f'windings={self.windings} '
-                f'buses=[{self.buses}] '
-                f'conns=[{self.conns}] '
-                f'kvs=[{self.kvs}] '
-                f'{taps}'
-                f'kvas=[{self.kvas}] '
-                f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
-                f'{self._coment}{self.pattern_reactor()}\n'
-                f'{MRT}')
+        return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
+            f'windings={self.windings} '
+            f'buses=[{self.buses}] '
+            f'conns=[{self.conns}] '
+            f'kvs=[{self.kvs}] '
+            f'{taps}'
+            f'kvas=[{self.kvas}] '
+            f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
+            f'{self._coment}{self.pattern_reactor()}\n'
+            f'{MRT}')
                 
     def __repr__(self):
         if self.sit_ativ == 'DS':
@@ -419,7 +418,7 @@ class Transformer:
                 f'{MRT}'
                 f'{self.pattern_reactor()}')
         
-    def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None): #retorna um dicionario de tensões de fase para cargas de acordo com critérios do Geoperdas
+    def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None, tip_trafo:Optional[str] = None): #retorna um dicionario de tensões de fase para cargas de acordo com critérios do Geoperdas
         if trload == None:
             if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
                 dict_phase_kv[transformer] = kv2/2 
@@ -429,7 +428,7 @@ class Transformer:
                 dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
         else:
             return(dict_phase_kv[trload])
-    
+        
     def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:
             dicionario_kv[transformer] = kv2

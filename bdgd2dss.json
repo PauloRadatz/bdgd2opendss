@@ -345,7 +345,7 @@
                 "direct_mapping": {
                     "bus1": "PAC_1",
                     "bus2": "PAC_2",
-                    "transformer": "COD_ID",
+                    "transformer": "UN_RE",
                     "vreg": "TEN_REG",
                     "prefix_transformer": "LIG_FAS_P",
                     "xhl": "XHL",
@@ -355,6 +355,9 @@
                     "banco":"BANC"
                 },
                 "indirect_mapping":{
+                    "kv1": ["LIG_FAS_P",
+                    "convert_tten"
+                    ],
                     "kvas": [
                         "POT_NOM",
                         "convert_tpotaprt"
