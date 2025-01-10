@@ -172,7 +172,6 @@ class Case:
         #   qualquer dependencia (temporal) de se executar o circuit e transformer antes). Eg _circuitos.GetKv()
         y.append(Circuit.kvbase())
         voltagebases = " ".join(str(z) for z in set(y))
-
         for i in file_names:
             if i[:2] == "GD":
                 master = master + f'!Redirect "{i}"\n'
@@ -211,27 +210,28 @@ buscoords buscoords.csv'''
 
         # TODO de fato quebrou, gerando excpetion: UnboundLocalError: local variable 'indice' referenced before assignment
         #  Correcao temporaria. Inicializei indice abaixo
-        indice = 0
+        indicebt = 0
+        indicemt = 0
 
         for elemento in file_names:
-            if "Cargas" in elemento:
-                indice = file_names.index(elemento)
+            if "CargasBT" in elemento:
+                indicebt = file_names.index(elemento)
+            if "CargasMT" in elemento:
+                indicemt = file_names.index(elemento)
 
         # TODO Este tipo de indexacao eh fragil. Se a ordem dos appends muda, o codigo quebra.
-        base_string_BT = file_names[indice - 2]
-        base_string_MT = file_names[indice - 1]
-        base_string_PIP = file_names[indice]
+        base_string_BT = file_names[indicebt]
+        base_string_MT = file_names[indicemt]
 
         for tip_dia in ['DU', 'SA', 'DO']:
 
             aux_BT = base_string_BT.replace('_DU', f'_{tip_dia}')
             aux_MT = base_string_MT.replace('_DU', f'_{tip_dia}')
-            aux_PIP = base_string_PIP.replace('_DU', f'_{tip_dia}')
+
 
             for mes in meses:
-                file_names[indice - 2] = aux_BT.replace('01_', f'{mes}_')
-                file_names[indice - 1] = aux_MT.replace('01_', f'{mes}_')
-                file_names[indice] = aux_PIP.replace('01_', f'{mes}_')
+                file_names[indicebt] = aux_BT.replace('01_', f'{mes}_',1)
+                file_names[indicemt] = aux_MT.replace('01_', f'{mes}_',1)
 
                 self.output_master(tip_dia=tip_dia, mes=mes, file_names=file_names)
 
@@ -247,6 +247,8 @@ buscoords buscoords.csv'''
 
         df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
+        Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt()) #Define quais são os elementos isolados
+        Utils.seq_eletrica(self.dfs,self.feeder,pac=Circuit.pac_ctmt(),kvbase=Circuit.kvbase()) #Define as tensões no circuito com base nos transformadores
 
         self.Populates_SEGCON()
 
@@ -265,7 +267,7 @@ buscoords buscoords.csv'''
         self.Populates_PIP()
 
         self.Populates_UCMT()
-
+        #Load.export_df_loads()#exporta tabela de perdas técnicas para cargas
         self.Populates_UGBT()
 
         self.Populates_UGMT()
@@ -403,7 +405,6 @@ buscoords buscoords.csv'''
         try:
             _load_shapes, fileName = LoadShape.create_loadshape_from_json(self._jsonData, self._dfs['CRVCRG']['gdf'], self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
-
         except UnboundLocalError:
             print("Error in CRVCRG\n")
 
