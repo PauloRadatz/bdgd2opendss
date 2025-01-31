@@ -283,9 +283,9 @@ class RegControl:
             kv = self.kv1*1000
         
         if self.bus2_nodes == '1.2' or self.bus2_nodes == '2.3' or self.bus2_nodes == '3.1' or self.bus2_nodes == '1.2.3':
-            ptratio = Circuit.kvbase()*10
+            ptratio = self.kv1*10
         else:
-            ptratio = Circuit.kvbase()*10/np.sqrt(3)
+            ptratio = self.kv1*10/np.sqrt(3)
 
         if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
             buses = f'"{self.bus2}.{self.bus2_nodes}" "{self.bus1}.{self.bus1_nodes}"'

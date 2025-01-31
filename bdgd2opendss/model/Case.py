@@ -208,8 +208,6 @@ buscoords buscoords.csv'''
         """
         meses = [f"{mes:02d}" for mes in range(1, 13)]
 
-        # TODO de fato quebrou, gerando excpetion: UnboundLocalError: local variable 'indice' referenced before assignment
-        #  Correcao temporaria. Inicializei indice abaixo
         indicebt = 0
         indicemt = 0
 
@@ -219,7 +217,6 @@ buscoords buscoords.csv'''
             if "CargasMT" in elemento:
                 indicemt = file_names.index(elemento)
 
-        # TODO Este tipo de indexacao eh fragil. Se a ordem dos appends muda, o codigo quebra.
         base_string_BT = file_names[indicebt]
         base_string_MT = file_names[indicemt]
 
@@ -247,9 +244,9 @@ buscoords buscoords.csv'''
 
         df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
-        Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt()) #Define quais são os elementos isolados
+        Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt(),output_folder=self.output_folder) #Define quais são os elementos isolados e cria um log de elementos isolados
         Utils.seq_eletrica(self.dfs,self.feeder,pac=Circuit.pac_ctmt(),kvbase=Circuit.kvbase()) #Define as tensões no circuito com base nos transformadores
-
+        
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
@@ -384,7 +381,7 @@ buscoords buscoords.csv'''
         #settings - criação de dataframe para eliminar transformadores em vazio
         if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
             dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
-        Utils.create_df_trafos_vazios(dfs)
+            Utils.create_df_trafos_vazios(dfs)
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
                 self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
@@ -485,7 +482,7 @@ buscoords buscoords.csv'''
                                                                               self.dfs['UGBT_tab']['gdf'].query(
                                                                                   "CTMT==@alimentador"), 'UGBT_tab', pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
-
+                
             except UnboundLocalError:
                 print("Error in UGBT_tab\n")
 

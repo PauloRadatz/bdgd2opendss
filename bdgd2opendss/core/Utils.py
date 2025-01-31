@@ -10,12 +10,27 @@ import networkx as nx
 import geopandas as gpd
 import pandas as pd
 from bdgd2opendss.core.Settings import settings
+import logging
 
 cod_year_bdgd = None
 tr_vazios = []
 sufixo_config = ""
 lista_isolados = []
 tensao_dict = {}
+
+def log_erros(df_isolados:Optional[pd.DataFrame],feeder:Optional[str],output_directory: Optional[str] = None):
+    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd()[6:]}')
+    if not logger.hasHandlers():
+        path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
+        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd()[6:]}.log')
+        logging.basicConfig(
+            level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
+            format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
+            filename = file_path,
+            filemode='w'  # Sobrescrever o arquivo de log (use 'a' para adicionar ao invés de sobrescrever)
+            )
+    for _,row in df_isolados.iterrows(): 
+        logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -664,7 +679,7 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
         return(seq)
 
 
-def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None): #cria uma lista de elementos isolados
+def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
     global lista_isolados
     if dataframe != None:
         alimentador = feeder
@@ -677,8 +692,8 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_ssdbt['ELEM'] = 'SEGMBT'
         df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_ramalig['ELEM'] = 'RML'
-        #df_aux_ramalig['COD_ID'] = "RBT_" + df_aux_ramalig['COD_ID'].astype(str) #alternativa para remover os ifs do fim do código
-        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        #df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_unsebt['ELEM'] = 'CHVBT'
@@ -713,6 +728,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         if df_not_connected.empty:
             return(print('Não existem elementos isolados!'))
         else:
+            log_erros(df_not_connected,alimentador,output_folder)
             lista_isolados = []
 
             for cod_id in df_not_connected['COD_ID'].values:
@@ -793,3 +809,17 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
                     tensao_dict[seq[1]] = kv
         return(print('Sequência elétrica na média tensão realizada!'))
 
+# def pvsystem_stats(dfs,output_folder):
+#     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
+#     df = pd.DataFrame(columns=colunas)
+#     for index,feeder in enumerate(dfs["CTMT"]['gdf']['COD_ID'].tolist()):
+#         alimentador = feeder
+#         df_ugbt = dfs['UGBT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
+#         df_ugmt = dfs['UGMT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
+#         df_pvbt = df_ugbt[df_ugbt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
+#         df_pvmt = df_ugmt[df_ugmt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
+#         df.loc[index,'CTMT'] = feeder
+#         df.loc[index,'POT_PV_TOTAL_INSTALADA'] = float(df_pvmt["POT_INST"].sum() + df_pvbt["POT_INST"].sum())
+#         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
+#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd()[6:]}.csv')
+#     df.to_csv(file_path, index=False, encoding='utf-8')
