@@ -19,7 +19,6 @@ from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file, ordem_pacs, elem_isolados
-from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass
@@ -403,7 +402,6 @@ class Line:
         for key, value in line_config.items():
             if key == "calculated":
                 line_._process_calculated(line_, value, row)
-
             elif key == "direct_mapping":
                 line_._process_direct_mapping(line_, value, row)
             elif key == "indirect_mapping":
