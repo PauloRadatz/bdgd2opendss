@@ -385,10 +385,17 @@ class Transformer:
         if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
             self.totalloss = 0
             self.noloadloss = 0
-
-        if settings.intUsaTrafoABNT:
-            self.totalloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'totalloss'))
-            self.noloadloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'noloadloss'))
+        if settings.intUsaTrafoABNT: #settings (configuração para utilização de perdas da ABNT 5440)
+            if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
+                kv1 = Circuit.kvbase()
+            else:
+                kv1 = float(self.kv1)
+            if self.conn_p == 'Delta' and self.phases == '1':
+                self.totalloss = float(perdas_trafos_abnt(2,kv1,kva,'totalloss'))
+                self.noloadloss = float(perdas_trafos_abnt(2,kv1,kva,'noloadloss'))
+            else:
+                self.totalloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'totalloss'))
+                self.noloadloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'noloadloss'))
 
         return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
             f'windings={self.windings} '
