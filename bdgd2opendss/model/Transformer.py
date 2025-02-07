@@ -30,6 +30,7 @@ dicionario_kv_pri = {}
 dict_phase_kv = {}
 dict_pot_tr = {}
 list_dsativ = []
+list_posse = []
 
 @dataclass
 class Transformer:
@@ -385,10 +386,17 @@ class Transformer:
         if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
             self.totalloss = 0
             self.noloadloss = 0
-
-        if settings.intUsaTrafoABNT:
-            self.totalloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'totalloss'))
-            self.noloadloss = float(perdas_trafos_abnt(self.phases,self.kv1,kva,'noloadloss'))
+        if settings.intUsaTrafoABNT: #settings (configuração para utilização de perdas da ABNT 5440)
+            if self.conn_p == 'Wye' and (int(self.phases) == 1 or '4' in self.bus1_nodes):
+                kv1 = Circuit.kvbase()
+            else:
+                kv1 = float(self.kv1)
+            if self.conn_p == 'Delta' and self.phases == '1':
+                self.totalloss = float(perdas_trafos_abnt(2,kv1,kva,'totalloss'))
+                self.noloadloss = float(perdas_trafos_abnt(2,kv1,kva,'noloadloss'))
+            else:
+                self.totalloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'totalloss'))
+                self.noloadloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'noloadloss'))
 
         return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
             f'windings={self.windings} '
@@ -451,6 +459,9 @@ class Transformer:
     
     def dict_kv_pri():
         return(dicionario_kv_pri)
+    
+    def list_posse():
+        return(list_posse)
         
     @staticmethod
     def _process_static(transformer_, value):
@@ -489,6 +500,8 @@ class Transformer:
                 Transformer.sec_line_kv(transformer=row[mapping_value][:-1],kv2=getattr(transformer_,"kv2"))
             if mapping_key == "sit_ativ" and row[mapping_value] == "DS":
                 list_dsativ.append(getattr(transformer_, f'_transformer')[:-1])
+            if mapping_key == "posse" and row[mapping_value] != "PD":
+                list_posse.append(getattr(transformer_, f'_transformer')[:-1])
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):

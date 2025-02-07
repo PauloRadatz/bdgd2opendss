@@ -501,7 +501,7 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
         sufixo_config = "-"
     if settings.intUsaTrafoABNT:
         sufixo_config = sufixo_config + "T"
-        df_config.loc[count] = ['intUsaTrafoABNT','Transformadores ABNT']
+        df_config.loc[count] = ['intUsaTrafoABNT','Perdas nos Transformadores de acordo ABNT']
         count += 1
     else:
         sufixo_config = sufixo_config + "-"
