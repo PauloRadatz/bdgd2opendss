@@ -30,6 +30,7 @@ dicionario_kv_pri = {}
 dict_phase_kv = {}
 dict_pot_tr = {}
 list_dsativ = []
+list_posse = []
 
 @dataclass
 class Transformer:
@@ -458,6 +459,9 @@ class Transformer:
     
     def dict_kv_pri():
         return(dicionario_kv_pri)
+    
+    def list_posse():
+        return(list_posse)
         
     @staticmethod
     def _process_static(transformer_, value):
@@ -496,6 +500,8 @@ class Transformer:
                 Transformer.sec_line_kv(transformer=row[mapping_value][:-1],kv2=getattr(transformer_,"kv2"))
             if mapping_key == "sit_ativ" and row[mapping_value] == "DS":
                 list_dsativ.append(getattr(transformer_, f'_transformer')[:-1])
+            if mapping_key == "posse" and row[mapping_value] != "PD":
+                list_posse.append(getattr(transformer_, f'_transformer')[:-1])
 
     @staticmethod
     def _process_indirect_mapping(transformer_, value, row):

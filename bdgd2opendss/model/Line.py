@@ -20,6 +20,7 @@ from tqdm import tqdm
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
 from bdgd2opendss.core.Utils import create_output_file, ordem_pacs, elem_isolados
 from bdgd2opendss.core.Settings import settings
+from bdgd2opendss.model.Transformer import Transformer
 
 from dataclasses import dataclass
 
@@ -229,8 +230,11 @@ class Line:
         self._posse = value
 
     def neutraliza_rede_terceiros(self): #settings (neutraliza rede de terceiros)
-        if self.posse != 'PD' and settings.intNeutralizarRedeTerceiros:
-            linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+        if settings.intNeutralizarRedeTerceiros:
+            if (self.prefix_name == 'RBT' and self.transformer in Transformer.list_posse()) or (self.prefix_name != 'RBT' and self.posse != "PD"):
+                linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+            else:
+                linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         else:
             linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         return(linecode)
