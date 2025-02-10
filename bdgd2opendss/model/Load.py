@@ -14,14 +14,14 @@ import copy
 import re
 from typing import Any
 # from numba import jit
-import pandas
+import pandas as pd
 import geopandas as gpd
 from tqdm import tqdm
 from bdgd2opendss.core.Settings import settings
 
 
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, convert_tfascon_conn_load, convert_tfascon_phases_load
-from bdgd2opendss.core.Utils import create_output_file,adequar_modelo_carga
+from bdgd2opendss.core.Utils import create_output_file,adequar_modelo_carga, get_cod_year_bdgd, elem_isolados, seq_eletrica
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.model.Count_days import return_day_type
@@ -30,6 +30,7 @@ import math
 import numpy as np
 
 from dataclasses import dataclass
+df_energ_load = pd.DataFrame()
 
 @dataclass
 class Load:
@@ -70,6 +71,7 @@ class Load:
     _energia_10: str = ''
     _energia_11: str = ''
     _energia_12: str = ''
+    _energia_total: float = 0.0
 
     @property
     def feeder(self):
@@ -320,7 +322,6 @@ class Load:
         self._transformer = value
     
     def adapting_string_variables_load(self): #TODO implementar as tensões de 254
-
         models = adequar_modelo_carga(settings.intAdequarModeloCarga)#settings adequar modelo de carga
 
         if "MT" not in self.entity:
@@ -336,12 +337,13 @@ class Load:
 
             return(kv,models)
         else:
+            kv = seq_eletrica(key=self.bus1)
             if settings.intAdequarTensaoCargasMT:#settings adequar tensão mínima das cargas MT
                 self.vminpu = 0.93
             else:
                 self.vminpu = settings.dblVPUMin 
 
-            return(Circuit.kvbase(),models)
+            return(kv,models)
     
     def limitar_potencia_cargasBT(self): #settings - Limitar potência de cargas BT(potência ativa do transformador)
         loadbtkw = Transformer.dict_pot_tr(trload=self.transformer)
@@ -352,13 +354,12 @@ class Load:
             return(self.kw)
 
     def full_string(self) -> str: 
-        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
-            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+        if self._energia_total == 0 or f'{self.entity}{self.load}' in elem_isolados():
             return("")
             
         if "MT" not in self.entity:
-            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
-                return("")
+            # if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
+            #     return("")
             if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
                 self.kw = Load.limitar_potencia_cargasBT(self)
             
@@ -375,42 +376,47 @@ class Load:
                 
             
     def __repr__(self):
-        if (float(self.energia_01)+float(self.energia_02)+float(self.energia_03)+float(self.energia_04)+float(self.energia_05)+float(self.energia_06) 
-            +float(self.energia_07)+float(self.energia_08)+float(self.energia_09)+float(self.energia_10)+float(self.energia_11)+float(self.energia_12)) == 0:
+        if self._energia_total == 0 or f'{self.entity}{self.load}' in elem_isolados():
             return("")
             
         if "MT" not in self.entity:
-            if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
-                return("")
+            # if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
+            #     return("")
+            if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
+                self.kw = Load.limitar_potencia_cargasBT(self)
+            
         kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
         kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}" \n'\
+                f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga} \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}"'
+                f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
+        global df_energ_load
         df = df.copy()
         df["prop_pot_tipdia_mes"] = None 
         #print('aqui')
 
         try:
             for index, row in df.iterrows():
-                df.loc[index, "prop_pot_tipdia_mes"] = row["prop"]*return_day_type(index,mes)
+                df.loc[index, "prop_pot_tipdia_mes"] = row["prop"]*return_day_type(index,mes) 
                 
 
-            prop_pot_mens_mes = df["prop_pot_tipdia_mes"][tip_dia]/(df["prop_pot_tipdia_mes"].sum())
+            prop_pot_mens_mes = df["prop_pot_tipdia_mes"][tip_dia]/(df["prop_pot_tipdia_mes"].sum()) #Tirar aqui o propenermensal(TIPDIA)(MES) para cada carga
 
             pot_atv_media = df["soma_pot"][tip_dia]/24
             pot_atv_max = max(df["pot_atv"][tip_dia])
-            fc = pot_atv_media/pot_atv_max
+            fc = pot_atv_media/pot_atv_max #tirar aqui o fcDU/fcDO/fcSA para cada carga
+            if self._energia_total != 0: #não cria df de cargas com energia zerada
+                Load.create_df_loads(self,tip_dia,mes,df['COD_ID'][tip_dia],prop_pot_mens_mes,fc) #cria o dataframe para usar no cálculo das perdas técnicas
 
-            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc))
+            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc))#kw tipo dia (DU/SA/DO)
 
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
 
@@ -448,8 +454,13 @@ class Load:
         key-value pairs of the 'value' dictionary and directly setting the corresponding
         attribute on the load object using the value from the row.
         """
+        lista_energia = []
         for mapping_key, mapping_value in value.items():
             setattr(load_, f"_{mapping_key}", row[mapping_value])
+            if 'energia' in mapping_key:
+                lista_energia.append(row[mapping_value])
+                if mapping_key == 'energia_12':
+                    setattr(load_, f"_energia_total", sum(lista_energia))
 
 
     @staticmethod
@@ -527,7 +538,7 @@ class Load:
     def compute_pre_kw(dataframe: gpd.geodataframe.GeoDataFrame):
         dataframe['loadshape'] = None
         dataframe['pot_atv'] = None
-
+        
         for i in range(0,len(dataframe)):
             # pot_atv_normal, pot_atv = process_loadshape(dataframe.filter(regex='^POT').loc[i,:].to_list())        # manda uma lista com os 96 valores de uma carga apenas
             pot_atv_normal, pot_atv = process_loadshape(dataframe.filter(regex='^POT').loc[i,:].to_list())        # manda uma lista com os 96 valores de uma carga apenas
@@ -609,12 +620,41 @@ class Load:
                             DO_meses[mes].append(new_load)
 
 
-
             progress_bar.set_description(f"Processing load {entity} {_ + 1}")
-
+        global df_energ_load
+        df_energ_load['CodDist'] = get_cod_year_bdgd()
         file_name = Load._create_output_load_files(DU_meses, "DU", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
         Load._create_output_load_files(SA_meses, "SA", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
         Load._create_output_load_files(DO_meses, "DO", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
 
         return DU_meses, file_name
         #return load_, file_name
+
+    def create_df_loads(self,tip_dia,mes,crvcarga,prop,fc):
+        global df_energ_load
+        if df_energ_load.empty:
+            columns = ['CodDist','CodConsBT','TipCrvaCarga','CodAlim','CodTrafo','fcDU','fcSA','fcDO','PropEnerMensDU01','PropEnerMensDU02','PropEnerMensDU03',
+                    'PropEnerMensDU04','PropEnerMensDU05','PropEnerMensDU06','PropEnerMensDU07','PropEnerMensDU08','PropEnerMensDU09','PropEnerMensDU10','PropEnerMensDU11',
+                    'PropEnerMensDU12','PropEnerMensSA01','PropEnerMensSA02','PropEnerMensSA03','PropEnerMensSA04','PropEnerMensSA05','PropEnerMensSA06','PropEnerMensSA07'
+                    ,'PropEnerMensSA08','PropEnerMensSA09','PropEnerMensSA10','PropEnerMensSA11','PropEnerMensSA12','PropEnerMensDO01','PropEnerMensDO02','PropEnerMensDO03',
+                    'PropEnerMensDO04','PropEnerMensDO05','PropEnerMensDO06','PropEnerMensDO07','PropEnerMensDO08','PropEnerMensDO09','PropEnerMensDO10','PropEnerMensDO11',
+                    'PropEnerMensDO12']
+            
+            df_energ_load = pd.DataFrame(columns=columns)
+            df_energ_load['CodAlim'] = self.feeder 
+            df_energ_load.set_index('CodConsBT', inplace=True)
+        else:
+            ...
+
+        df_energ_load.at[self.load, f'PropEnerMens{tip_dia}{mes}'] = prop
+        df_energ_load.at[self.load, f'fc{tip_dia}'] = fc
+        df_energ_load.at[self.load, 'TipCrvaCarga'] = crvcarga
+        df_energ_load.at[self.load, 'CodAlim'] = self.feeder
+        df_energ_load.at[self.load, 'CodTrafo'] = self.transformer
+
+    def export_df_loads():
+        global df_energ_load
+        df_energ_load.to_csv(r"C:\Users\mozar\OneDrive\Desktop\creluz\tabelapropcargas.csv",sep=';',encoding='utf-8', index=False)
+        return(print('Tabela de perdas técnicas criada'))
+    
+        

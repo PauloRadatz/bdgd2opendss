@@ -18,9 +18,9 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_tfascon_phases, convert_tfascon_bus, convert_tfascon_quant_fios
-from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
-from bdgd2opendss.model.Transformer import list_dsativ, dicionario_kv
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs, elem_isolados
 from bdgd2opendss.core.Settings import settings
+from bdgd2opendss.model.Transformer import Transformer
 
 from dataclasses import dataclass
 
@@ -230,8 +230,11 @@ class Line:
         self._posse = value
 
     def neutraliza_rede_terceiros(self): #settings (neutraliza rede de terceiros)
-        if self.posse != 'PD' and settings.intNeutralizarRedeTerceiros:
-            linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+        if settings.intNeutralizarRedeTerceiros:
+            if (self.prefix_name == 'RBT' and self.transformer in Transformer.list_posse()) or (self.prefix_name != 'RBT' and self.posse != "PD"):
+                linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+            else:
+                linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         else:
             linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         return(linecode)
@@ -250,6 +253,8 @@ class Line:
         if self.prefix_name == "SMT": #TODO checar como fazer o sequenciamento dos buses
             if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
                 self.bus2, self.bus1 = self.bus1, self.bus2 
+            else:
+                self.bus1, self.bus2 = self.bus1, self.bus2
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
@@ -259,7 +264,10 @@ class Line:
     def pattern_switch(self):
 
         if self.prefix_name == "CMT":
-            self.bus1, self.bus2 = self.bus2, self.bus1
+            if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
+                self.bus2, self.bus1 = self.bus1, self.bus2 
+            else:
+                self.bus1, self.bus2 = self.bus1, self.bus2
 
         if self.estado == 'A':
             return  f'!New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
@@ -274,17 +282,10 @@ class Line:
             f'r1={self.r1} r0={self.r0} x1={self.x1} x0={self.x0} c1={self.c1} c0={self.c0}  ' \
             f'switch = {self.switch} length={self.length:.5f}'
 
-    def pattern_energymeter(self):
-
-        return f'New Energymeter.EM_{self.prefix_name}_{self.line} element=line.{self.prefix_name}_{self.line} terminal=1'
-
-
     def full_string(self) -> str:
-
-        # if em:
-        #     return self.pattern_energymeter()
         
-        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
+        if f'{self.prefix_name}_{self.line}' in elem_isolados(): #remove as linhas isoladas
+        #if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -295,9 +296,8 @@ class Line:
 
     def __repr__(self):
 
-        # if em:
-        #     return self.pattern_energymeter()
-        if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
+        if f'{self.prefix_name}_{self.line}' in elem_isolados(): #remove as linhas isoladas
+        #if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
@@ -406,7 +406,6 @@ class Line:
         for key, value in line_config.items():
             if key == "calculated":
                 line_._process_calculated(line_, value, row)
-
             elif key == "direct_mapping":
                 line_._process_direct_mapping(line_, value, row)
             elif key == "indirect_mapping":

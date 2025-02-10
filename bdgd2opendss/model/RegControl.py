@@ -19,7 +19,7 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tfascon_phases, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_ptratio
-from bdgd2opendss.core.Utils import create_output_file, ordem_pacs
+from bdgd2opendss.core.Utils import create_output_file, ordem_pacs, elem_isolados, seq_eletrica
 from bdgd2opendss.model.Circuit import Circuit
 
 
@@ -67,7 +67,6 @@ class RegControl:
     @feeder.setter
     def feeder(self, value):
         self._feeder = value
-
 
     @property
     def bus1(self):
@@ -275,7 +274,7 @@ class RegControl:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 
         """
-        self.kv1 = Circuit.kvbase()
+        self.kv1 = seq_eletrica(key=self.bus1)
         if self.conn_p == 'Wye':
             kvs = f"{self.kv1/np.sqrt(3):.3f} {self.kv1/np.sqrt(3):.3f}"
             kv = self.kv1*1000/np.sqrt(3)
@@ -284,9 +283,9 @@ class RegControl:
             kv = self.kv1*1000
         
         if self.bus2_nodes == '1.2' or self.bus2_nodes == '2.3' or self.bus2_nodes == '3.1' or self.bus2_nodes == '1.2.3':
-            ptratio = Circuit.kvbase()*10
+            ptratio = self.kv1*10
         else:
-            ptratio = Circuit.kvbase()*10/np.sqrt(3)
+            ptratio = self.kv1*10/np.sqrt(3)
 
         if ordem_pacs() == 'Invertida': #define a ordem dos buses de acordo com o bus inicial
             buses = f'"{self.bus2}.{self.bus2_nodes}" "{self.bus1}.{self.bus1_nodes}"'
@@ -302,17 +301,19 @@ class RegControl:
         if self.conn_p == "Delta":
             return("")
         else:
-            return (f'New "Reactor.TRF_{self.transformer}{self.prefix_transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
-                f'New "Reactor.TRF_{self.transformer}{self.prefix_transformer}_S" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
+            return (f'New "Reactor.TRF_{self.transformer}_P" phases=1 bus1="{self.bus1}.4" R=15 X=0 basefreq=60 \n'
+                f'New "Reactor.TRF_{self.transformer}_S" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
         )
 
     def full_string(self) -> str:
+        if f"REG_{self.transformer}" in elem_isolados():
+            return("") 
 
         if self.buses == "":
             self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
         return(
-    f'New \"Transformer.REG_{self.transformer}{self.prefix_transformer[0]}" phases={self.phases} '
+    f'New \"Transformer.REG_{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
@@ -320,7 +321,7 @@ class RegControl:
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={(self.totalloss - self.noloadloss)/(1000*kva)} %noloadloss={self.noloadloss/(1000*kva)}'
-    f'\nNew \"Regcontrol.REG_{self.transformer}{self.prefix_transformer[0]}" transformer="REG_{self.transformer}{self.prefix_transformer[0]}" '
+    f'\nNew \"Regcontrol.REG_{self.transformer}" transformer="REG_{self.transformer}" '
     f'winding={self.windings} '
     f'vreg={self.vreg*100} '
     f'band={self.band} '
@@ -328,12 +329,14 @@ class RegControl:
     f'{self.pattern_reactor_reg()}')
     
     def __repr__(self):
+        if f"REG_{self.transformer}" in elem_isolados():
+            return("") 
 
         if self.buses == "":
             self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
         return(
-    f'New \"Transformer.REG_{self.transformer}{self.prefix_transformer[0]}" phases={self.phases} '
+    f'New \"Transformer.REG_{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
     f'buses=[{self.buses}] '
     f'conns=[{self.conn_p} {self.conn_s} {self.conn_t}] '
@@ -341,7 +344,7 @@ class RegControl:
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
     f'%loadloss={(self.totalloss - self.noloadloss)/(1000*kva)} %noloadloss={self.noloadloss/(1000*kva)}'
-    f'\nNew \"Regcontrol.REG_{self.transformer}{self.prefix_transformer[0]}" transformer="REG_{self.transformer}{self.prefix_transformer[0]}" '
+    f'\nNew \"Regcontrol.REG_{self.transformer}" transformer="REG_{self.transformer}" '
     f'winding={self.windings} '
     f'vreg={self.vreg*100} '
     f'band={self.band} '
@@ -409,6 +412,10 @@ class RegControl:
             if isinstance(mapping_value, list):
                 param_name, function_name = mapping_value
                 function_ = globals()[function_name]
+                # if mapping_key == 'kv1':
+                #     param_value = seq_eletrica(key=getattr(regcontrol_, f'_bus1')) #pegando a tensão através da sequência elétrica
+                # else:
+                #     param_value = row[param_name]
                 param_value = row[param_name]
                 setattr(regcontrol_, f"_{mapping_key}", function_(str(param_value)))
             else:

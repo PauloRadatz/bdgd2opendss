@@ -6,15 +6,31 @@ import pathlib
 from typing import Any, Optional
 import re
 import sys
-
+import networkx as nx
 import geopandas as gpd
 import pandas as pd
 from bdgd2opendss.core.Settings import settings
+import logging
 
 cod_year_bdgd = None
 tr_vazios = []
 sufixo_config = ""
+lista_isolados = []
+tensao_dict = {}
 
+def log_erros(df_isolados:Optional[pd.DataFrame],feeder:Optional[str],output_directory: Optional[str] = None):
+    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd()[6:]}')
+    if not logger.hasHandlers():
+        path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
+        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd()[6:]}.log')
+        logging.basicConfig(
+            level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
+            format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
+            filename = file_path,
+            filemode='w'  # Sobrescrever o arquivo de log (use 'a' para adicionar ao invés de sobrescrever)
+            )
+    for _,row in df_isolados.iterrows(): 
+        logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -97,19 +113,20 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     - Columns with '_y' suffix have the suffix removed.
 
     """
-    if left_column == 'UN_RE':
-        merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
-    else:
-        merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='right') #Pegar UNI_TR_MT que não tenham EQTRMT (geram linhas e cargas isoladas)
-        counter = 0
-        for value in merged_dfs['UNI_TR_MT']:
-            if pd.isna(value): #remove transformadores desativados que não estão com SIT_ATIV = DS na BDGD.
-                merged_dfs.loc[counter,"SIT_ATIV"] = "DS"
-            else:
-                merged_dfs.loc[counter,"SIT_ATIV"] = "AT"
-            counter += 1 
-        merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
-        merged_dfs['TEN_PRI'] = merged_dfs["TEN_PRI"].fillna(0).astype(int)
+    merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
+    # if left_column == 'UN_RE':
+    #     merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
+    # else:
+    #     merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='right') #Pegar UNI_TR_MT que não tenham EQTRMT (geram linhas e cargas isoladas)
+    #     counter = 0
+    #     for value in merged_dfs['UNI_TR_MT']:
+    #         if pd.isna(value): #remove transformadores desativados que não estão com SIT_ATIV = DS na BDGD.
+    #             merged_dfs.loc[counter,"SIT_ATIV"] = "DS"
+    #         else:
+    #             merged_dfs.loc[counter,"SIT_ATIV"] = "AT"
+    #         counter += 1 
+    #     merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
+    #     merged_dfs['TEN_PRI'] = merged_dfs["TEN_PRI"].fillna(0).astype(int)
     for column in merged_dfs.columns:
         if column.endswith('_x'):
             merged_dfs.drop(columns=column, inplace=True)
@@ -484,7 +501,7 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
         sufixo_config = "-"
     if settings.intUsaTrafoABNT:
         sufixo_config = sufixo_config + "T"
-        df_config.loc[count] = ['intUsaTrafoABNT','Transformadores ABNT']
+        df_config.loc[count] = ['intUsaTrafoABNT','Perdas nos Transformadores de acordo ABNT']
         count += 1
     else:
         sufixo_config = sufixo_config + "-"
@@ -635,6 +652,7 @@ def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela 
     df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_regul['ELEM'] = 'REGUL'
     df_aux_tramo = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul], ignore_index=True)
+    
     return(df_aux_tramo,df_aux_trafo)
 
 def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
@@ -652,9 +670,156 @@ def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
 def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
     global seq 
     if df_aux_tramo is not None:
-        if pac_ctmt in df_aux_tramo['PAC_1']:
+        if pac_ctmt in df_aux_tramo['PAC_1'].values:
             seq = 'Direta'
         else:
             seq = 'Invertida'
+            return(print('PACs invertidos!!'))
     else:
         return(seq)
+
+
+def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
+    global lista_isolados
+    if dataframe != None:
+        alimentador = feeder
+        df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                left_column='UNI_TR_MT', right_column='COD_ID')
+        adapt_regulators_names(df_trafo,'transformer')
+        df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ssdmt['ELEM'] = 'SEGMMT'
+        df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ssdbt['ELEM'] = 'SEGMBT'
+        df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ramalig['ELEM'] = 'RML'
+        #df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsemt['ELEM'] = 'CHVMT'
+        df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsebt['ELEM'] = 'CHVBT'
+        df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_trafo['ELEM'] = 'TRAFO'
+        df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul['ELEM'] = 'REGUL'
+        df_aux_ucmt = dataframe['UCMT_tab']['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        df_aux_ucmt['PAC_2'] = ''
+        df_aux_ucmt['ELEM'] = 'LDMT'
+        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
+        df_aux_ucbt = dataframe['UCBT_tab']['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+        df_aux_ucbt['PAC_2'] = ''
+        df_aux_ucbt['ELEM'] = 'LDBT'
+        df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
+        df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+        df_aux_pip['PAC_2'] = ''
+        df_aux_pip['ELEM'] = 'PIP'
+        df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
+        df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,df_aux_pip,df_aux_ucbt,df_aux_ucmt], ignore_index=True)
+        grafo = nx.Graph()
+        for index,row in df_total.iterrows():
+            grafo.add_edge(row['PAC_1'],row['PAC_2'])
+        grafo.remove_node('')
+        conectados = list(nx.connected_components(grafo))
+        for conection in conectados:
+            if pac_ctmt in conection:
+                df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
+                break
+            else:
+                continue
+        if df_not_connected.empty:
+            return(print('Não existem elementos isolados!'))
+        else:
+            log_erros(df_not_connected,alimentador,output_folder)
+            lista_isolados = []
+
+            for cod_id in df_not_connected['COD_ID'].values:
+                if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
+                    lista_isolados.append(f'SBT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'RAMLIG':
+                    lista_isolados.append(f'RBT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMMT':
+                    lista_isolados.append(f'SMT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVMT':
+                    lista_isolados.append(f'CMT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVBT':
+                    lista_isolados.append(f'CBT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDBT':
+                    lista_isolados.append(f'BT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDMT':
+                    lista_isolados.append(f'MT_{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'PIP':
+                    lista_isolados.append(f'BT_IP{cod_id}')
+                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'REGUL':
+                    lista_isolados.append(f'REG_{cod_id}')
+                else:
+                    lista_isolados.append(cod_id)
+        return(print('Lista de elementos isolados criados!'))
+    else:
+        return(lista_isolados)
+
+def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac: Optional[str] = None, kvbase: Optional[float] = None, key:Optional[str] = None): #define as tensões de PRIMÁRIO dos elementos de MT
+    global tensao_dict
+    if pac == None:
+        return(tensao_dict[key])
+    else:
+        alimentador = feeder
+        df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+                                left_column='UNI_TR_MT', right_column='COD_ID')
+        adapt_regulators_names(df_trafo,'transformer')
+        df_transformer = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','TEN_PRI','TEN_LIN_SE']]
+        df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ssdmt['ELEM'] = 'SEGMMT'
+        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsemt['ELEM'] = 'CHVMT'
+        df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul['ELEM'] = 'REGUL'
+        df_aux_ucmt = dataframe['UCMT_tab']['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        df_aux_ucmt['PAC_2'] = ''
+        df_aux_ucmt['ELEM'] = 'LDMT'
+        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
+        df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_transformer,df_aux_regul,df_aux_ucmt], ignore_index=True)
+        pac_ctmt = pac
+        grafo = nx.Graph()
+
+        for index, row in df_elements.iterrows():
+            grafo.add_edge(row['PAC_1'], row['PAC_2'])
+        grafo.remove_node('')
+        conectados = list(nx.connected_components(grafo))
+        tensao_dict = {}  # Dicionário para armazenar as tensões
+        tensao_dict[pac_ctmt] = kvbase
+        sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) #usar essa função!!!
+        kv = kvbase
+        count = 0
+        for seq in sequencia:
+            if seq[0] in tensao_dict.keys():
+                if seq[1] in df_transformer['PAC_2'].values:
+                    if df_transformer.loc[df_transformer['PAC_2'] == seq[1], 'TEN_LIN_SE'].iloc[0] > 1:
+                        kv = df_transformer.loc[df_transformer['PAC_2'] == seq[1], 'TEN_LIN_SE'].iloc[0]
+                        tensao_dict[seq[1]] = kv
+                    else:
+                        tensao_dict[seq[1]] = df_transformer.loc[df_transformer['PAC_2'] == seq[1], 'TEN_LIN_SE'].iloc[0]
+                else:
+                    tensao_dict[seq[1]] = kv
+            else:
+                kv = tensao_dict[sequencia[count-1][1]] #deve buscar a tensão do nó anterior... 
+                tensao_dict[seq[0]] = kv
+                if seq[1] in df_transformer['PAC_2'].values:
+                    kv = df_transformer.loc[df_transformer['PAC_2'] == seq[1], 'TEN_LIN_SE'].iloc[0]
+                    tensao_dict[seq[1]] = kv
+                else:
+                    tensao_dict[seq[1]] = kv
+        return(print('Sequência elétrica na média tensão realizada!'))
+
+# def pvsystem_stats(dfs,output_folder):
+#     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
+#     df = pd.DataFrame(columns=colunas)
+#     for index,feeder in enumerate(dfs["CTMT"]['gdf']['COD_ID'].tolist()):
+#         alimentador = feeder
+#         df_ugbt = dfs['UGBT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
+#         df_ugmt = dfs['UGMT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
+#         df_pvbt = df_ugbt[df_ugbt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
+#         df_pvmt = df_ugmt[df_ugmt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
+#         df.loc[index,'CTMT'] = feeder
+#         df.loc[index,'POT_PV_TOTAL_INSTALADA'] = float(df_pvmt["POT_INST"].sum() + df_pvbt["POT_INST"].sum())
+#         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
+#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd()[6:]}.csv')
+#     df.to_csv(file_path, index=False, encoding='utf-8')
