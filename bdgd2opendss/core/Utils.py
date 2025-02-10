@@ -29,8 +29,8 @@ def log_erros(df_isolados:Optional[pd.DataFrame],feeder:Optional[str],output_dir
             filename = file_path,
             filemode='w'  # Sobrescrever o arquivo de log (use 'a' para adicionar ao invés de sobrescrever)
             )
-    for _,row in df_isolados.iterrows(): 
-        logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
+    for _,row in df_isolados.iterrows():
+        logger.info(f"Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}")
 
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
@@ -124,8 +124,8 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     #             merged_dfs.loc[counter,"SIT_ATIV"] = "DS"
     #         else:
     #             merged_dfs.loc[counter,"SIT_ATIV"] = "AT"
-    #         counter += 1 
-    #     merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int) 
+    #         counter += 1
+    #     merged_dfs['POT_NOM'] = merged_dfs["POT_NOM"].fillna(0).astype(int)
     #     merged_dfs['TEN_PRI'] = merged_dfs["TEN_PRI"].fillna(0).astype(int)
     for column in merged_dfs.columns:
         if column.endswith('_x'):
@@ -137,7 +137,7 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     return merged_dfs
 
 
-def create_output_file(object_list=[], file_name="", object_lists="", file_names="", output_folder="", feeder=""): 
+def create_output_file(object_list=[], file_name="", object_lists="", file_names="", output_folder="", feeder=""):
     """Create an dss_models_output file and write data from a list of objects.
 
     Parameters:
@@ -149,7 +149,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
 
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
-    
+
     if object_lists != "":
         if file_name == 'CargasBT_IP':
             k = 'a' #anexação de arquivo
@@ -169,7 +169,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             except Exception as e:
                 print(f"An error occurred: {str(e)}")
         return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
-    
+
     else:
         path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
 
@@ -320,7 +320,7 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
     lista=[]
 
     # TODO evitar tomar decisoes
-    for value in dicionario_kv.values(): 
+    for value in dicionario_kv.values():
         if value >= 0.22:
             lista.append(value)
         else:
@@ -375,7 +375,7 @@ def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os regulador
         else:
             continue
 
-def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código e o ano da BDGD 
+def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código e o ano da BDGD
     global cod_year_bdgd
     if bdgd_file_path == None:
         return(cod_year_bdgd)
@@ -386,7 +386,7 @@ def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código 
         ano_bdgd = nomes.group(2)+nomes.group(3)+nomes.group(4)
         cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
         return(None)
-    
+
 def limitar_tensao_superior(kvpu): #settings (Limitar tensão de barras e reguladores)
     if kvpu > 1.05:
         kvpu = 1.05
@@ -411,7 +411,7 @@ def create_df_trafos_vazios(df_ucbt: Optional[pd.DataFrame] = None):
         tr_vazios = list(df_tr_cargas[df_tr_cargas == 0].index)
     else:
         return(tr_vazios)
-    
+
 def perdas_trafos_abnt(fases,kv,pot,perda):
     if fases == '3':
         if float(kv) < 15:
@@ -488,7 +488,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                 else:
                     loss = int(fases)*(-0.054*pot**2 + 18.383*pot + 70.191)
                     return(loss)
-                
+
 def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None):
     global sufixo_config
     df_config = pd.DataFrame(columns=["Configuração", "Descrição"])
@@ -629,10 +629,10 @@ def create_output_folder(feeder, output_folder:Optional[str] = None):
                 os.mkdir(f'dss_models_output/{feeder}')
 
             output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
-    
+
     return(output_directory)
 
-def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela auxiliar para definir a ordem 
+def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela auxiliar para definir a ordem
     alimentador = feeder
     df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                             left_column='UNI_TR_MT', right_column='COD_ID')
@@ -652,7 +652,7 @@ def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela 
     df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
     df_aux_regul['ELEM'] = 'REGUL'
     df_aux_tramo = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul], ignore_index=True)
-    
+
     return(df_aux_tramo,df_aux_trafo)
 
 def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
@@ -668,7 +668,7 @@ def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
     return(merged_dfs)
 
 def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
-    global seq 
+    global seq
     if df_aux_tramo is not None:
         if pac_ctmt in df_aux_tramo['PAC_1'].values:
             seq = 'Direta'
@@ -732,7 +732,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             lista_isolados = []
 
             for cod_id in df_not_connected['COD_ID'].values:
-                if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
+                if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT':
                     lista_isolados.append(f'SBT_{cod_id}')
                 elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'RAMLIG':
                     lista_isolados.append(f'RBT_{cod_id}')
@@ -800,7 +800,7 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
                 else:
                     tensao_dict[seq[1]] = kv
             else:
-                kv = tensao_dict[sequencia[count-1][1]] #deve buscar a tensão do nó anterior... 
+                kv = tensao_dict[sequencia[count-1][1]] #deve buscar a tensão do nó anterior...
                 tensao_dict[seq[0]] = kv
                 if seq[1] in df_transformer['PAC_2'].values:
                     kv = df_transformer.loc[df_transformer['PAC_2'] == seq[1], 'TEN_LIN_SE'].iloc[0]
