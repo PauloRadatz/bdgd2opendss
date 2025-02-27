@@ -379,9 +379,10 @@ buscoords buscoords.csv'''
                                            left_column='UNI_TR_MT', right_column='COD_ID')
         Utils.adapt_regulators_names(merged_dfs,'transformer')
         #settings - criação de dataframe para eliminar transformadores em vazio
-        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
-            Utils.create_df_trafos_vazios(dfs)
+        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
+            df_uc = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+            df_ip = pd.DataFrame(self.dfs['PIP']['gdf'].query("CTMT==@alimentador"))
+            Utils.create_df_trafos_vazios(df_uc,df_ip,merged_dfs)
         if not merged_dfs.query("CTMT == @alimentador").empty:
             try:
                 self.transformers, fileName = Transformer.create_transformer_from_json(self._jsonData, merged_dfs, pastadesaida=self.output_folder)
