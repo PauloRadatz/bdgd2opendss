@@ -231,8 +231,9 @@ class Line:
 
     def neutraliza_rede_terceiros(self): #settings (neutraliza rede de terceiros)
         if settings.intNeutralizarRedeTerceiros:
-            if (self.prefix_name == 'RBT' and self.transformer in Transformer.list_posse()) or (self.prefix_name != 'RBT' and self.posse != "PD"):
-                linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0'
+            #if (self.prefix_name == 'RBT' and self.transformer in Transformer.list_posse()) or (self.prefix_name != 'RBT' and self.posse != "PD"):
+            if (self.prefix_name == 'RBT' or self.prefix_name == 'SBT') and self.transformer in Transformer.list_posse():
+                linecode = 'r1=0.001 r0=0.001 x1=0 x0=0 c1=0 c0=0 switch=T'
             else:
                 linecode = f'linecode="{self.linecode}_{self.suffix_linecode}"'
         else:

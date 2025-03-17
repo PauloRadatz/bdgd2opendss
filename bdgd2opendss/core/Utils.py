@@ -410,13 +410,16 @@ def create_df_trafos_vazios(df_ucbt: Optional[pd.DataFrame] = None,df_ip: Option
         trs = df_tr2['COD_ID'].str[:-1].tolist()
         df_tr_cargas = pd.DataFrame(df_ucbt).groupby('UNI_TR_MT', as_index=True).agg({'ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
             'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
-        df_tr_ips = pd.DataFrame(df_ucbt).groupby('UNI_TR_MT', as_index=True).agg({'ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
+        df_tr_ips = pd.DataFrame(df_ip).groupby('UNI_TR_MT', as_index=True).agg({'ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
             'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})
         df_tr_cargas = df_tr_cargas.sum(axis=1)
         df_tr_ips = df_tr_ips.sum(axis=1)
-        tr_vazios_ucbt = list(df_tr_cargas[df_tr_cargas == 0].index)
-        tr_vazios_pip = list(df_tr_ips[df_tr_ips == 0].index)
-        tr_vazios = tr_vazios_ucbt + tr_vazios_pip + trs
+        soma = df_tr_cargas.add(df_tr_ips, fill_value=0)
+        tr_vazios_ucbt = list(soma[soma == 0].index)
+        #tr_vazios_ucbt = list(df_tr_cargas[df_tr_cargas == 0].index)
+        #tr_vazios_pip = list(df_tr_ips[df_tr_ips == 0].index)
+        #tr_vazios = tr_vazios_ucbt + tr_vazios_pip + trs
+        tr_vazios = tr_vazios_ucbt + trs
     else:
         return(tr_vazios)
     
@@ -440,6 +443,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                 df_tri_24kv = pd.read_csv(file_tri_24kv, index_col=0)
                 return(df_tri_24kv.loc[pot,perda])
             except:
+                print('aqui')
                 if perda == 'noloadloss':
                     loss = (-0.0032*pot**2 + 3.3031*pot + 38.568)
                     return(loss)
@@ -477,7 +481,6 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                 df_mono_24kv = pd.read_csv(file_mono_24kv, index_col=0)
                 return(int(fases)*df_mono_24kv.loc[pot,perda])
             except:
-                print('aqui')
                 if perda == 'noloadloss':
                     loss = int(fases)*(-0.0113*pot**2 + 3.4321*pot + 17.717)
                     return(loss)

@@ -347,7 +347,7 @@ class Load:
     
     def limitar_potencia_cargasBT(self): #settings - Limitar potência de cargas BT(potência ativa do transformador)
         loadbtkw = Transformer.dict_pot_tr(trload=self.transformer)
-        if float(self.kw) > loadbtkw:
+        if float(self.kw) > loadbtkw*0.92:
             self._flag_limitcarga = '! Carga limitada'
             return(loadbtkw*0.92)
         else:

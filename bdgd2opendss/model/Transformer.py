@@ -391,12 +391,14 @@ class Transformer:
                 kv1 = Circuit.kvbase()
             else:
                 kv1 = float(self.kv1)
-            if self.conn_p == 'Delta' and self.phases == '1':
+            if self.conn_p == 'Delta' and self.phases == '1' and kva <= 100:
                 self.totalloss = float(perdas_trafos_abnt(2,kv1,kva,'totalloss'))
                 self.noloadloss = float(perdas_trafos_abnt(2,kv1,kva,'noloadloss'))
-            else:
+            elif kva <= 300:
                 self.totalloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'totalloss'))
                 self.noloadloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'noloadloss'))
+            else:
+                pass
 
         return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
             f'windings={self.windings} '
