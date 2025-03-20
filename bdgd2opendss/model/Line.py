@@ -259,7 +259,7 @@ class Line:
 
         return  f'New \"Line.{self.prefix_name}_{self.line}" phases={self.phases} ' \
         f'bus1="{self.bus1}.{self.bus_nodes}" bus2="{self.bus2}.{self.bus_nodes}" ' \
-        f'{linecode} length={self.length:.5f} ' \
+        f'{linecode} length={self.length:.9f} ' \
         f'units={self.units}'
 
     def pattern_switch(self):

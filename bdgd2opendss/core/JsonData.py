@@ -96,9 +96,8 @@ class JsonData:
         :return: Dicionário contendo GeoDataFrames e estatísticas.
         """
         geodataframes = {}
-
+        
         for table_name, table in self.tables.items():
-
             load_times = []
             conversion_times = []
             gdf_converted = None
@@ -112,10 +111,9 @@ class JsonData:
                 start_conversion_time = time.time()
                 gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
-
+                
                 load_times.append(start_conversion_time - start_time)
                 conversion_times.append(end_time - start_conversion_time)
-
             load_time_avg = sum(load_times) / len(load_times)
             conversion_time_avg = sum(conversion_times) / len(conversion_times)
             mem_usage = gdf_converted.memory_usage(index=True, deep=True).sum() / 1024 ** 2

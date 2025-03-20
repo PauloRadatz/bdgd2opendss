@@ -32,5 +32,8 @@ class Settings:
     intModeloConverge: bool = field(default=False, metadata={"description": "Modelo de Convergência"})
     dblVPUMin: float = field(default=0.5, metadata={"description": "Tensão Mínima(pu)"})
     cbMeterComplete: bool = field(default=False, metadata={"description": "Medidores de Energia no barramento principal e transformadores"})
+    # BDGD pública ou PRIVADA
+    TipoBDGD: bool = field(default=False, metadata={"description": "Define o arquivo JSON para a BDGD: privada (True) ou pública (False)"})
+
 
 settings = Settings()

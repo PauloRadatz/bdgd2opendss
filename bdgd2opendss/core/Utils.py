@@ -18,6 +18,7 @@ sufixo_config = ""
 lista_isolados = []
 tensao_dict = {}
 
+
 def log_erros(df_isolados:Optional[pd.DataFrame],feeder:Optional[str],output_directory: Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd()[6:]}')
     if not logger.hasHandlers():
@@ -443,7 +444,6 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                 df_tri_24kv = pd.read_csv(file_tri_24kv, index_col=0)
                 return(df_tri_24kv.loc[pot,perda])
             except:
-                print('aqui')
                 if perda == 'noloadloss':
                     loss = (-0.0032*pot**2 + 3.3031*pot + 38.568)
                     return(loss)
@@ -692,6 +692,16 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
 
 def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
     global lista_isolados
+    if settings.TipoBDGD: #BDGD privada
+        ucbt = "UCBT"
+        ucmt = "UCMT"
+        ugbt = "UGBT"
+        ugmt = "UGMT"
+    else: #BDGD pública
+        ucbt = "UCBT_tab"
+        ucmt = "UCMT_tab"
+        ugbt = "UGBT_tab"
+        ugmt = "UGMT_tab"
     if dataframe != None:
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
@@ -712,11 +722,11 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_trafo['ELEM'] = 'TRAFO'
         df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe['UCMT_tab']['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
         df_aux_ucmt['PAC_2'] = ''
         df_aux_ucmt['ELEM'] = 'LDMT'
         df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
-        df_aux_ucbt = dataframe['UCBT_tab']['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+        df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
         df_aux_ucbt['PAC_2'] = ''
         df_aux_ucbt['ELEM'] = 'LDBT'
         df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
@@ -769,6 +779,16 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
 
 def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac: Optional[str] = None, kvbase: Optional[float] = None, key:Optional[str] = None): #define as tensões de PRIMÁRIO dos elementos de MT
     global tensao_dict
+    if settings.TipoBDGD: #BDGD privada
+        ucbt = "UCBT"
+        ucmt = "UCMT"
+        ugbt = "UGBT"
+        ugmt = "UGMT"
+    else: #BDGD pública
+        ucbt = "UCBT_tab"
+        ucmt = "UCMT_tab"
+        ugbt = "UGBT_tab"
+        ugmt = "UGMT_tab"
     if pac == None:
         return(tensao_dict[key])
     else:
@@ -783,7 +803,7 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe['UCMT_tab']['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
         df_aux_ucmt['PAC_2'] = ''
         df_aux_ucmt['ELEM'] = 'LDMT'
         df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
