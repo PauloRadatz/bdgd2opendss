@@ -811,9 +811,12 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         pac_ctmt = pac
         grafo = nx.Graph()
 
+        df_elements = df_elements.dropna(subset=['PAC_1', 'PAC_2'])
+        df_elements = df_elements[(df_elements['PAC_1'] != '') & (df_elements['PAC_2'] != '')]
+
         for index, row in df_elements.iterrows():
             grafo.add_edge(row['PAC_1'], row['PAC_2'])
-        grafo.remove_node('')
+        #grafo.remove_node('')
         conectados = list(nx.connected_components(grafo))
         tensao_dict = {}  # Dicionário para armazenar as tensões
         tensao_dict[pac_ctmt] = kvbase
