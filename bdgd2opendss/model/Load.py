@@ -338,6 +338,7 @@ class Load:
             return(kv,models)
         else:
             kv = seq_eletrica(key=self.bus1)
+
             if settings.intAdequarTensaoCargasMT:#settings adequar tensão mínima das cargas MT
                 self.vminpu = 0.93
             else:
@@ -347,7 +348,7 @@ class Load:
     
     def limitar_potencia_cargasBT(self): #settings - Limitar potência de cargas BT(potência ativa do transformador)
         loadbtkw = Transformer.dict_pot_tr(trload=self.transformer)
-        if float(self.kw) > loadbtkw:
+        if float(self.kw) > loadbtkw*0.92:
             self._flag_limitcarga = '! Carga limitada'
             return(loadbtkw*0.92)
         else:
@@ -362,17 +363,29 @@ class Load:
             #     return("")
             if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
                 self.kw = Load.limitar_potencia_cargasBT(self)
-            
-        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
+
+        try: #tratando erro numérico no cálculo de potência das cargas
+            kw = (math.trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
+        except:
+            kw = float('nan')
+
         kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga} \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
+        # return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        #         f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
+        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+        #         f'{self._flag_limitcarga} \n'\
+        #         f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        #         f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
+        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+        #         f'{self._flag_limitcarga}'
                 
             
     def __repr__(self):
@@ -384,17 +397,29 @@ class Load:
             #     return("")
             if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
                 self.kw = Load.limitar_potencia_cargasBT(self)
-            
-        kw = math.trunc(float(self.kw) * 10**6)/ 10**6 #truncando de acordo com o geoperdas
+
+        try: #tratando erro numérico no cálculo de potência das cargas
+            kw = (math.trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
+        except:
+            kw = float('nan')
+
         kv,models = Load.adapting_string_variables_load(self)
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga} \n'\
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw/2} '\
+                f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
+        # return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        #         f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
+        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+        #         f'{self._flag_limitcarga} \n'\
+        #         f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
+        #         f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
+        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
+        #         f'{self._flag_limitcarga}'
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
@@ -421,7 +446,7 @@ class Load:
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
 
             print("There's no corresponding loadshape for this load")
-
+            return (float('nan'))
 
     @staticmethod
     def _process_static(load_, value):

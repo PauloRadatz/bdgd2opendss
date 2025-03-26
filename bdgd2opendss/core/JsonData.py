@@ -1,6 +1,8 @@
 import json
 import time
+import os
 import geopandas as gpd
+import pandas as pd
 
 # import os
 # from typing import Optional
@@ -59,7 +61,11 @@ class JsonData:
         :return: Dicionário contendo informações das tabelas a serem processadas.
         """
         return self.tables
-    
+    def get_data_erros(df,column_types,name):
+        try:
+            df.astype(column_types)
+        except ValueError:
+            print('aqui')
     def get_numeric_erros(df,column_types,name): #TODO criar um log txt explicitando os erros
         list_error = []
         for column in df.columns:
@@ -98,7 +104,6 @@ class JsonData:
         geodataframes = {}
 
         for table_name, table in self.tables.items():
-
             load_times = []
             conversion_times = []
             gdf_converted = None
@@ -115,7 +120,6 @@ class JsonData:
 
                 load_times.append(start_conversion_time - start_time)
                 conversion_times.append(end_time - start_conversion_time)
-
             load_time_avg = sum(load_times) / len(load_times)
             conversion_time_avg = sum(conversion_times) / len(conversion_times)
             mem_usage = gdf_converted.memory_usage(index=True, deep=True).sum() / 1024 ** 2
@@ -143,3 +147,88 @@ class JsonData:
                 'gdf': gdf_
             }
         return geodataframes
+    
+    def scan_bdgd(self, file_name, output_file,lista_ctmt, runs=1):
+        """
+        Cria GeoDataFrames a partir de um arquivo de entrada e coleta estatísticas.
+        :param file_name: Nome do arquivo de entrada.
+        :param runs: Número de vezes que cada tabela será carregada e convertida (padrão: 1).
+        :return: Dicionário contendo GeoDataFrames e estatísticas.
+        """
+        geodataframes = {}
+        #path = os.path.join(output_file, "log_erros_dados.txt")
+        lista_ctmt = []
+        lista_segcon = []
+        path = os.path.join(output_file, 'erros_dados.csv')
+        with open(path, 'w', newline='') as file:
+            colunas = ['Tabela','Identificador','Código','Atributo','Valor']
+            cabecalho = ','.join(colunas)
+            file.write(cabecalho + '\n')
+        #with open(path, "w") as file:
+            for table_name, table in self.tables.items():
+                gdf_converted = None
+                print(f'Creating geodataframe {table.name}')
+                gdf_ = gpd.read_file(file_name, layer=table.name,
+                                        columns=table.columns, 
+                                        engine='pyogrio', use_arrow=True)
+                if table_name == 'CTMT':
+                    lista_ctmt = gdf_["COD_ID"].tolist()
+                    print('aqui')
+                if table_name == 'SEGCON':
+                    lista_segcon = gdf_["COD_ID"].tolist()
+                    print('aqui')
+                for column in table.columns:
+                    if type(table.data_types[column]) is list: 
+                        for index,value in enumerate(gdf_[column]):
+                            if pd.isnull(value) or value == "" or value == None:
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                                continue
+                            if value not in table.data_types[column]:
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                    elif table.data_types[column] == 'int':
+                        for index,value in enumerate(gdf_[column]):
+                            try:
+                                int(value)
+                                continue
+                            except ValueError or TypeError: 
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                    elif table.data_types[column] == 'float':
+                        for index,value in enumerate(gdf_[column]):
+                            try:
+                                float(value)
+                                continue
+                            except ValueError or TypeError: 
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                    elif table.data_types[column] == 'string':
+                        for index,value in enumerate(gdf_[column]):
+                            try:
+                                str(value)
+                                continue
+                            except ValueError or TypeError: 
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                    elif table.data_types[column] == "category":
+                        if column == 'CTMT':
+                            for index,value in enumerate(gdf_[column]):
+                                if value not in lista_ctmt:
+                                    #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                    file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                        else:
+                            continue
+                    else:
+                        intervalo = eval(table.data_types[column])
+                        inicio,fim = intervalo
+                        lista = list(range(inicio,fim))
+                        for index,value in enumerate(gdf_[column]):
+                            if pd.isnull(value) or value == "" or value == None:
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                                continue
+                            if int(value) not in lista:
+                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                                continue

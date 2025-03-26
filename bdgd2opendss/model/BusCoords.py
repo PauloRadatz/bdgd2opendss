@@ -58,6 +58,8 @@ def buses_coords(coords_shx, df_ssd):
 
 
 def get_buscoords(ssdmt, ssdbt):
+    if ssdbt.empty and ssdmt.empty:
+        return(None)
     if not ssdmt.empty:
         coords_ssdmt_bdgd = extract_shx(ssdmt)
         buscoords_mt = buses_coords(coords_ssdmt_bdgd, ssdmt)

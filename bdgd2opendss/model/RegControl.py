@@ -274,7 +274,8 @@ class RegControl:
             Calling this method will format the variables and return a tuple of strings for OpenDSS input.
 
         """
-        self.kv1 = seq_eletrica(key=self.bus1)
+
+        self.kv1 = seq_eletrica(key=self.bus1) #corrigir em caso de erro
         if self.conn_p == 'Wye':
             kvs = f"{self.kv1/np.sqrt(3):.3f} {self.kv1/np.sqrt(3):.3f}"
             kv = self.kv1*1000/np.sqrt(3)
@@ -312,6 +313,20 @@ class RegControl:
         if self.buses == "":
             self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
+        try: #trata erros numéricos
+            loadloss = f'{(self.totalloss - self.noloadloss)/(1000*kva)}'
+            noloadloss = f'{self.noloadloss/(1000*kva)}'
+        except ZeroDivisionError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float('nan')
+            noloadloss = float('nan')
+            pass
+        except ValueError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float('nan')
+            noloadloss = float('nan')
+            pass
+        
         return(
     f'New \"Transformer.REG_{self.transformer}" phases={self.phases} '
     f'windings={self.windings} '
@@ -320,7 +335,7 @@ class RegControl:
     f'kvs=[{self.kvs}] '
     f'kvas=[{self.kvas}] '
     f'xhl={self.xhl} '
-    f'%loadloss={(self.totalloss - self.noloadloss)/(1000*kva)} %noloadloss={self.noloadloss/(1000*kva)}'
+    f'%loadloss={loadloss} %noloadloss={noloadloss}'
     f'\nNew \"Regcontrol.REG_{self.transformer}" transformer="REG_{self.transformer}" '
     f'winding={self.windings} '
     f'vreg={self.vreg*100} '

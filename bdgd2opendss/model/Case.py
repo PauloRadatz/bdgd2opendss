@@ -26,7 +26,7 @@ class Case:
     _loads: list[Load] = field(init=False)
     _PVsystems: list[PVsystem] = field(init=False)
     _dfs: dict = field(init=False)
-
+    
     def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
         self._jsonData = jsonData
         self._dfs = geodataframes
@@ -34,6 +34,17 @@ class Case:
         self.feeder = feeder
         self.output_folder = output_folder
 
+        if settings.TipoBDGD: #BDGD privada
+            self.ucbt = "UCBT"
+            self.ucmt = "UCMT"
+            self.ugbt = "UGBT"
+            self.ugmt = "UGMT"
+        else: #BDGD pública
+            self.ucbt = "UCBT_tab"
+            self.ucmt = "UCMT_tab"
+            self.ugbt = "UGBT_tab"
+            self.ugmt = "UGMT_tab"
+        
         print(f"\nFeeder: {feeder}")
 
         # init list
@@ -246,11 +257,11 @@ buscoords buscoords.csv'''
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
         Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt(),output_folder=self.output_folder) #Define quais são os elementos isolados e cria um log de elementos isolados
         Utils.seq_eletrica(self.dfs,self.feeder,pac=Circuit.pac_ctmt(),kvbase=Circuit.kvbase()) #Define as tensões no circuito com base nos transformadores
-        
+
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
-
+        
         self.Populates_Entity()
 
         self.Populates_UNREMT()
@@ -281,6 +292,8 @@ buscoords buscoords.csv'''
             gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
+            if df_coords is None:
+                return("There's no coordinates for this feeder")
             #
             Utils.create_output_feeder_coords(df_coords, feeder=self.feeder, output_folder=self.output_folder)
 
@@ -311,16 +324,16 @@ buscoords buscoords.csv'''
     # UCBT
     def Popula_UCBT(self):
 
-        if not self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+        if not self._dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty:
             
             try:
                 _loads, fileName = Load.create_load_from_json(self._jsonData,
-                                                              self._dfs['UCBT_tab']['gdf'].query("CTMT==@alimentador"),
-                                                              self._dfs['CRVCRG']['gdf'], 'UCBT_tab')
+                                                              self._dfs[self.ucbt]['gdf'].query("CTMT==@alimentador"),
+                                                              self._dfs['CRVCRG']['gdf'], self.ucbt)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
-                print("Error in UCBT_tab\n")
+                print("Error in UCBT\n")
 
         else:
             print(f'No UCBT found for this feeder.\n')
@@ -353,6 +366,13 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
+        # merged_dfs_2 = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
+        #                                    self.dfs['UNREMT']['gdf'],
+        #                                    left_column='UN_RE', right_column='COD_ID')
+        # caminho = r"C:\Users\mozar\OneDrive\Desktop\dataframe.csv"
+        # df = merged_dfs_2[(merged_dfs_2['XHL'] == 0) | (merged_dfs_2['PER_FER'] == 0) | (merged_dfs_2['PER_TOT'] == 0)]
+        # df.to_csv(caminho, index=False, sep=';', encoding='utf-8')
+        #print('aqui')
         Utils.adapt_regulators_names(merged_dfs,'regulator')
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
@@ -362,25 +382,28 @@ buscoords buscoords.csv'''
 
             except UnboundLocalError:
                 print("Error in UNREMT.\n")
-
         else:
-            if self.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-                print("No RegControls found for this feeder.\n")
-            else:
-                print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
+            print("No RegControls found for this feeder.\n")
 
     # EQTRMT
     def Populates_UNTRMT(self):
-
         alimentador = self.feeder
-
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
+        #CRIA CSV TRAFOS POT 0
+        # merged_dfs_2 = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
+        #                                    self.dfs['UNTRMT']['gdf'],
+        #                                    left_column='UNI_TR_MT', right_column='COD_ID')
+        # print('aqui')
+        # caminho = r"C:\Users\mozar\OneDrive\Desktop\dataframe.csv"
+        # df = merged_dfs_2[merged_dfs_2['XHL'] == 0]
+        # df.to_csv(caminho, index=False, sep=';', encoding='utf-8')
+        # print('aqui')
         Utils.adapt_regulators_names(merged_dfs,'transformer')
         #settings - criação de dataframe para eliminar transformadores em vazio
-        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
-            df_uc = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+        if not self.dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
+            df_uc = pd.DataFrame(self._dfs[self.ucbt]['gdf'].query("CTMT == @alimentador"))
             df_ip = pd.DataFrame(self.dfs['PIP']['gdf'].query("CTMT==@alimentador"))
             Utils.create_df_trafos_vazios(df_uc,df_ip,merged_dfs)
         if not merged_dfs.query("CTMT == @alimentador").empty:
@@ -392,10 +415,7 @@ buscoords buscoords.csv'''
                 print("Error in UNTRMT.\n")
 
         else:
-            if self.dfs['EQTRMT']['gdf'].query("CTMT == @alimentador").empty:
-                print('No Transformers found for this feeder. \n')
-            else:
-                print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+            print('No Transformers found for this feeder. \n')
 
     # CRVCRG
     def Popula_CRVCRG(self):
@@ -406,13 +426,13 @@ buscoords buscoords.csv'''
         except UnboundLocalError:
             print("Error in CRVCRG\n")
 
-    # UCBT_tab
+    # UCBT
     def Populates_UCBT(self):
 
         alimentador = self.feeder
 
-        if not self.dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            dfs = pd.DataFrame(self._dfs['UCBT_tab']['gdf'].query("CTMT == @alimentador"))
+        if not self.dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty:
+            dfs = pd.DataFrame(self._dfs[self.ucbt]['gdf'].query("CTMT == @alimentador"))
             df_ucbt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
@@ -421,11 +441,11 @@ buscoords buscoords.csv'''
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucbt,
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCBT_tab',pastadesaida=self.output_folder)
+                                                                  self.dfs['CRVCRG']['gdf'], self.ucbt,pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
-                print("Error in UCBT_tab\n")
+                print("Error in UCBT\n")
 
         else:
             print(f'No UCBT found for this feeder.\n')
@@ -449,13 +469,12 @@ buscoords buscoords.csv'''
         else:
             print(f'No PIP found for this feeder.\n')
 
-    # UCMT_tab
+    # UCMT
     def Populates_UCMT(self):
 
         alimentador = self.feeder
-
-        if not self.dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador").empty:
-            dfs = pd.DataFrame(self._dfs['UCMT_tab']['gdf'].query("CTMT == @alimentador"))
+        if not self.dfs[self.ucmt]['gdf'].query("CTMT == @alimentador").empty:
+            dfs = pd.DataFrame(self._dfs[self.ucmt]['gdf'].query("CTMT == @alimentador"))
             df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC': 'last', 'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
@@ -463,7 +482,7 @@ buscoords buscoords.csv'''
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucmt,
-                                                                  self.dfs['CRVCRG']['gdf'], 'UCMT_tab',pastadesaida=self.output_folder)
+                                                                  self.dfs['CRVCRG']['gdf'], self.ucmt,pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
@@ -471,40 +490,40 @@ buscoords buscoords.csv'''
         else:
             print(f'No UCMT found for this feeder.\n')
 
-    # UGBT_tab
+    # UGBT
     def Populates_UGBT(self):
 
         alimentador = self.feeder
 
-        if not self.dfs['UGBT_tab']['gdf'].query("CTMT == @alimentador").empty:
+        if not self.dfs[self.ugbt]['gdf'].query("CTMT == @alimentador").empty:
 
             try:
                 self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
-                                                                              self.dfs['UGBT_tab']['gdf'].query(
-                                                                                  "CTMT==@alimentador"), 'UGBT_tab', pastadesaida=self.output_folder)
+                                                                              self.dfs[self.ugbt]['gdf'].query(
+                                                                                  "CTMT==@alimentador"), self.ugbt, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
                 
             except UnboundLocalError:
-                print("Error in UGBT_tab\n")
+                print("Error in UGBT\n")
 
         else:
             print("No UGBT found for this feeder. \n")
 
-    # UGMT_tab
+    # UGMT
     def Populates_UGMT(self):
 
         alimentador = self.feeder
 
-        if not self.dfs['UGMT_tab']['gdf'].query("CTMT == @alimentador").empty:
+        if not self.dfs[self.ugmt]['gdf'].query("CTMT == @alimentador").empty:
 
             try:
                 self.pvsystems, fileName = PVsystem.create_pvsystem_from_json(self._jsonData,
-                                                                              self.dfs['UGMT_tab']['gdf'].query(
-                                                                                  "CTMT==@alimentador"), 'UGMT_tab', pastadesaida=self.output_folder)
+                                                                              self.dfs[self.ugmt]['gdf'].query(
+                                                                                  "CTMT==@alimentador"), self.ugmt, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
 
             except UnboundLocalError:
-                print("Error in UGBT_tab\n")
+                print("Error in UGBT\n")
         else:
             print("No UGMT found for this feeder. \n")
 
