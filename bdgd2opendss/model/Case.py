@@ -366,13 +366,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
-        # merged_dfs_2 = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
-        #                                    self.dfs['UNREMT']['gdf'],
-        #                                    left_column='UN_RE', right_column='COD_ID')
-        # caminho = r"C:\Users\mozar\OneDrive\Desktop\dataframe.csv"
-        # df = merged_dfs_2[(merged_dfs_2['XHL'] == 0) | (merged_dfs_2['PER_FER'] == 0) | (merged_dfs_2['PER_TOT'] == 0)]
-        # df.to_csv(caminho, index=False, sep=';', encoding='utf-8')
-        #print('aqui')
+        
         Utils.adapt_regulators_names(merged_dfs,'regulator')
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
@@ -391,15 +385,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
-        #CRIA CSV TRAFOS POT 0
-        # merged_dfs_2 = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
-        #                                    self.dfs['UNTRMT']['gdf'],
-        #                                    left_column='UNI_TR_MT', right_column='COD_ID')
-        # print('aqui')
-        # caminho = r"C:\Users\mozar\OneDrive\Desktop\dataframe.csv"
-        # df = merged_dfs_2[merged_dfs_2['XHL'] == 0]
-        # df.to_csv(caminho, index=False, sep=';', encoding='utf-8')
-        # print('aqui')
+        
         Utils.adapt_regulators_names(merged_dfs,'transformer')
         #settings - criação de dataframe para eliminar transformadores em vazio
         if not self.dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
