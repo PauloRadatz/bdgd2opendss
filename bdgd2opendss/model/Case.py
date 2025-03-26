@@ -257,11 +257,11 @@ buscoords buscoords.csv'''
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
         Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt(),output_folder=self.output_folder) #Define quais são os elementos isolados e cria um log de elementos isolados
         Utils.seq_eletrica(self.dfs,self.feeder,pac=Circuit.pac_ctmt(),kvbase=Circuit.kvbase()) #Define as tensões no circuito com base nos transformadores
-        
+
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
-
+        
         self.Populates_Entity()
 
         self.Populates_UNREMT()
@@ -292,6 +292,8 @@ buscoords buscoords.csv'''
             gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
             #
             df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
+            if df_coords is None:
+                return("There's no coordinates for this feeder")
             #
             Utils.create_output_feeder_coords(df_coords, feeder=self.feeder, output_folder=self.output_folder)
 
@@ -373,18 +375,12 @@ buscoords buscoords.csv'''
 
             except UnboundLocalError:
                 print("Error in UNREMT.\n")
-
         else:
-            if self.dfs['UNREMT']['gdf'].query("CTMT == @alimentador").empty:
-                print("No RegControls found for this feeder.\n")
-            else:
-                print("Error. Please, check the association EQRE/UNREMT for this feeder.\n")
+            print("No RegControls found for this feeder.\n")
 
     # EQTRMT
     def Populates_UNTRMT(self):
-
         alimentador = self.feeder
-
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
@@ -403,10 +399,7 @@ buscoords buscoords.csv'''
                 print("Error in UNTRMT.\n")
 
         else:
-            if self.dfs['EQTRMT']['gdf'].query("CTMT == @alimentador").empty:
-                print('No Transformers found for this feeder. \n')
-            else:
-                print("Error. Please, check the association EQTRMT/UNTRMT for this feeder.\n")
+            print('No Transformers found for this feeder. \n')
 
     # CRVCRG
     def Popula_CRVCRG(self):
@@ -464,7 +457,6 @@ buscoords buscoords.csv'''
     def Populates_UCMT(self):
 
         alimentador = self.feeder
-
         if not self.dfs[self.ucmt]['gdf'].query("CTMT == @alimentador").empty:
             dfs = pd.DataFrame(self._dfs[self.ucmt]['gdf'].query("CTMT == @alimentador"))
             df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC': 'last', 'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',

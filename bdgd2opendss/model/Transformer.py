@@ -399,6 +399,19 @@ class Transformer:
                 self.noloadloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'noloadloss'))
             else:
                 pass
+        try: #trata erros numéricos
+            loadloss = f'{(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f}'
+            noloadloss = f'{self.noloadloss/(10*float(kva)):.6f}'
+        except ZeroDivisionError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float("nan")
+            noloadloss = float("nan")
+            pass
+        except ValueError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float("nan")
+            noloadloss = float("nan")
+            pass
 
         return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
             f'windings={self.windings} '
@@ -407,10 +420,9 @@ class Transformer:
             f'kvs=[{self.kvs}] '
             f'{taps}'
             f'kvas=[{self.kvas}] '
-            f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
+            f'%loadloss={loadloss} %noloadloss={noloadloss}\n'
             f'{self._coment}{self.pattern_reactor()}\n'
             f'{MRT}')
-                
     def __repr__(self):
         if self.sit_ativ == 'DS':
             return("")
