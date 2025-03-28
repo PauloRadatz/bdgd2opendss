@@ -9,7 +9,7 @@
                     "PAC_INI"
                 ],
                 "type": {
-                    "COD_ID": "category",
+                    "COD_ID": "string",
                     "PAC_INI": "string",
                     "TEN_NOM": "[0,109]",
                     "TEN_OPE": "float"  

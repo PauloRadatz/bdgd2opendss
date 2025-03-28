@@ -159,6 +159,9 @@ class JsonData:
         #path = os.path.join(output_file, "log_erros_dados.txt")
         lista_ctmt = []
         lista_segcon = []
+        lista_untrmt = []
+        lista_crvcrg = []
+
         path = os.path.join(output_file, 'erros_dados.csv')
         with open(path, 'w', newline='') as file:
             colunas = ['Tabela','Identificador','Código','Atributo','Valor']
@@ -171,21 +174,23 @@ class JsonData:
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                         columns=table.columns, 
                                         engine='pyogrio', use_arrow=True)
+                
                 if table_name == 'CTMT':
                     lista_ctmt = gdf_["COD_ID"].tolist()
-                    print('aqui')
                 if table_name == 'SEGCON':
                     lista_segcon = gdf_["COD_ID"].tolist()
-                    print('aqui')
+                if table_name == 'CRVCRG':
+                    lista_crvcrg = gdf_["COD_ID"].tolist()
+                if table_name == 'UNTRMT':
+                    lista_untrmt = gdf_["COD_ID"].tolist()
+
                 for column in table.columns:
                     if type(table.data_types[column]) is list: 
                         for index,value in enumerate(gdf_[column]):
                             if pd.isnull(value) or value == "" or value == None:
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                                 continue
                             if value not in table.data_types[column]:
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                     elif table.data_types[column] == 'int':
                         for index,value in enumerate(gdf_[column]):
@@ -193,7 +198,6 @@ class JsonData:
                                 int(value)
                                 continue
                             except ValueError or TypeError: 
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                     elif table.data_types[column] == 'float':
                         for index,value in enumerate(gdf_[column]):
@@ -201,7 +205,6 @@ class JsonData:
                                 float(value)
                                 continue
                             except ValueError or TypeError: 
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                     elif table.data_types[column] == 'string':
                         for index,value in enumerate(gdf_[column]):
@@ -209,13 +212,23 @@ class JsonData:
                                 str(value)
                                 continue
                             except ValueError or TypeError: 
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                     elif table.data_types[column] == "category":
                         if column == 'CTMT':
                             for index,value in enumerate(gdf_[column]):
                                 if value not in lista_ctmt:
-                                    #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
+                                    file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                        if column == 'TIP_CND':
+                            for index,value in enumerate(gdf_[column]):
+                                if value not in lista_segcon:
+                                    file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                        if column == 'UNI_TR_MT':
+                            for index,value in enumerate(gdf_[column]):
+                                if value not in lista_untrmt:
+                                    file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
+                        if column == 'TIP_CC':
+                            for index,value in enumerate(gdf_[column]):
+                                if value not in lista_crvcrg:
                                     file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                         else:
                             continue
@@ -225,10 +238,8 @@ class JsonData:
                         lista = list(range(inicio,fim))
                         for index,value in enumerate(gdf_[column]):
                             if pd.isnull(value) or value == "" or value == None:
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                                 continue
                             if int(value) not in lista:
-                                #file.write(f"Erro na Tabela:{table_name}, {table.columns[0]}:{gdf_.loc[index,table.columns[0]]}: atributo-{column}={gdf_.loc[index,column]} \n")
                                 file.write(f"{table_name}, {table.columns[0]},{gdf_.loc[index,table.columns[0]]},{column},{gdf_.loc[index,column]} \n")
                                 continue

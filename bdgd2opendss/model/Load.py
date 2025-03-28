@@ -359,8 +359,6 @@ class Load:
             return("")
             
         if "MT" not in self.entity:
-            # if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
-            #     return("")
             if settings.intAdequarPotenciaCarga: #settings adequar potência das cargas BT(limitar a potência ativa do Transformador BT)
                 self.kw = Load.limitar_potencia_cargasBT(self)
 
@@ -370,6 +368,11 @@ class Load:
             kw = float('nan')
 
         kv,models = Load.adapting_string_variables_load(self)
+        # if flag_loadshape:
+        #     daily = f"daily='{self.daily}_{self.tip_dia}'"
+        # else:
+        #     daily = ""
+
         return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
@@ -377,7 +380,7 @@ class Load:
                 f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
                 f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-                f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
+                f'{self.daily}_{self.tip_dia} {self._flag_limitcarga}'
         # return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
         #         f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
         #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
@@ -423,6 +426,7 @@ class Load:
 
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
+        #global flag_loadshape 
         global df_energ_load
         df = df.copy()
         df["prop_pot_tipdia_mes"] = None 
@@ -440,11 +444,14 @@ class Load:
             fc = pot_atv_media/pot_atv_max #tirar aqui o fcDU/fcDO/fcSA para cada carga
             if self._energia_total != 0: #não cria df de cargas com energia zerada
                 Load.create_df_loads(self,tip_dia,mes,df['COD_ID'][tip_dia],prop_pot_mens_mes,fc) #cria o dataframe para usar no cálculo das perdas técnicas
-
+            
+            #flag_loadshape = True
+            
             return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc))#kw tipo dia (DU/SA/DO)
 
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
-
+            
+            #flag_loadshape = False
             print("There's no corresponding loadshape for this load")
             return (float('nan'))
 
