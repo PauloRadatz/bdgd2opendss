@@ -12,7 +12,7 @@ import pandas as pd
 from bdgd2opendss.core.Settings import settings
 import logging
 
-cod_year_bdgd = None
+cod_year_bdgd = []
 tr_vazios = []
 sufixo_config = ""
 lista_isolados = []
@@ -20,10 +20,10 @@ tensao_dict = {}
 
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
-    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd()[6:]}')
+    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}')
     if not logger.hasHandlers():
         path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd()[6:]}.log')
+        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
@@ -161,7 +161,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
             
             with open(path, k) as file:
@@ -172,10 +172,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     except Exception as e:
                         print(f"An error occurred: {str(e)}")
                         continue
-        return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
+        return f'{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
     
     else:
-        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
         with open(path, "w") as file:
             if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
@@ -195,10 +195,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     else:
                         file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
                     continue
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado\n')
         
 
-        return f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
+        return f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -212,12 +212,12 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
-    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -387,17 +387,16 @@ def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os regulador
         else:
             continue
 
-def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código e o ano da BDGD 
+def get_cod_year_bdgd(cod: Optional[str] = None, data:Optional[str] = None, typ: Optional[str] = None): #captura o código e o ano da BDGD 
     global cod_year_bdgd
-    if bdgd_file_path == None:
-        return(cod_year_bdgd)
+    if cod != None and data != None:
+        cod_year_bdgd = [cod, data]
+    elif typ == 'cod':
+        return(cod_year_bdgd[0])
+    elif typ == 'data':
+        return(cod_year_bdgd[1])
     else:
-        bdgd_name = pathlib.Path(bdgd_file_path).name
-        nomes = re.search(r'(\d+)_([\d]+)-([\d]+)-([\d]+)', bdgd_name)
-        cod_bdgd = nomes.group(1)
-        ano_bdgd = nomes.group(2)+nomes.group(3)+nomes.group(4)
-        cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
-        return(None)
+        return(cod_year_bdgd[1]+cod_year_bdgd[0])
     
 def limitar_tensao_superior(kvpu): #settings (Limitar tensão de barras e reguladores)
     if kvpu > 1.05:
@@ -884,5 +883,5 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 #         df.loc[index,'CTMT'] = feeder
 #         df.loc[index,'POT_PV_TOTAL_INSTALADA'] = float(df_pvmt["POT_INST"].sum() + df_pvbt["POT_INST"].sum())
 #         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
-#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd()[6:]}.csv')
+#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
 #     df.to_csv(file_path, index=False, encoding='utf-8')

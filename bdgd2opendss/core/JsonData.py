@@ -117,7 +117,7 @@ class JsonData:
                 start_conversion_time = time.time()
                 gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
-
+                
                 load_times.append(start_conversion_time - start_time)
                 conversion_times.append(end_time - start_conversion_time)
             load_time_avg = sum(load_times) / len(load_times)

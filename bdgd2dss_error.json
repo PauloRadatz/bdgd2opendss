@@ -1,6 +1,17 @@
 {
     "configuration": {
         "tables": {
+            "BASE": {
+                "columns": [
+                    "DIST",
+                    "DAT_EXT"
+                ],
+                "type": {
+                    "DIST": "int",
+                    "DAT_EXT": "string"
+            },
+            "ignore_geometry": "False"
+            },
             "CTMT": {
                 "columns": [
                     "COD_ID",

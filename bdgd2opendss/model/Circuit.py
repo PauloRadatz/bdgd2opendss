@@ -8,7 +8,6 @@ from bdgd2opendss.core.Settings import settings
 
 from bdgd2opendss.model.Converter import convert_tten
 from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior
-from bdgd2opendss.model.KVBase import KVBase
 from dataclasses import dataclass
 
 # TODO vide TO DO em case/output_master
