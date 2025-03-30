@@ -12,27 +12,29 @@ import pandas as pd
 from bdgd2opendss.core.Settings import settings
 import logging
 
-cod_year_bdgd = None
+cod_year_bdgd = []
 tr_vazios = []
 sufixo_config = ""
 lista_isolados = []
 tensao_dict = {}
 
 
-def log_erros(df_isolados:Optional[pd.DataFrame],feeder:Optional[str],output_directory: Optional[str] = None):
-    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd()[6:]}')
+def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
+    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}')
     if not logger.hasHandlers():
         path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd()[6:]}.log')
+        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
             filename = file_path,
             filemode='w'  # Sobrescrever o arquivo de log (use 'a' para adicionar ao invés de sobrescrever)
             )
-    for _,row in df_isolados.iterrows(): 
-        logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
-
+    if ctmt is None: 
+        for _,row in df_isolados.iterrows(): 
+            logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
+    else:
+        logger.info(f'O alimentador {feeder} não tem conexão com a barra incial {ctmt}')
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
 
@@ -159,38 +161,44 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
-            try:
-                with open(path, k) as file:
-                    for string in object_list:
+            
+            with open(path, k) as file:
+                for string in object_list:
+                    try:
                         file.write(string.full_string() + "\n")
 
-                    # print(f'O arquivo {file_name}_{feeder} foi gerado\n')
-            except Exception as e:
-                print(f"An error occurred: {str(e)}")
-        return f'{file_names[0]}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
+                    except Exception as e:
+                        print(f"An error occurred: {str(e)}")
+                        continue
+        return f'{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
     
     else:
-        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
-        try:
-            with open(path, "w") as file:
-                if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
-                    file.write(standard_curves_pv() + "\n")
-                else:
-                    ...
-                for string in object_list:
+        with open(path, "w") as file:
+            if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
+                file.write(standard_curves_pv() + "\n")
+            else:
+                ...
+            for string in object_list:
+                try:
                     if type(string) == str:
                         file.write(string + "\n")
                     else:
                         file.write(string.full_string() + "\n")
+                except Exception as e:
+                    print(f"An error occurred: {str(e)}")
+                    if type(string) == str:
+                        file.write(f'{string} + "\n"!Elemento com erro de dados "\n"')
+                    else:
+                        file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
+                    continue
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado\n')
+        
 
-            print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado\n')
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
-
-        return f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss'
+        return f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -204,12 +212,12 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
-    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd()}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -319,20 +327,23 @@ def create_dfs_coords(filename="", feeder=""):
 
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
-
+    #print('aqui')
     # TODO evitar tomar decisoes
-    for value in dicionario_kv.values(): 
-        if value >= 0.22:
-            lista.append(value)
-        else:
-            ...
-    x=set(lista)
-    if max(lista) == 0.38:
-        try:
-            x.remove(0.22)
-        except KeyError:
-            ...
-    return(list(x))
+    if len(dicionario_kv) > 0:
+        for value in dicionario_kv.values(): 
+            if value >= 0.22:
+                lista.append(value)
+            else:
+                ...
+        x=set(lista)
+        if max(lista) == 0.38:
+            try:
+                x.remove(0.22)
+            except KeyError:
+                ...
+        return(list(x))
+    else:
+        return(lista)
 
 def standard_curves_pv():
         return(f'New "LoadShape.PVIrrad_diaria" npts=24 interval=1 \n'
@@ -376,17 +387,16 @@ def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os regulador
         else:
             continue
 
-def get_cod_year_bdgd(bdgd_file_path: Optional[str] = None): #captura o código e o ano da BDGD 
+def get_cod_year_bdgd(cod: Optional[str] = None, data:Optional[str] = None, typ: Optional[str] = None): #captura o código e o ano da BDGD 
     global cod_year_bdgd
-    if bdgd_file_path == None:
-        return(cod_year_bdgd)
+    if cod != None and data != None:
+        cod_year_bdgd = [cod, data]
+    elif typ == 'cod':
+        return(cod_year_bdgd[0])
+    elif typ == 'data':
+        return(cod_year_bdgd[1])
     else:
-        bdgd_name = pathlib.Path(bdgd_file_path).name
-        nomes = re.search(r'(\d+)_([\d]+)-([\d]+)-([\d]+)', bdgd_name)
-        cod_bdgd = nomes.group(1)
-        ano_bdgd = nomes.group(2)+nomes.group(3)+nomes.group(4)
-        cod_year_bdgd = f'{ano_bdgd[:-2]}{cod_bdgd}'
-        return(None)
+        return(cod_year_bdgd[1]+cod_year_bdgd[0])
     
 def limitar_tensao_superior(kvpu): #settings (Limitar tensão de barras e reguladores)
     if kvpu > 1.05:
@@ -703,6 +713,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         ugbt = "UGBT_tab"
         ugmt = "UGMT_tab"
     if dataframe != None:
+
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UNI_TR_MT', right_column='COD_ID')
@@ -737,43 +748,52 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,df_aux_pip,df_aux_ucbt,df_aux_ucmt], ignore_index=True)
         grafo = nx.Graph()
         for index,row in df_total.iterrows():
-            grafo.add_edge(row['PAC_1'],row['PAC_2'])
-        grafo.remove_node('')
+            grafo.add_node(row['PAC_1'])
+            grafo.add_node(row['PAC_2'])
+            grafo.add_edge(row['PAC_1'], row['PAC_2'])
+        try:
+            grafo.remove_node('')
+        except:
+            pass
         conectados = list(nx.connected_components(grafo))
-        for conection in conectados:
-            if pac_ctmt in conection:
-                df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
-                break
-            else:
-                continue
-        if df_not_connected.empty:
-            return(print('Não existem elementos isolados!'))
-        else:
-            log_erros(df_not_connected,alimentador,output_folder)
-            lista_isolados = []
-
-            for cod_id in df_not_connected['COD_ID'].values:
-                if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
-                    lista_isolados.append(f'SBT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'RAMLIG':
-                    lista_isolados.append(f'RBT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMMT':
-                    lista_isolados.append(f'SMT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVMT':
-                    lista_isolados.append(f'CMT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVBT':
-                    lista_isolados.append(f'CBT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDBT':
-                    lista_isolados.append(f'BT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDMT':
-                    lista_isolados.append(f'MT_{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'PIP':
-                    lista_isolados.append(f'BT_IP{cod_id}')
-                elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'REGUL':
-                    lista_isolados.append(f'REG_{cod_id}')
+        if any(pac_ctmt in grf for grf in conectados):
+            for conection in conectados:
+                if pac_ctmt in conection:
+                    df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
+                    break
                 else:
-                    lista_isolados.append(cod_id)
-        return(print('Lista de elementos isolados criados!'))
+                    continue
+            if df_not_connected.empty:
+                return(print('Não existem elementos isolados!'))
+            else:
+                log_erros(df_not_connected,alimentador,output_folder)
+                lista_isolados = []
+
+                for cod_id in df_not_connected['COD_ID'].values:
+                    if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
+                        lista_isolados.append(f'SBT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'RAMLIG':
+                        lista_isolados.append(f'RBT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMMT':
+                        lista_isolados.append(f'SMT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVMT':
+                        lista_isolados.append(f'CMT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'CHVBT':
+                        lista_isolados.append(f'CBT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDBT':
+                        lista_isolados.append(f'BT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'LDMT':
+                        lista_isolados.append(f'MT_{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'PIP':
+                        lista_isolados.append(f'BT_IP{cod_id}')
+                    elif df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'REGUL':
+                        lista_isolados.append(f'REG_{cod_id}')
+                    else:
+                        lista_isolados.append(cod_id)
+            return(print('Lista de elementos isolados criados!'))
+        else:
+            log_erros(feeder=alimentador,output_directory=output_folder,ctmt=pac_ctmt)
+            return(print('Alimentador não tem conexão com a fonte!!'))
     else:
         return(lista_isolados)
 
@@ -790,7 +810,11 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         ugbt = "UGBT_tab"
         ugmt = "UGMT_tab"
     if pac == None:
-        return(tensao_dict[key])
+        try:
+            return(tensao_dict[key])
+        except KeyError:
+            print(f'Não foi realizada a sequência elétrica para o nó {key}')
+            return float("nan")
     else:
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
@@ -812,12 +836,20 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         grafo = nx.Graph()
 
         for index, row in df_elements.iterrows():
+            grafo.add_node(row['PAC_1'])
+            grafo.add_node(row['PAC_2'])
             grafo.add_edge(row['PAC_1'], row['PAC_2'])
-        grafo.remove_node('')
+        try:
+            grafo.remove_node('')
+        except:
+            pass
         conectados = list(nx.connected_components(grafo))
         tensao_dict = {}  # Dicionário para armazenar as tensões
         tensao_dict[pac_ctmt] = kvbase
-        sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) #usar essa função!!!
+        if any(pac_ctmt in grf for grf in conectados):
+            sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) #usar essa função!!!
+        else:
+            return(print("Não é possível gerar a sequência elétrica, pois o alimentador não tem conexão com a fonte"))
         kv = kvbase
         count = 0
         for seq in sequencia:
@@ -839,7 +871,6 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
                 else:
                     tensao_dict[seq[1]] = kv
         return(print('Sequência elétrica na média tensão realizada!'))
-
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
 #     df = pd.DataFrame(columns=colunas)
@@ -852,5 +883,5 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 #         df.loc[index,'CTMT'] = feeder
 #         df.loc[index,'POT_PV_TOTAL_INSTALADA'] = float(df_pvmt["POT_INST"].sum() + df_pvbt["POT_INST"].sum())
 #         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
-#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd()[6:]}.csv')
+#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
 #     df.to_csv(file_path, index=False, encoding='utf-8')

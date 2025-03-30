@@ -1,6 +1,15 @@
 {
     "bdgd_version": "0.0.0",
     "elements": {
+        "Base": {
+            "BASE": {
+                "direct_mapping": {
+                    "cod": "DIST",
+                    "data": "DAT_EXT",
+                    "descr": "DESCR"
+                }
+            }
+        },
         "Circuit": {
             "CTMT": {
                 "arquivo": "CircuitoMT",
@@ -640,6 +649,16 @@
     },
     "configuration": {
         "tables": {
+            "BASE": {
+                "columns": [
+                    "DIST",
+                    "DAT_EXT"
+                ],
+                "type": {
+                    "DIST": "string"
+            },
+            "ignore_geometry": "False"
+            },
             "CTMT": {
                 "columns": [
                     "COD_ID",

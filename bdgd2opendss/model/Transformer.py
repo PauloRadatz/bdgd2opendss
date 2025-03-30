@@ -353,7 +353,7 @@ class Transformer:
         return kvs, buses, conns, kvas, taps, kva, MRT
 
     def pattern_reactor(self):
-        return f'New "Reactor.TRF_{self.transformer}_R" phases=1 bus1="{self.bus2}.4" R=15 X=0 basefreq=60'
+        return f'New "Reactor.TRF_{self.transformer}_R" phases=1 bus1={self.bus2}.4 R=15 X=0 basefreq=60'
 
     def pattern_MRT(self):
 
@@ -383,7 +383,8 @@ class Transformer:
         else:
             taps = ""
 
-        if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
+        #if settings.intNeutralizarTrafoTerceiros and self.posse != 'PD': #settings (neutraliza transformadores de terceiros)
+        if self.posse != 'PD':
             self.totalloss = 0
             self.noloadloss = 0
         if settings.intUsaTrafoABNT: #settings (configuração para utilização de perdas da ABNT 5440)
@@ -399,6 +400,19 @@ class Transformer:
                 self.noloadloss = float(perdas_trafos_abnt(self.phases,kv1,kva,'noloadloss'))
             else:
                 pass
+        try: #trata erros numéricos
+            loadloss = f'{(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f}'
+            noloadloss = f'{self.noloadloss/(10*float(kva)):.6f}'
+        except ZeroDivisionError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float("nan")
+            noloadloss = float("nan")
+            pass
+        except ValueError as e:
+            print(f"An error occurred: {str(e)}")
+            loadloss = float("nan")
+            noloadloss = float("nan")
+            pass
 
         return (f'{self._coment}New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
             f'windings={self.windings} '
@@ -407,10 +421,9 @@ class Transformer:
             f'kvs=[{self.kvs}] '
             f'{taps}'
             f'kvas=[{self.kvas}] '
-            f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={self.noloadloss/(10*float(kva)):.6f}\n'
+            f'%loadloss={loadloss} %noloadloss={noloadloss}\n'
             f'{self._coment}{self.pattern_reactor()}\n'
             f'{MRT}')
-                
     def __repr__(self):
         if self.sit_ativ == 'DS':
             return("")
@@ -437,13 +450,23 @@ class Transformer:
             else: 
                 dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
         else:
+            # try:
+            #     kv2 = dict_phase_kv[trload]
+            # except KeyError:
+            #     kv2 = float('nan')
+            # return(kv2)
             return(dict_phase_kv[trload])
         
     def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:
             dicionario_kv[transformer] = kv2
         else:
-            return(dicionario_kv[trload])
+            try:
+                kv2 = dicionario_kv[trload]
+            except KeyError:
+                kv2 = float('nan')
+            return(kv2)
+            #return(dicionario_kv[trload])
     
     def dict_pot_tr(transformer:Optional[str] = None,kva:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:

@@ -1,0 +1,467 @@
+{
+    "configuration": {
+        "tables": {
+            "BASE": {
+                "columns": [
+                    "DIST",
+                    "DAT_EXT"
+                ],
+                "type": {
+                    "DIST": "int",
+                    "DAT_EXT": "string"
+            },
+            "ignore_geometry": "False"
+            },
+            "CTMT": {
+                "columns": [
+                    "COD_ID",
+                    "TEN_NOM",
+                    "TEN_OPE",
+                    "PAC_INI"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "PAC_INI": "string",
+                    "TEN_NOM": "[0,109]",
+                    "TEN_OPE": "float"  
+                },
+                "ignore_geometry": "False"
+            },
+            "SEGCON": {
+                "columns": [
+                    "COD_ID",
+                    "R1",
+                    "X1",
+                    "CMAX"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "R1": "float",
+                    "X1": "float",
+                    "CMAX": "float"
+                },
+                "ignore_geometry": "False"
+            },
+            "CRVCRG": {
+                "columns": [
+                    "COD_ID", 
+                    "TIP_DIA", 
+                    "GRU_TEN"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "TIP_DIA": ["DU","SA","DO","0"],
+                    "GRU_TEN": "category"
+                },
+                "ignore_geometry": "False"
+            },
+            "SSDMT": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "TIP_CND",
+                    "COMP",
+                    "CTMT",
+                    "POS"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "FAS_CON": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TIP_CND": "category",
+                    "CTMT": "category",
+                    "COMP": "float",
+                    "PAC_1": "string",
+                    "PAC_2": "string",
+                    "POS": ["0", "PD", "OD", "T", "G", "CS", "CO", "A", "O"]
+                },
+                "ignore_geometry": "False"
+            },
+            "UNSEMT": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "P_N_OPE",
+                    "CTMT"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "FAS_CON": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "CTMT": "category",
+                    "PAC_1": "string",
+                    "PAC_2":"string",
+                    "P_N_OPE": ["0","A","F"]
+                },
+                "ignore_geometry": "False"
+            },
+            "UNSEBT": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "UNI_TR_MT",
+                    "CTMT"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "FAS_CON": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "CTMT": "category",
+                    "PAC_1": "string",
+                    "PAC_2":"string",
+                    "UNI_TR_MT": "category"
+                },
+                "ignore_geometry": "False"
+            },
+            "UNTRMT": {
+                "columns": [
+                    "COD_ID",
+                    "SIT_ATIV",
+                    "PAC_1",
+                    "PAC_2",
+                    "PAC_3",
+                    "TAP",
+                    "PER_FER",
+                    "PER_TOT",
+                    "CTMT",
+                    "TIP_TRAFO",
+                    "MRT",
+                    "FAS_CON_P",
+                    "FAS_CON_S",
+                    "FAS_CON_T",
+                    "TEN_LIN_SE",
+                    "BANC",
+                    "POS"
+                ],
+                "type": {
+                    "CTMT": "category",
+                    "TIP_TRAFO": ["M","B","T","MT","DA","DF"],
+                    "SIT_ATIV": ["AT", "DS", "0"],
+                    "COD_ID": "string",
+                    "PAC_1":"string",
+                    "PAC_2":"string",
+                    "PAC_3":"string",
+                    "TAP": "float",
+                    "PER_FER": "float",
+                    "PER_TOT": "float",
+                    "MRT": "int",
+                    "FAS_CON_P": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "FAS_CON_S": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "FAS_CON_T": ["0","A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_LIN_SE": "float",
+                    "BANC": "int",
+                    "POS": ["0", "PD", "OD", "T", "G", "CS", "CO", "A", "O"]
+                },
+                "ignore_geometry": "False"
+            },
+            "EQTRMT": {
+                "columns": [
+                    "UNI_TR_MT",
+                    "COD_ID",
+                    "POT_NOM",
+                    "TEN_PRI",
+                    "TEN_SEC",
+                    "TEN_TER",
+                    "LIG_FAS_P",
+                    "LIG_FAS_S",
+                    "LIG_FAS_T"
+                ],
+                "type": {
+                    "COD_ID": "category",
+                    "UNI_TR_MT": "category",
+                    "LIG_FAS_P": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "LIG_FAS_S": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "LIG_FAS_T": ["0","A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_PRI": "[0,109]",
+                    "TEN_SEC": "[0,109]",
+                    "TEN_TER": "[0,109]",
+                    "POT_NOM": "[0,106]"
+                },
+                "ignore_geometry": "False"
+            },
+            "UNREMT": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "TIP_REGU",
+                    "CTMT",
+                    "BANC",
+                    "SIT_ATIV"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "FAS_CON": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TIP_REGU": ["0","M","T","DA","DF"],
+                    "CTMT": "category",
+                    "PAC_1":"string",
+                    "PAC_2":"string",
+                    "BANC": "int",
+                    "SIT_ATIV": ["AT", "DS", "0"]
+                },
+                "ignore_geometry": "False"
+            },
+            "EQRE": {
+                "columns": [
+                    "UN_RE",
+                    "LIG_FAS_P",
+                    "LIG_FAS_S",
+                    "POT_NOM",
+                    "PER_FER",
+                    "PER_TOT",
+                    "XHL",
+                    "TEN_REG",
+                    "REL_TP"
+                ],
+                "type": {
+                    "LIG_FAS_P": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "LIG_FAS_S": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "POT_NOM":"[0,106]",
+                    "PER_FER":"float",
+                    "PER_TOT":"float",
+                    "XHL":"float",
+                    "TEN_REG":"float",
+                    "UN_RE":"category",
+                    "REL_TP": "int"
+
+                },
+                "ignore_geometry": "False"
+            },
+            "SSDBT": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "TIP_CND",
+                    "COMP",
+                    "UNI_TR_MT",
+                    "CTMT",
+                    "POS"
+                ],
+                "type": {
+                    "COD_ID": "string",
+                    "FAS_CON": ["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "CTMT": "category",
+                    "TIP_CND":"category",
+                    "UNI_TR_MT":"category",
+                    "COMP": "float",
+                    "PAC_1":"string",
+                    "PAC_2":"string",
+                    "POS": ["0", "PD", "OD", "T", "G", "CS", "CO", "A", "O"]
+                },
+                "ignore_geometry": "False"
+            },
+            "RAMLIG": {
+                "columns": [
+                    "COD_ID",
+                    "FAS_CON",
+                    "PAC_1",
+                    "PAC_2",
+                    "TIP_CND",
+                    "COMP",
+                    "UNI_TR_MT",
+                    "CTMT",
+                    "POS"
+                ],
+                "type": {
+                    "COD_ID":"string",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "PAC_1":"string",
+                    "PAC_2":"string",
+                    "TIP_CND":"category",
+                    "COMP":"float",
+                    "UNI_TR_MT":"category",
+                    "CTMT":"category",
+                    "POS": ["0", "PD", "OD", "T", "G", "CS", "CO", "A", "O"]
+                },
+                "ignore_geometry": "False"
+            },
+            "UCMT_tab": {
+                "columns": [
+                    "COD_ID",
+                    "PAC",
+                    "FAS_CON",
+                    "TEN_FORN",
+                    "TIP_CC",
+                    "ENE_01",
+                    "ENE_02",
+                    "ENE_03",
+                    "ENE_04",
+                    "ENE_05",
+                    "ENE_06",
+                    "ENE_07",
+                    "ENE_08",
+                    "ENE_09",
+                    "ENE_10",
+                    "ENE_11",
+                    "ENE_12",
+                    "CTMT"
+                ],
+                "type": {
+                    "COD_ID":"string",
+                    "PAC":"string",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_FORN":"[0,109]",
+                    "TIP_CC":"category",
+                    "ENE_01":"float",
+                    "ENE_02":"float",
+                    "ENE_03":"float",
+                    "ENE_04":"float",
+                    "ENE_05":"float",
+                    "ENE_06":"float",
+                    "ENE_07":"float",
+                    "ENE_08":"float",
+                    "ENE_09":"float",
+                    "ENE_10":"float",
+                    "ENE_11":"float",
+                    "ENE_12":"float",
+                    "CTMT":"category"
+                },
+                "ignore_geometry": "False"
+            },
+            "UCBT_tab": {
+                "columns": [
+                    "COD_ID",
+                    "PAC",
+                    "FAS_CON",
+                    "TEN_FORN",
+                    "TIP_CC",
+                    "UNI_TR_MT",
+                    "ENE_01",
+                    "ENE_02",
+                    "ENE_03",
+                    "ENE_04",
+                    "ENE_05",
+                    "ENE_06",
+                    "ENE_07",
+                    "ENE_08",
+                    "ENE_09",
+                    "ENE_10",
+                    "ENE_11",
+                    "ENE_12",
+                    "CTMT",
+                    "RAMAL"
+                ],
+                "type": {
+                    "COD_ID":"string",
+                    "PAC":"string",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_FORN":"[0,109]",
+                    "TIP_CC":"category",
+                    "UNI_TR_MT":"category",
+                    "ENE_01":"float",
+                    "ENE_02":"float",
+                    "ENE_03":"float",
+                    "ENE_04":"float",
+                    "ENE_05":"float",
+                    "ENE_06":"float",
+                    "ENE_07":"float",
+                    "ENE_08":"float",
+                    "ENE_09":"float",
+                    "ENE_10":"float",
+                    "ENE_11":"float",
+                    "ENE_12":"float",
+                    "CTMT":"category",
+                    "RAMAL":"category"
+                },
+                "ignore_geometry": "False"
+            },  
+            "PIP": {
+                "columns": [
+                    "COD_ID",
+                    "PAC",
+                    "FAS_CON",
+                    "TEN_FORN",
+                    "TIP_CC",
+                    "UNI_TR_MT",
+                    "ENE_01",
+                    "ENE_02",
+                    "ENE_03",
+                    "ENE_04",
+                    "ENE_05",
+                    "ENE_06",
+                    "ENE_07",
+                    "ENE_08",
+                    "ENE_09",
+                    "ENE_10",
+                    "ENE_11",
+                    "ENE_12",
+                    "CTMT"
+                ],
+                "type": {
+                    "COD_ID":"string",
+                    "PAC":"string",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_FORN":"[0,109]",
+                    "TIP_CC":"category",
+                    "UNI_TR_MT":"category",
+                    "ENE_01":"float",
+                    "ENE_02":"float",
+                    "ENE_03":"float",
+                    "ENE_04":"float",
+                    "ENE_05":"float",
+                    "ENE_06":"float",
+                    "ENE_07":"float",
+                    "ENE_08":"float",
+                    "ENE_09":"float",
+                    "ENE_10":"float",
+                    "ENE_11":"float",
+                    "ENE_12":"float",
+                    "CTMT":"category"
+                },
+                "ignore_geometry": "False"
+            },
+            "UGBT": {
+                "columns":[
+                    "CEG_GD",
+                    "CTMT",
+                    "PAC",
+                    "UNI_TR_MT",
+                    "POT_INST",
+                    "FAS_CON",
+                    "TEN_CON",
+                    "SIT_ATIV"
+                ],
+                "type":{
+                    "CTMT":"category",
+                    "CEG_GD":"string",
+                    "PAC":"string",
+                    "UNI_TR_MT":"category",
+                    "POT_INST":"float",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_CON":"[0,109]",
+                    "SIT_ATIV":["AT", "DS", "0"]
+                },
+                "ignore_geometry": "False"
+            },
+            "UGMT": {
+                "columns":[
+                    "CEG_GD",
+                    "CTMT",
+                    "PAC",
+                    "POT_INST",
+                    "FAS_CON",
+                    "TEN_CON",
+                    "SIT_ATIV"
+                ],
+                "type":{
+                    "CTMT":"category",
+                    "CEG_GD":"string",
+                    "PAC":"string",
+                    "UNI_TR_MT":"category",
+                    "POT_INST":"float",
+                    "FAS_CON":["A","B","C","AN","BN","CN","AB","BC","CA","AX","BX","CX","CAN","BCN","ABN","ABC","ABCN"],
+                    "TEN_CON":"[0,109]",
+                    "SIT_ATIV":["AT", "DS", "0"]
+                },
+                "ignore_geometry": "False"
+            }
+            }
+        }
+    }
+
