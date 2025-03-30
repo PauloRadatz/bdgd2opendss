@@ -462,12 +462,12 @@ class Transformer:
         if trload == None:
             dicionario_kv[transformer] = kv2
         else:
-            #try:
-            #     kv2 = dicionario_kv[trload]
-            # except KeyError:
-            #     kv2 = float('nan')
-            # return(kv2)
-            return(dicionario_kv[trload])
+            try:
+                kv2 = dicionario_kv[trload]
+            except KeyError:
+                kv2 = float('nan')
+            return(kv2)
+            #return(dicionario_kv[trload])
     
     def dict_pot_tr(transformer:Optional[str] = None,kva:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:

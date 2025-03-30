@@ -381,14 +381,6 @@ class Load:
                 f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
                 f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
                 f'daily="{self.daily}_{self.tip_dia}" {self._flag_limitcarga}'
-        # return f'New \"Load.{self.entity}{self.load}_M1" bus1="{self.bus1}.{self.bus_nodes}" ' \
-        #         f'phases={self.phases} conn={self.conn} model={models[0]} kv={kv:.9f} kw = {kw} '\
-        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-        #         f'{self._flag_limitcarga} \n'\
-        #         f'New \"Load.{self.entity}{self.load}_M2" bus1="{self.bus1}.{self.bus_nodes}" ' \
-        #         f'phases={self.phases} conn={self.conn} model={models[1]} kv={kv:.9f} kw = {kw} '\
-        #         f'pf={self.pf} status=variable vmaxpu={self.vmaxpu} vminpu={self.vminpu} ' \
-        #         f'{self._flag_limitcarga}'
                 
             
     def __repr__(self):
