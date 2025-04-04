@@ -616,7 +616,7 @@ class Transformer:
         
         # global _kVbase_GLOBAL 
         # _kVbase_GLOBAL = kVbaseObj.MV_kVbase
-
+        #APLICAR AQUI A CRIAÇÃO DOS DSS ISOLADOS
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Transformer", unit=" transformers", ncols=100)
         for _, row in progress_bar:
             transformer_ = Transformer._create_transformer_from_row(transformer_config, row)

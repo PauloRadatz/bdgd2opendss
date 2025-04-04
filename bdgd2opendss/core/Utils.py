@@ -32,7 +32,7 @@ def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,
             )
     if ctmt is None: 
         for _,row in df_isolados.iterrows(): 
-            logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
+            logger.info(f'Elemento isolado - COD_ID:{row["COD_ID"]} - TIPO:{row["ELEM"]} - CTMT:{row["CTMT"]} - PAC1:{row["PAC_1"]} - PAC2:{row["PAC_2"]}')
     else:
         logger.info(f'O alimentador {feeder} não tem conexão com a barra incial {ctmt}')
 def load_json(json_file: str = "bdgd2dss.json"):
@@ -769,6 +769,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 log_erros(df_not_connected,alimentador,output_folder)
                 lista_isolados = []
 
+                print('aqui')
                 for cod_id in df_not_connected['COD_ID'].values:
                     if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
                         lista_isolados.append(f'SBT_{cod_id}')
@@ -834,7 +835,6 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_transformer,df_aux_regul,df_aux_ucmt], ignore_index=True)
         pac_ctmt = pac
         grafo = nx.Graph()
-
         for index, row in df_elements.iterrows():
             grafo.add_node(row['PAC_1'])
             grafo.add_node(row['PAC_2'])
@@ -885,3 +885,55 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 #         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
 #     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
 #     df.to_csv(file_path, index=False, encoding='utf-8')
+
+# def create_output_file_isolateds(object_list=[], file_name="", object_lists="", file_names="", output_folder="", feeder=""): 
+#     """Create an dss_models_output file and write data from a list of objects.
+
+#     Parameters:
+#     - object_list (list): List of objects to be written to the file.Ex: line or transformer objects.
+#     - file_name (str): Name of the dss_models_output file. Ex: transformers.txt or lines.txt
+
+#     Creates an dss_models_output file in the 'dss_models_output' directory and writes OpenDSS commands from the list,
+#     separated by newline characters. If any error occurs, it will be displayed.
+
+#     """
+#     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
+    
+#     if object_lists != "":
+#         for object_list, file_name in zip(object_lists, file_names):
+#             path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+
+            
+#             with open(path, 'a') as file:
+#                 for string in object_list:
+#                     try:
+#                         file.write(string.full_string() + "\n")
+
+#                     except Exception as e:
+#                         print(f"An error occurred: {str(e)}")
+#                         continue
+#         return f'isolados_{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
+    
+#     else:
+#         path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+
+#         with open(path, "a") as file:
+#             if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
+#                 file.write(standard_curves_pv() + "\n")
+#             else:
+#                 ...
+#             for string in object_list:
+#                 try:
+#                     if type(string) == str:
+#                         file.write(string + "\n")
+#                     else:
+#                         file.write(string.full_string() + "\n")
+#                 except Exception as e:
+#                     print(f"An error occurred: {str(e)}")
+#                     if type(string) == str:
+#                         file.write(f'{string} + "\n"!Elemento com erro de dados "\n"')
+#                     else:
+#                         file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
+#                     continue
+
+#         return f'isolados_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
