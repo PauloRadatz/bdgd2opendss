@@ -33,6 +33,9 @@ class Case:
         self.folder_bdgd = folder_bdgd
         self.feeder = feeder
         self.output_folder = output_folder
+        self.cod_bdgd = ""
+        self.data_bdgd = ""
+        self.year_bdgd = 0
 
         if settings.TipoBDGD: #BDGD privada
             self.ucbt = "UCBT"
@@ -245,8 +248,11 @@ buscoords buscoords.csv'''
 
     # this method populates Case object with data from BDGD
     def PopulaCase(self):
-        get_cod_year_bdgd(self.folder_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
-        count_day_type(int(get_cod_year_bdgd()[0:4]))#calcula du,sa, do/feriados a partir do ano da BDGD
+        self.Populates_BASE()
+
+        get_cod_year_bdgd(cod=self.cod_bdgd,data=self.data_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
+        #count_day_type(int(get_cod_year_bdgd()[0:4]))#calcula du,sa, do/feriados a partir do ano da BDGD
+        count_day_type(self.year_bdgd)#calcula du,sa, do/feriados a partir do ano da BDGD
         get_configuration(feeder=self.feeder,output_folder=self.output_folder) #Identifica as configurações escolhidas pelo usuário e transforma em uma string
 
         self.GenGeographicCoord()
@@ -366,6 +372,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
+        
         Utils.adapt_regulators_names(merged_dfs,'regulator')
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
@@ -384,6 +391,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
+        
         Utils.adapt_regulators_names(merged_dfs,'transformer')
         #settings - criação de dataframe para eliminar transformadores em vazio
         if not self.dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
@@ -511,7 +519,18 @@ buscoords buscoords.csv'''
         else:
             print("No UGMT found for this feeder. \n")
 
+    #Energymeters
     def Populates_energymeters(self,df_aux_tramo,df_aux_trafo):
         alimentador = self.feeder
         fileName = create_energymeters(df_aux_tramo,df_aux_trafo,self.feeder,self.output_folder)
         self.list_files_name.append(fileName)
+
+    def Populates_BASE(self):
+
+        try:
+            self.cod_bdgd = self._dfs['BASE']['gdf']['DIST'].tolist()[0]
+            self.data_bdgd = self._dfs['BASE']['gdf']['DAT_EXT'].tolist()[0].split("/")[2]+self._dfs['BASE']['gdf']['DAT_EXT'].tolist()[0].split("/")[1]
+            self.year_bdgd = int(self._dfs['BASE']['gdf']['DAT_EXT'].tolist()[0].split("/")[2])
+
+        except UnboundLocalError:
+            print("Error in BDGD BASE. Can't get the year and code of BDGD.\n")
