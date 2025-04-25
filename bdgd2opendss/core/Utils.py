@@ -161,7 +161,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
             
             with open(path, k) as file:
@@ -172,10 +172,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     except Exception as e:
                         print(f"An error occurred: {str(e)}")
                         continue
-        return f'{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
+        return f'{file_names[0]}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss'
     
     else:
-        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
         with open(path, "w") as file:
             if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
@@ -195,10 +195,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     else:
                         file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
                     continue
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()} foi gerado\n')
         
 
-        return f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
+        return f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -212,12 +212,12 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
-    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -688,6 +688,7 @@ def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
             merged_dfs.rename(columns={column: new_column_name}, inplace=True)
     return(merged_dfs)
 
+#TODO verifica se a atribuição dos PACs é invertida
 def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
     global seq 
     if df_aux_tramo is not None:
@@ -699,7 +700,7 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
     else:
         return(seq)
 
-
+#TODO cria uma lista dos elementos isolados no circuito
 def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
     global lista_isolados
     if settings.TipoBDGD: #BDGD privada
@@ -717,7 +718,12 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UNI_TR_MT', right_column='COD_ID')
+        df_reg = merge_df_aux_tr(dataframe['EQRE']['gdf'], dataframe['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                left_column='UN_RE', right_column='COD_ID')
+
         adapt_regulators_names(df_trafo,'transformer')
+        adapt_regulators_names(df_reg,'regulator')
+
         df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_ssdmt['ELEM'] = 'SEGMMT'
         df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
@@ -731,16 +737,26 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_unsebt['ELEM'] = 'CHVBT'
         df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_trafo['ELEM'] = 'TRAFO'
-        df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
-        df_aux_ucmt['PAC_2'] = ''
-        df_aux_ucmt['ELEM'] = 'LDMT'
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
-        df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
-        df_aux_ucbt['PAC_2'] = ''
-        df_aux_ucbt['ELEM'] = 'LDBT'
-        df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
+        if settings.TipoBDGD:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
+        else:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
         df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
         df_aux_pip['PAC_2'] = ''
         df_aux_pip['ELEM'] = 'PIP'
@@ -762,6 +778,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                     df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     break
                 else:
+                    #df_x = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     continue
             if df_not_connected.empty:
                 return(print('Não existem elementos isolados!'))
@@ -769,7 +786,6 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 log_erros(df_not_connected,alimentador,output_folder)
                 lista_isolados = []
 
-                print('aqui')
                 for cod_id in df_not_connected['COD_ID'].values:
                     if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
                         lista_isolados.append(f'SBT_{cod_id}')
@@ -797,18 +813,14 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             return(print('Alimentador não tem conexão com a fonte!!'))
     else:
         return(lista_isolados)
-
+#TODO realiza a sequência elétrica do circuito
 def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac: Optional[str] = None, kvbase: Optional[float] = None, key:Optional[str] = None): #define as tensões de PRIMÁRIO dos elementos de MT
     global tensao_dict
     if settings.TipoBDGD: #BDGD privada
-        ucbt = "UCBT"
         ucmt = "UCMT"
-        ugbt = "UGBT"
         ugmt = "UGMT"
     else: #BDGD pública
-        ucbt = "UCBT_tab"
         ucmt = "UCMT_tab"
-        ugbt = "UGBT_tab"
         ugmt = "UGMT_tab"
     if pac == None:
         try:
@@ -828,13 +840,18 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        if settings.TipoBDGD:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+        else:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
         df_aux_ucmt['PAC_2'] = ''
         df_aux_ucmt['ELEM'] = 'LDMT'
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
         df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_transformer,df_aux_regul,df_aux_ucmt], ignore_index=True)
         pac_ctmt = pac
         grafo = nx.Graph()
+
         for index, row in df_elements.iterrows():
             grafo.add_node(row['PAC_1'])
             grafo.add_node(row['PAC_2'])
@@ -885,55 +902,3 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 #         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
 #     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
 #     df.to_csv(file_path, index=False, encoding='utf-8')
-
-# def create_output_file_isolateds(object_list=[], file_name="", object_lists="", file_names="", output_folder="", feeder=""): 
-#     """Create an dss_models_output file and write data from a list of objects.
-
-#     Parameters:
-#     - object_list (list): List of objects to be written to the file.Ex: line or transformer objects.
-#     - file_name (str): Name of the dss_models_output file. Ex: transformers.txt or lines.txt
-
-#     Creates an dss_models_output file in the 'dss_models_output' directory and writes OpenDSS commands from the list,
-#     separated by newline characters. If any error occurs, it will be displayed.
-
-#     """
-#     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
-    
-#     if object_lists != "":
-#         for object_list, file_name in zip(object_lists, file_names):
-#             path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
-
-            
-#             with open(path, 'a') as file:
-#                 for string in object_list:
-#                     try:
-#                         file.write(string.full_string() + "\n")
-
-#                     except Exception as e:
-#                         print(f"An error occurred: {str(e)}")
-#                         continue
-#         return f'isolados_{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
-    
-#     else:
-#         path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
-
-#         with open(path, "a") as file:
-#             if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
-#                 file.write(standard_curves_pv() + "\n")
-#             else:
-#                 ...
-#             for string in object_list:
-#                 try:
-#                     if type(string) == str:
-#                         file.write(string + "\n")
-#                     else:
-#                         file.write(string.full_string() + "\n")
-#                 except Exception as e:
-#                     print(f"An error occurred: {str(e)}")
-#                     if type(string) == str:
-#                         file.write(f'{string} + "\n"!Elemento com erro de dados "\n"')
-#                     else:
-#                         file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
-#                     continue
-
-#         return f'isolados_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
