@@ -46,6 +46,10 @@
                     "x1": "X1"
                 },
                 "indirect_mapping": {
+                    "res_regul": [
+                        "R_REGUL",
+                        "convert_resist"
+                    ]
                 },
                 "calculated": {
                 },
@@ -413,7 +417,7 @@
                 },
                 "direct_mapping": {
                     "bus1": "PAC",
-                    "load": "PN_CON",
+                    "load": "COD_ID",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
                     "energia_01": "ENE_01",
@@ -482,7 +486,7 @@
                 },
                 "direct_mapping": {
                     "bus1": "PAC",
-                    "load": "RAMAL",
+                    "load": "COD_ID",
                     "data_con": "DAT_CON",
                     "daily": "TIP_CC",
                     "feeder": "CTMT",
@@ -679,13 +683,15 @@
                     "COD_ID",
                     "R1",
                     "X1",
-                    "CMAX"
+                    "CMAX",
+                    "R_REGUL"
                 ],
                 "type": {
                     "COD_ID": "category",
                     "R1": "float32",
                     "X1": "float32",
-                    "CMAX": "float32"
+                    "CMAX": "float32",
+                    "R_REGUL":"string"
                 },
                 "ignore_geometry": "False"
             },
@@ -887,7 +893,6 @@
             },
             "UCMT": {
                 "columns": [
-                    "PN_CON",
                     "COD_ID",
                     "PAC",
                     "FAS_CON",
@@ -905,6 +910,7 @@
                     "ENE_10",
                     "ENE_11",
                     "ENE_12",
+                    "PN_CON",
                     "CTMT"
                 ],
                 "type": {

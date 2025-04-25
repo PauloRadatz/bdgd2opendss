@@ -45,6 +45,10 @@
                     "x1": "X1"
                 },
                 "indirect_mapping": {
+                    "res_regul": [
+                        "R_REGUL",
+                        "convert_resist"
+                    ]
                 },
                 "calculated": {
                 },
@@ -678,13 +682,15 @@
                     "COD_ID",
                     "R1",
                     "X1",
-                    "CMAX"
+                    "CMAX",
+                    "R_REGUL"
                 ],
                 "type": {
                     "COD_ID": "category",
                     "R1": "float32",
                     "X1": "float32",
-                    "CMAX": "float32"
+                    "CMAX": "float32",
+                    "R_REGUL": "string"
                 },
                 "ignore_geometry": "False"
             },

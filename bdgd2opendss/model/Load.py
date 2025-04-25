@@ -25,7 +25,7 @@ from bdgd2opendss.core.Utils import create_output_file,adequar_modelo_carga, get
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.model.Count_days import return_day_type
-from math import trunc
+import math
 
 import numpy as np
 
@@ -363,7 +363,7 @@ class Load:
                 self.kw = Load.limitar_potencia_cargasBT(self)
 
         try: #tratando erro numérico no cálculo de potência das cargas
-            kw = (trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
+            kw = (math.trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
         except:
             kw = float('nan')
 
@@ -394,7 +394,7 @@ class Load:
                 self.kw = Load.limitar_potencia_cargasBT(self)
 
         try: #tratando erro numérico no cálculo de potência das cargas
-            kw = (trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
+            kw = (math.trunc(float(self.kw) * 10**6)/ 10**6)/2 #truncando de acordo com o geoperdas
         except:
             kw = float('nan')
 

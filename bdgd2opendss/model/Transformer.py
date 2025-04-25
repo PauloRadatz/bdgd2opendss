@@ -443,19 +443,22 @@ class Transformer:
         
     def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None, tip_trafo:Optional[str] = None): #retorna um dicionario de tensões de fase para cargas de acordo com critérios do Geoperdas
         if trload == None:
-            if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
+            # 1 - M, 2 - MT, 3 - B, 4 - T, 5 - DA, 6 - DF
+            #if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
+            if bus3_nodes != 'XX' and tip_trafo == 'MT':
                 dict_phase_kv[transformer] = kv2/2 
-            elif kv2 != 0.38 and not ((len(bus2_nodes) == 5 and '4' in bus2_nodes) or (len(bus2_nodes) == 3 and '4' not in bus2_nodes)):
+            #elif kv2 != 0.38 and not ((len(bus2_nodes) == 5 and '4' in bus2_nodes) or (len(bus2_nodes) == 3 and '4' not in bus2_nodes)):
+            elif tip_trafo == 'M' or tip_trafo == 'B':
                 dict_phase_kv[transformer] = kv2  
             else: 
                 dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
         else:
-            # try:
-            #     kv2 = dict_phase_kv[trload]
-            # except KeyError:
-            #     kv2 = float('nan')
-            # return(kv2)
-            return(dict_phase_kv[trload])
+            try:
+                kv2 = dict_phase_kv[trload]
+            except KeyError:
+                kv2 = float('nan')
+            return(kv2)
+            # return(dict_phase_kv[trload])
         
     def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:
@@ -556,7 +559,7 @@ class Transformer:
                 param_value = row[param_name]
                 setattr(transformer_, f"_{mapping_key}", function_(str(param_value)))
                 if mapping_key == 'bus3_nodes':
-                    Transformer.sec_phase_kv(getattr(transformer_, f'_transformer')[:-1],getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)))
+                    Transformer.sec_phase_kv(getattr(transformer_, f'_transformer')[:-1],getattr(transformer_, f'_kv2'),getattr(transformer_, f'_bus2_nodes'),function_(str(param_value)),tip_trafo=getattr(transformer_,'_Tip_Lig'))
                 if mapping_key == 'kvas': #settings - limitar cargas BT (potencia atv do trafo): cria dicionário de trafos/potências
                     Transformer.dict_pot_tr(getattr(transformer_, f'_transformer')[:-1],function_(str(param_value)))
                 if mapping_key == 'kv1':
@@ -616,7 +619,7 @@ class Transformer:
         
         # global _kVbase_GLOBAL 
         # _kVbase_GLOBAL = kVbaseObj.MV_kVbase
-        #APLICAR AQUI A CRIAÇÃO DOS DSS ISOLADOS
+
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Transformer", unit=" transformers", ncols=100)
         for _, row in progress_bar:
             transformer_ = Transformer._create_transformer_from_row(transformer_config, row)
