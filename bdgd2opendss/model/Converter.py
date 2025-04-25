@@ -139,10 +139,10 @@ def process_loadshape2(loadshape_list):
     medias = [sum(loadshape_list[i:i + 4]) / 4 for i in range(0, len(loadshape_list), 4)]
 
 
-
     # Calculate the minimum and maximum values in the array
     max_value = max(medias)
-
+    if max_value == 0:
+        return [0]*24, medias
     return [media/max_value for media in medias], medias  # Set all values to 0.5 (midpoint)
 
 
@@ -646,5 +646,100 @@ def convert_ptratio(case): #de acordo com o manual da bdgd e prodist modulo 10
         '16': 63.33,
         '24': 66.09,
         '17': 66.09
+    }
+    return switch_dict.get(case, 'Invalid case')
+
+def convert_resist(case): #de acordo com o manual da bdgd
+    switch_dict = {
+        '0' : 0,
+        'AL6AWG' : 2.469,
+        'AL4AWG': 1.551,
+        'AL3AWG' : 1.229,
+        'AL2AWG': 0.975,
+        'AL1AWG' : 0.774,
+        'AL1_0AWG': 0.613,
+        'AL2_0AWG': 0.486,
+        'AL3_0AWG': 0.386,
+        'AL4_0AWG': 0.306,
+        'AL250MCM' : 0.259,
+        'AL266_8MCM': 0.245,
+        'AL300MCM': 0.217,
+        'AL336_4MCM' : 0.195,
+        'AL350MCM': 0.185,
+        'AL397_5MCM': 0.165,
+        'AL450MCM': 0.145,
+        'AL477MCM': 0.138,
+        'AL500MCM': 0.131,
+        'AL556_5MCM': 0.119,
+        'ALI10MM2': 3.514,
+        'ALI16MM2': 2.179,
+        'ALI25MM2': 1.369,
+        'ALI35MM2': 0.991,
+        'ALI50MM2': 0.732,
+        'ALI70MM2': 0.506,
+        'ALI95MM2': 0.365,
+        'ALI120MM2': 0.289,
+        'ALI150MM2': 0.236,
+        'ALI185MM2': 0.188,
+        'ALI240MM2': 0.143,
+        'ALI300MM2': 0.115,
+        'CUM0_5MM2': 40.952,
+        'CUM0_75MM2': 27.87,
+        'CUM1MM2': 20.59,
+        'CUM1_5MM2': 13.764,
+        'CUM2_5MM2': 8.429,
+        'CUM4MM2': 5.244,
+        'CUM6MM2': 3.504,
+        'CUM10MM2': 2.082,
+        'CUM16MM2': 1.308,
+        'CUM25MM2': 0.827,
+        'CUM35MM2': 0.596,
+        'CUM50MM2': 0.441,
+        'CUM70MM2': 0.305,
+        'CUM95MM2': 0.22,
+        'CUM120MM2': 0.175,
+        'CUM150MM2': 0.142,
+        'CUM185MM2': 0.114,
+        'CUM240MM2': 0.087,
+        'CUM300MM2': 0.07,
+        'CUM400MM2': 0.056,
+        'CUM500MM2': 0.044,
+        'CUM630MM2': 0.036,
+        'CUM800MM2': 0.029,
+        'CUM1000MM2': 0.025,
+        'CUM1200MM2': 0.022,
+        'CUM1400MM2': 0.02,
+        'CUM1600MM2': 0.019,
+        'CUM1800MM2': 0.017,
+        'CUM2000MM2': 0.016,
+        'CU10AWG': 3.754,
+        'CU9AWG': 2.958,
+        'CU8AWG': 2.389,
+        'CU7AWG': 1.82,
+        'CU6AWG': 1.564,
+        'CU5AWG': 1.138,
+        'CU4AWG': 0.984,
+        'CU3AWG': 0.78,
+        'CU2AWG': 0.62,
+        'CU1AWG': 0.491,
+        'CU1_0AWG': 0.389,
+        'CU2_0AWG': 0.308,
+        'CU3_0AWG': 0.245,
+        'CU4_0AWG': 0.195,
+        'AZN1X3_09MM': 29.142,
+        'AZN3X2_25MM': 18.325,
+        'AZN5X6MM': 11.411,
+        'AAL7X9AWG': 2.1,
+        'AAL7X8AWG': 1.673,
+        'AAL7X7AWG': 1.32,
+        'AAL7X6AWG': 1.047,
+        'AAL7X5AWG': 0.833,
+        'AAL7X10AWG': 2.651,
+        'AAL3X9AWG': 4.873,
+        'AAL3X8AWG': 3.883,
+        'AAL3X7AWG': 3.064,
+        'AAL3X6AWG': 2.432,
+        'AAL3X5AWG': 1.934,
+        'AAL3X10AWG': 6.153
     }
     return switch_dict.get(case, 'Invalid case')

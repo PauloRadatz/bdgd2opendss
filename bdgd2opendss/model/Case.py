@@ -281,12 +281,13 @@ buscoords buscoords.csv'''
         self.Populates_PIP()
 
         self.Populates_UCMT()
-        #Load.export_df_loads()#exporta tabela de perdas técnicas para cargas
+
+        #Load.export_df_loads(self.output_folder,self.feeder,self.data_bdgd,self.cod_bdgd)#exporta tabela de perdas técnicas para cargas
         self.Populates_UGBT()
 
         self.Populates_UGMT()
 
-        # creates dss files
+        # # # # creates dss files
         self.output_master(self.list_files_name)
         self.create_outputs_masters(self.list_files_name)
 
@@ -323,7 +324,6 @@ buscoords buscoords.csv'''
             self.line_codes, fileName = LineCode.create_linecode_from_json(self._jsonData, self.dfs['SEGCON']['gdf'],
                                                                            self.feeder, pastadesaida=self.output_folder)
             self.list_files_name.append(fileName)
-
         except UnboundLocalError:
             print("Error in SEGCON.\n")
 
@@ -372,7 +372,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQRE']['gdf'],
                                            self.dfs['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UN_RE', right_column='COD_ID')
-        
+
         Utils.adapt_regulators_names(merged_dfs,'regulator')
         if not merged_dfs.query("CTMT == @alimentador").empty:
 
@@ -428,7 +428,9 @@ buscoords buscoords.csv'''
             df_ucbt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC':'last','FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last','UNI_TR_MT':'last',
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
-            Utils.check_duplicate_loads_names(df_ucbt,"BT") #deve-se passar o tipo de consumidor (BT ou MT)
+
+            if not settings.TipoBDGD:#apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
+                Utils.check_duplicate_loads_names(df_ucbt,"BT") #deve-se passar o tipo de consumidor (BT ou MT)
             
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
@@ -470,7 +472,8 @@ buscoords buscoords.csv'''
             df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC': 'last', 'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
-            Utils.check_duplicate_loads_names(df_ucmt,"MT") #deve-se passar o tipo de consumidor (BT ou MT)
+            if not settings.TipoBDGD: #apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
+                Utils.check_duplicate_loads_names(df_ucmt,"MT") #deve-se passar o tipo de consumidor (BT ou MT)
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucmt,

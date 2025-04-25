@@ -32,7 +32,7 @@ def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,
             )
     if ctmt is None: 
         for _,row in df_isolados.iterrows(): 
-            logger.info(f'Elemento isolado - COD_ID:{row['COD_ID']} - TIPO:{row['ELEM']} - CTMT:{row['CTMT']} - PAC1:{row['PAC_1']} - PAC2:{row['PAC_2']}')
+            logger.info(f'Elemento isolado - COD_ID:{row["COD_ID"]} - TIPO:{row["ELEM"]} - CTMT:{row["CTMT"]} - PAC1:{row["PAC_1"]} - PAC2:{row["PAC_2"]}')
     else:
         logger.info(f'O alimentador {feeder} não tem conexão com a barra incial {ctmt}')
 def load_json(json_file: str = "bdgd2dss.json"):
@@ -161,7 +161,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             k = 'w' #sobre-escrevendo o arquivo
             file_name = ""
         for object_list, file_name in zip(object_lists, file_names):
-            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+            path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
             
             with open(path, k) as file:
@@ -172,10 +172,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     except Exception as e:
                         print(f"An error occurred: {str(e)}")
                         continue
-        return f'{file_names[0]}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
+        return f'{file_names[0]}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss'
     
     else:
-        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+        path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
         with open(path, "w") as file:
             if "GD_" in file_name: #cria curvas padrões do EPRI nos PVsystems
@@ -195,10 +195,10 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                     else:
                         file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
                     continue
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()} foi gerado\n')
         
 
-        return f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss'
+        return f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss'
 
 
 def create_master_file(file_name="", feeder="", master_content="", output_folder=""):
@@ -212,12 +212,12 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
     """
     output_directory = create_output_folder(feeder=feeder,output_folder=output_folder)
 
-    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()}.dss')
+    path = os.path.join(output_directory, f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss')
 
     try:
         with open(path, "w") as file:
             file.write(master_content + "\n")
-        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ='yearcod')}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
+        print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()} foi gerado em ({path})\n')
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
@@ -688,6 +688,7 @@ def merge_df_aux_tr(dataframe_1,dataframe_2,right_column,left_column):
             merged_dfs.rename(columns={column: new_column_name}, inplace=True)
     return(merged_dfs)
 
+#TODO verifica se a atribuição dos PACs é invertida
 def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[str] = None):
     global seq 
     if df_aux_tramo is not None:
@@ -699,7 +700,7 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
     else:
         return(seq)
 
-
+#TODO cria uma lista dos elementos isolados no circuito
 def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
     global lista_isolados
     if settings.TipoBDGD: #BDGD privada
@@ -717,7 +718,12 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UNI_TR_MT', right_column='COD_ID')
+        df_reg = merge_df_aux_tr(dataframe['EQRE']['gdf'], dataframe['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                left_column='UN_RE', right_column='COD_ID')
+
         adapt_regulators_names(df_trafo,'transformer')
+        adapt_regulators_names(df_reg,'regulator')
+
         df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_ssdmt['ELEM'] = 'SEGMMT'
         df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
@@ -731,16 +737,26 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_unsebt['ELEM'] = 'CHVBT'
         df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_trafo['ELEM'] = 'TRAFO'
-        df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
-        df_aux_ucmt['PAC_2'] = ''
-        df_aux_ucmt['ELEM'] = 'LDMT'
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
-        df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
-        df_aux_ucbt['PAC_2'] = ''
-        df_aux_ucbt['ELEM'] = 'LDBT'
-        df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
+        if settings.TipoBDGD:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
+        else:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
         df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
         df_aux_pip['PAC_2'] = ''
         df_aux_pip['ELEM'] = 'PIP'
@@ -762,6 +778,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                     df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     break
                 else:
+                    #df_x = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     continue
             if df_not_connected.empty:
                 return(print('Não existem elementos isolados!'))
@@ -796,18 +813,14 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             return(print('Alimentador não tem conexão com a fonte!!'))
     else:
         return(lista_isolados)
-
+#TODO realiza a sequência elétrica do circuito
 def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac: Optional[str] = None, kvbase: Optional[float] = None, key:Optional[str] = None): #define as tensões de PRIMÁRIO dos elementos de MT
     global tensao_dict
     if settings.TipoBDGD: #BDGD privada
-        ucbt = "UCBT"
         ucmt = "UCMT"
-        ugbt = "UGBT"
         ugmt = "UGMT"
     else: #BDGD pública
-        ucbt = "UCBT_tab"
         ucmt = "UCMT_tab"
-        ugbt = "UGBT_tab"
         ugmt = "UGMT_tab"
     if pac == None:
         try:
@@ -827,10 +840,14 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+        if settings.TipoBDGD:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+        else:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
         df_aux_ucmt['PAC_2'] = ''
         df_aux_ucmt['ELEM'] = 'LDMT'
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
         df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_transformer,df_aux_regul,df_aux_ucmt], ignore_index=True)
         pac_ctmt = pac
         grafo = nx.Graph()

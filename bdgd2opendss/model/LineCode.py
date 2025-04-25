@@ -15,8 +15,9 @@ import re
 from typing import Any
 import geopandas as gpd
 from tqdm import tqdm
+from pandas import isna
 
-from bdgd2opendss.model.Converter import convert_tten
+from bdgd2opendss.model.Converter import convert_tten, convert_resist
 from bdgd2opendss.core.Utils import create_output_file
 
 from dataclasses import dataclass
@@ -182,6 +183,14 @@ class LineCode:
                         param_name, function_name = mapping_value
                         function_ = globals()[function_name]
                         param_value = row[param_name]
+                        if isna(param_value):
+                            param_value = '0'
+                        try:
+                            if function_(param_value) < getattr(linecode_,"_r1"): #Atualização devido a alteração no script do geoperdas
+                                setattr(linecode_, f"_r1", function_(param_value))
+                        except:
+                            print(f'Código do tipo de condutor inexistente para linecode:{getattr(linecode_,'linecode')}')
+                                  
                         setattr(linecode_, f"_{mapping_key}", function_(param_value))
                     else:
                         setattr(linecode_, f"_{mapping_key}", row[mapping_value])
