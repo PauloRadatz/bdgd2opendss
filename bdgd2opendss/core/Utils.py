@@ -20,10 +20,10 @@ tensao_dict = {}
 
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
-    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}')
+    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
     if not logger.hasHandlers():
         path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}.log')
+        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
@@ -717,7 +717,12 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         alimentador = feeder
         df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UNI_TR_MT', right_column='COD_ID')
+        df_reg = merge_df_aux_tr(dataframe['EQRE']['gdf'], dataframe['UNREMT']['gdf'].query("CTMT==@alimentador"),
+                                left_column='UN_RE', right_column='COD_ID')
+
         adapt_regulators_names(df_trafo,'transformer')
+        adapt_regulators_names(df_reg,'regulator')
+
         df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_ssdmt['ELEM'] = 'SEGMMT'
         df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
@@ -731,16 +736,26 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_unsebt['ELEM'] = 'CHVBT'
         df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_trafo['ELEM'] = 'TRAFO'
-        df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
-        df_aux_ucmt['PAC_2'] = ''
-        df_aux_ucmt['ELEM'] = 'LDMT'
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
-        df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
-        df_aux_ucbt['PAC_2'] = ''
-        df_aux_ucbt['ELEM'] = 'LDBT'
-        df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
+        if settings.TipoBDGD:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
+        else:
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'LDMT'
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'LDBT'
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
         df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
         df_aux_pip['PAC_2'] = ''
         df_aux_pip['ELEM'] = 'PIP'
@@ -755,6 +770,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             grafo.remove_node('')
         except:
             pass
+
         conectados = list(nx.connected_components(grafo))
         if any(pac_ctmt in grf for grf in conectados):
             for conection in conectados:
@@ -762,6 +778,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                     df_not_connected = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     break
                 else:
+                    #df_x = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     continue
             if df_not_connected.empty:
                 return(print('Não existem elementos isolados!'))
@@ -769,7 +786,6 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 log_erros(df_not_connected,alimentador,output_folder)
                 lista_isolados = []
 
-                print('aqui')
                 for cod_id in df_not_connected['COD_ID'].values:
                     if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
                         lista_isolados.append(f'SBT_{cod_id}')
