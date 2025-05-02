@@ -20,10 +20,10 @@ tensao_dict = {}
 
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
-    logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}')
+    logger = logging.getLogger(f"elementos_isolados_{get_cod_year_bdgd(typ='cod')}")
     if not logger.hasHandlers():
         path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ='cod')}.log')
+        file_path = os.path.join(path, f"elementos_isolados_{get_cod_year_bdgd(typ='cod')}.log")
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
