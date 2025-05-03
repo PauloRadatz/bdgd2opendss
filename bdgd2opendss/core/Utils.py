@@ -785,7 +785,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             else:
                 log_erros(df_not_connected,alimentador,output_folder)
                 lista_isolados = []
-
+                df_not_connected.fillna('Nulo',inplace=True)
                 for cod_id in df_not_connected['COD_ID'].values:
                     if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
                         lista_isolados.append(f'SBT_{cod_id}')
