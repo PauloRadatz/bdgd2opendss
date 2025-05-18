@@ -419,7 +419,7 @@ class Transformer:
             f'buses=[{self.buses}] '
             f'conns=[{self.conns}] '
             f'kvs=[{self.kvs}] '
-            f'{taps}'
+            f'{taps} '
             f'kvas=[{self.kvas}] '
             f'%loadloss={loadloss} %noloadloss={noloadloss}\n'
             f'{self._coment}{self.pattern_reactor()}\n'
