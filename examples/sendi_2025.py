@@ -9,8 +9,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 if __name__ == '__main__':
     script_path = os.path.dirname(os.path.abspath(__file__))
-    bdgd_file_path = pathlib.Path(script_path, "../bdgd2opendss", "sample", "raw", "aneel",
-                                  "Creluz-D_598_2023-12-31_V11_20240715-1111.gdb")
+    bdgd_file_path = r"C:\SENDI\BDGD\Creluz-D_598_2023-12-31_V11_20240715-1111.gdb"
     lst_feeders = ["1_3PAS_1"]
     output_folder = "C:\SENDI\DSS"
 
