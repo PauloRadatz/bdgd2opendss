@@ -7,6 +7,7 @@ from typing import List, Union, Optional
 from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.model.Case import Case
 from bdgd2opendss.core.Settings import settings
+from bdgd2opendss.config.paths import bdgd2dss_json, bdgd2dss_private_json
 
 def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     """
@@ -50,9 +51,9 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
     #
     if settings.TipoBDGD:
-        json_file_name = os.path.join(os.getcwd(), "bdgd2dss_private.json")
+        json_file_name = bdgd2dss_private_json
     else:
-        json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
+        json_file_name = bdgd2dss_json
     json_obj = JsonData(json_file_name)
     geodataframes = json_obj.create_geodataframes(bdgd_file_path)
 
