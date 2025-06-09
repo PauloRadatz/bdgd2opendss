@@ -35,8 +35,8 @@ def export_feeder_list(feeder_list, feeder):
 
     if not os.path.exists(f'dss_models_output/{feeder}'):
         os.mkdir(f'dss_models_output/{feeder}')
-
-    output_directory = os.path.join(os.getcwd(), f'dss_models_output\{feeder}')
+        
+    output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
 
     path = os.path.join(output_directory, f'Alimentadores.txt')
     with open(path,'w') as output:
