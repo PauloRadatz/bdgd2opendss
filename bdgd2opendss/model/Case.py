@@ -251,7 +251,6 @@ buscoords buscoords.csv'''
         self.Populates_BASE()
 
         get_cod_year_bdgd(cod=self.cod_bdgd,data=self.data_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
-        #count_day_type(int(get_cod_year_bdgd()[0:4]))#calcula du,sa, do/feriados a partir do ano da BDGD
         count_day_type(self.year_bdgd)#calcula du,sa, do/feriados a partir do ano da BDGD
         get_configuration(feeder=self.feeder,output_folder=self.output_folder) #Identifica as configurações escolhidas pelo usuário e transforma em uma string
 
@@ -282,7 +281,9 @@ buscoords buscoords.csv'''
 
         self.Populates_UCMT()
 
-        #Load.export_df_loads(self.output_folder,self.feeder,self.data_bdgd,self.cod_bdgd)#exporta tabela de perdas técnicas para cargas
+        if settings.TabelaPT:
+            Load.export_df_loads(self.output_folder,self.feeder,self.data_bdgd,self.cod_bdgd)#exporta tabela de perdas técnicas para cargas
+        
         self.Populates_UGBT()
 
         self.Populates_UGMT()
@@ -306,12 +307,12 @@ buscoords buscoords.csv'''
 
     # CTMT
     def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
-
+        
         alimentador = self.feeder
 
         try:
             circuitos, fileName = Circuit.create_circuit_from_json(self._jsonData, self._dfs['CTMT']['gdf'].query(
-                "COD_ID==@alimentador"), pastadesaida=self.output_folder)
+                "COD_ID==@alimentador"), pastadesaida=self.output_folder,codedata=self.data_bdgd+self.cod_bdgd)
             self.list_files_name.append(fileName)
 
         except UnboundLocalError:

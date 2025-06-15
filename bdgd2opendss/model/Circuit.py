@@ -3,12 +3,12 @@
 # Não remover a linha de importação abaixo
 from typing import Any, List
 import geopandas as gpd
+import pandas as pd
 from tqdm import tqdm
 from bdgd2opendss.core.Settings import settings
 
 from bdgd2opendss.model.Converter import convert_tten
-from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior
-from bdgd2opendss.model.KVBase import KVBase
+from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior,create_output_folder
 from dataclasses import dataclass
 
 # TODO vide TO DO em case/output_master
@@ -164,7 +164,7 @@ class Circuit:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @classmethod
-    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida:str = "") -> List:
+    def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida:str = "", codedata:str = "") -> List:
     #def create_circuit_from_json(cls,json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, _kVbaseObj: KVBase, pastadesaida:str = "") -> List:
         """Class method to create a list of Circuit objects from JSON data and a GeoDataFrame.
 
@@ -213,9 +213,44 @@ class Circuit:
                     cls._process_static(circuit_, value)
             circuits.append(circuit_)
             progress_bar.set_description(f"Processing Circuit {_+1}")
-
+        
+        if settings.TabelaPT: #criar tabela CircMT
+            Circuit.create_df_circuit(dataframe,getattr(circuit_,'basekv'),getattr(circuit_,'pu'),getattr(circuit_,'circuit'),pastadesaida, codedata)
 
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
 
         #_kVbaseObj.MV_kVbase = circuit_.basekv
         return circuits, file_name
+    
+    def create_df_circuit(dataframe,kv,pu,feeder,output_folder,codedata):
+        colunas = ['CodBase','CodAlim','TenNom_kV','TenOpe_pu','PerdTecnMed_MWh','PerdTecnA3a_MWh','PerdTecnA4_MWh', "PerdTecnA4A3a_MWh",
+                   'PerdTecnB_MWh','PerdTecnA3a_A4_MWh','PerdTecnA3a_B_MWh','PerdTecnB_A3a_MWh','PerdTecnA4_B_MWh','PerdTecnB_A4_MWh']
+        df = pd.DataFrame(columns=colunas)
+        df.at[1,'CodBase'] = codedata
+        df.at[1,'CodAlim'] = feeder
+        df.at[1,'TenNom_kV'] = kv
+        df.at[1,'TenOpe_pu'] = pu
+        df.at[1,'PerdTecnMed_MWh'] = float(dataframe[f"PERD_MED"])/1000
+        df.at[1,'PerdTecnA3a_MWh'] = float(dataframe[f"PERD_A3A"])/1000
+        df.at[1,'PerdTecnA4A3a_MWh'] = float(dataframe[f"PERD_A4A3A"])/1000
+        df.at[1,'PerdTecnA4_MWh'] = float(dataframe[f"PERD_A4"])/1000
+        df.at[1,'PerdTecnB_MWh'] = float(dataframe[f"PERD_B"])/1000
+        df.at[1,'PerdTecnA3a_A4_MWh'] = float(dataframe[f"PERD_A3AA4"])/1000
+        df.at[1,'PerdTecnA3a_B_MWh'] = float(dataframe[f"PERD_A3A_B"])/1000
+        df.at[1,'PerdTecnA4_B_MWh'] = float(dataframe[f"PERD_A4_B"])/1000
+        df.at[1,'PerdTecnB_A3a_MWh'] = float(dataframe[f"PERD_B_A3A"])/1000
+        df.at[1,'PerdTecnB_A4_MWh'] = float(dataframe[f"PERD_B_A4"])/1000
+
+        for month in range(1,13):
+            df.at[1,f"EnerCirc{month:02d}_MWh"] = float(dataframe[f"ENE_{month:02d}"])/1000
+            df.at[1,f"PerdCirc{month:02d}_MWh"] = float(dataframe[f"PNTMT_{month:02d}"])/1000
+            df.at[1,f"PropPerdNTecnMT{month:02d}_pu"] = float(dataframe[f"PNTMT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
+            df.at[1,f"PropPerdNTecnBT{month:02d}_pu"] = float(dataframe[f"PNTBT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
+        primeiras_colunas = df.columns[:4]  # Manter as 2 primeiras colunas
+        outras_colunas = sorted(df.columns[4:])  # Ordenar o resto alfabeticamente
+        df = df[list(primeiras_colunas) + outras_colunas]
+        #df.sort_index(axis=1)
+        pastadesaida = create_output_folder(feeder=feeder, output_folder=output_folder)
+        path_file = pastadesaida + r"\\CircMT" + f"_{feeder}.csv"
+        df.to_csv(path_file,sep=';',encoding='utf-8', index=False)
+        return(print('Tabela CircMT criada'))

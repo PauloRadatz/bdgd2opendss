@@ -34,6 +34,6 @@ class Settings:
     cbMeterComplete: bool = field(default=False, metadata={"description": "Medidores de Energia no barramento principal e transformadores"})
     # BDGD pública ou PRIVADA
     TipoBDGD: bool = field(default=False, metadata={"description": "Define o arquivo JSON para a BDGD: privada (True) ou pública (False)"})
-
+    TabelaPT: bool = field(default=False, metadata={"description": "Define se o usuário quer gerar as tabelas de perdas técnicas"})
 
 settings = Settings()

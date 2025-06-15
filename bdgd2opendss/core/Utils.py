@@ -377,6 +377,10 @@ def adapt_regulators_names(df_tr,type_trafo): #Nomeia dinamicamente os regulador
         column = 'UN_RE'
     contagem_valores = df_tr[column].value_counts().to_dict()
     for value, quantidade in contagem_valores.items():
+        i = df_tr[df_tr['COD_ID'] == value].index
+        if quantidade > 6 or (df_tr.loc[i[0],'BANC'] == 1 and len(i) == 1): #remove transformadores que sejam formado por um banco com mais de 6 trafos ou que sejam formados por bancos e não sejam bancos
+            df_tr.drop(df_tr[df_tr['COD_ID'] == value].index, inplace=True)
+            continue
         count = 0
         count_index = 0
         indices = df_tr[df_tr[column] == value].index.tolist()

@@ -9,17 +9,16 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 if __name__ == '__main__':
-
     script_path = os.path.dirname(os.path.abspath(__file__))
-    bdgd_file_path = pathlib.Path(script_path, "bdgd2opendss", "sample", "raw", "aneel", "Creluz-D_598_2023-12-31_V11_20240715-1111.gdb")
-    lst_feeders = ['1_3PAS_1']
-    pastadesaida = None #local de criação dos arquivos DSS
-
-    # You can change setting below if needed
+    bdgd_file_path = pathlib.Path(script_path, "bdgd2opendss", "sample", "raw", "aneel", r"C:\Users\mozar\OneDrive\Desktop\Certaja\Base_certaja_2024")
+    lst_feeders = ['1_CTJ1_1']#lista
+    pastadesaida = r"C:\Users\mozar\OneDrive\Desktop\Certaja\Certaja_bdgd2opendss"
+    #pastadesaida = r"C:\Users\mozar\OneDrive\Desktop\creluz\casos_bdgd2opendss_todos"
     
     # You can change setting below if needed
 
-    #settings.TipoBDGD = True # - Defina True para BDGD privada da distribuidora e False para BDGD Pública disponibilizada pela ANEEL
+    settings.TipoBDGD = True # - Defina True para BDGD privada da distribuidora e False para BDGD Pública disponibilizada pela ANEEL
+    #settings.TabelaPT = True # - Defina True se quiser gerar as tabelas para os cálculos de Perdas Técnicas (AuxBTNT,AuxMTNT e CircMT)
     #settings.intUsaTrafoABNT = True # - Usa as perdas dos transformadores da ABNT 5440
     #settings.intAdequarTensaoCargasMT = True # - adequar tensão mínima das cargas MT (0.93)
     #settings.intAdequarTensaoCargasBT = True # - adequar tensão mínima das cargas BT (0.92)
@@ -33,5 +32,7 @@ if __name__ == '__main__':
     #settings.intNeutralizarRedeTerceiros = True # - neutralizar redes de terceiros 
     settings.dblVPUMin = 0.6 # - tensão mínima das cargas
     # settings.cbMeterComplete = True # - (True) Criar medidores de energia nos transformadores e barramento/ (False) Cria só no barramento
-    bdgd.run(bdgd_file_path=bdgd_file_path,output_folder=pastadesaida, all_feeders=False, lst_feeders=lst_feeders)
+    #settings.CRVCRG96pts = True # Defina True se quiser gerar o arquivo de curva de carga com 96 pts (diferente do geoperdas)
+    bdgd.run(bdgd_file_path=bdgd_file_path,output_folder=pastadesaida, all_feeders=True, lst_feeders=lst_feeders)
     #bdgd.run_errors(bdgd_file_path=bdgd_file_path,output_folder=pastadesaida,lista_ctmt=lista)
+    
