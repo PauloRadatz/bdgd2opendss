@@ -17,10 +17,13 @@ import numpy
 from idlelib.pyparse import trans
 import geopandas as gpd
 from tqdm import tqdm
+import csv
+import pandas as pd
+import os
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_ttranf_windings, convert_tfascon_conn, convert_tpotaprt, convert_tfascon_phases,  convert_tfascon_bus_prim,  convert_tfascon_bus_sec,  convert_tfascon_bus_terc, convert_tfascon_phases_trafo
 from bdgd2opendss.model.Circuit import Circuit
-from bdgd2opendss.core.Utils import create_output_file, create_df_trafos_vazios, perdas_trafos_abnt, elem_isolados
+from bdgd2opendss.core.Utils import create_output_file, create_output_folder, create_df_trafos_vazios, perdas_trafos_abnt, elem_isolados
 from bdgd2opendss.core.Settings import settings
 
 from dataclasses import dataclass
@@ -31,7 +34,7 @@ dict_phase_kv = {}
 dict_pot_tr = {}
 list_dsativ = []
 list_posse = []
-
+output = ""
 @dataclass
 class Transformer:
 
@@ -356,12 +359,25 @@ class Transformer:
         return f'New "Reactor.TRF_{self.transformer}_R" phases=1 bus1={self.bus2}.4 R=15 X=0 basefreq=60'
 
     def pattern_MRT(self):
-
+        Transformer.coords_MRT(self)
         return (f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_1" nphases=1 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
                 f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_2" nphases=2 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
                 f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_3" nphases=3 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
                 f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_4" nphases=4 basefreq=60 r1=15000 x1=0 units=km normamps=0\n' #alteração feita por Mozart - 26/06 às 11h
                 f'{self._coment}New "Line.Resist_MTR_TRF_{self.transformer}" phases=1 bus1="{self.bus1}.{self.bus1_nodes}" bus2="MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" linecode="LC_MRT_TRF_{self.transformer}_1" length=0.001 units=km \n')
+    
+    def coords_MRT(self):
+        global output
+        output_directory = create_output_folder(self.feeder,output_folder=output)
+        path = os.path.join(output_directory,"buscoords.csv")
+        df = pd.read_csv(path)
+        result = df[df['PAC'] == self.bus1]
+        dados = [
+            [f"MRT_{self.bus1}TRF_{self.transformer}",result.loc[result.index[0],'long'],result.loc[result.index[0],'lat']]
+        ]
+        with open(path, mode="a", newline='') as arquivo:
+            escritor = csv.writer(arquivo)
+            escritor.writerows(dados)
 
     def full_string(self) -> str:
         #if self.transformer in elem_isolados():
@@ -612,23 +628,20 @@ class Transformer:
         return transformer_
 
     @staticmethod
-    #def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, kVbaseObj: Any, pastadesaida: str = ""):
     def create_transformer_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, pastadesaida: str = ""):
+        global output
         transformers = []
         transformer_config = json_data['elements']['Transformer']['UNTRMT']
-        
-        # global _kVbase_GLOBAL 
-        # _kVbase_GLOBAL = kVbaseObj.MV_kVbase
+        output = pastadesaida
 
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Transformer", unit=" transformers", ncols=100)
         for _, row in progress_bar:
             transformer_ = Transformer._create_transformer_from_row(transformer_config, row)
             transformers.append(transformer_)
             progress_bar.set_description(f"Processing transformer {_ + 1}")
+        
 
         file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
-        #kVbaseObj.LV_kVbase = dicionario_kv
 
         return transformers, file_name
-        #return kVbaseObj, file_name
     
