@@ -380,10 +380,9 @@ class Transformer:
             escritor.writerows(dados)
 
     def full_string(self) -> str:
-        #if self.transformer in elem_isolados():
-        # if self.sit_ativ == 'DS':
-        #     return("")
-        # else:
+        if self.transformer in elem_isolados():
+            return("")
+
         if settings.intAdequarTrafoVazio and self.transformer[:-1] in create_df_trafos_vazios(): #settings (comenta os transformadores vazios)
             self._coment = '!'
         else:
