@@ -21,10 +21,14 @@ def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
 
 def get_feeder_list(folder: str) -> List[str]:  # TODO is there a way to not load everything?
     folder_bdgd = folder
-    json_file_name = os.path.join(os.getcwd(), "bdgd2dss.json")
 
-    json_data = JsonData(json_file_name)
-    geodataframes = json_data.create_geodataframes_lista_ctmt(folder_bdgd)
+    if settings.TipoBDGD:
+        json_file_name = bdgd2dss_private_json
+    else:
+        json_file_name = bdgd2dss_json
+
+    json_obj = JsonData(json_file_name)
+    geodataframes = json_obj.create_geodataframes_lista_ctmt(folder_bdgd)
 
     return geodataframes["CTMT"]['gdf']['COD_ID'].tolist()
 
