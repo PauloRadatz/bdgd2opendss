@@ -289,7 +289,7 @@ buscoords buscoords.csv'''
         self.Populates_UGMT()
 
         # # # # creates dss files
-        self.output_master(self.list_files_name)
+        #self.output_master(self.list_files_name)
         self.create_outputs_masters(self.list_files_name)
 
     # generates the geographic coordinates
