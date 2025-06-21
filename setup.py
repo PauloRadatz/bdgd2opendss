@@ -3,6 +3,7 @@
 """The setup script."""
 
 from setuptools import setup, find_packages
+import bdgd2opendss
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -37,6 +38,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/PauloRadatz/bdgd2opendss',
-    version='1.0.0',
+    version=bdgd2opendss.__version__,
     zip_safe=False,
 )
