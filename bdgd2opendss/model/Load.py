@@ -21,7 +21,7 @@ from bdgd2opendss.core.Settings import settings
 
 
 from bdgd2opendss.model.Converter import convert_tten, convert_tfascon_bus, convert_tfascon_bus_prim, convert_tfascon_quant_fios, process_loadshape, process_loadshape2, convert_tfascon_conn_load, convert_tfascon_phases_load
-from bdgd2opendss.core.Utils import create_output_file,adequar_modelo_carga, get_cod_year_bdgd, elem_isolados, seq_eletrica
+from bdgd2opendss.core.Utils import create_output_file, create_output_folder,adequar_modelo_carga, get_cod_year_bdgd, elem_isolados, seq_eletrica
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.model.Count_days import return_day_type
@@ -426,12 +426,11 @@ class Load:
             pot_atv_media = df["soma_pot"][tip_dia]/24
             pot_atv_max = max(df["pot_atv"][tip_dia])
             fc = pot_atv_media/pot_atv_max #tirar aqui o fcDU/fcDO/fcSA para cada carga
+            kw = getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc)#kw tipo dia (DU/SA/DO)
+            energia = getattr(self, f'energia_{mes}')
             if self._energia_total != 0: #não cria df de cargas com energia zerada
-                Load.create_df_loads(self,tip_dia,mes,df['COD_ID'][tip_dia],prop_pot_mens_mes,fc) #cria o dataframe para usar no cálculo das perdas técnicas
-            
-            #flag_loadshape = True
-            
-            return (getattr(self, f'energia_{mes}')*(prop_pot_mens_mes)/(return_day_type(tip_dia, mes)*24*fc))#kw tipo dia (DU/SA/DO)
+                Load.create_df_loads(self,tip_dia,mes,df['COD_ID'][tip_dia],prop_pot_mens_mes,fc,kw,energia) #cria o dataframe para usar no cálculo das perdas técnicas
+            return (kw)
 
         except KeyError: #TODO implementar uma curva default quando não houver loadshape na BDGD 
             
@@ -646,31 +645,51 @@ class Load:
         return DU_meses, file_name
         #return load_, file_name
 
-    def create_df_loads(self,tip_dia,mes,crvcarga,prop,fc):
+    def create_df_loads(self,tip_dia,mes,crvcarga,prop,fc,kw,energia):
         global df_energ_load
         if df_energ_load.empty:
-            columns = ['CodDist','CodConsBT','TipCrvaCarga','CodAlim','CodTrafo','fcDU','fcSA','fcDO','PropEnerMensDU01','PropEnerMensDU02','PropEnerMensDU03',
-                    'PropEnerMensDU04','PropEnerMensDU05','PropEnerMensDU06','PropEnerMensDU07','PropEnerMensDU08','PropEnerMensDU09','PropEnerMensDU10','PropEnerMensDU11',
-                    'PropEnerMensDU12','PropEnerMensSA01','PropEnerMensSA02','PropEnerMensSA03','PropEnerMensSA04','PropEnerMensSA05','PropEnerMensSA06','PropEnerMensSA07'
-                    ,'PropEnerMensSA08','PropEnerMensSA09','PropEnerMensSA10','PropEnerMensSA11','PropEnerMensSA12','PropEnerMensDO01','PropEnerMensDO02','PropEnerMensDO03',
-                    'PropEnerMensDO04','PropEnerMensDO05','PropEnerMensDO06','PropEnerMensDO07','PropEnerMensDO08','PropEnerMensDO09','PropEnerMensDO10','PropEnerMensDO11',
-                    'PropEnerMensDO12']
+            colunas = []
+            dias = []
+            colunas_ene = []
+            tipo_dia = ['DU','SA','DO']
+            for dia in tipo_dia:
+                for month in range(1,13):
+                    colunas.append('PropEnerMens'+f'{dia}{month:02d}')
+                    colunas.append('DemMax'+f'{dia}{month:02d}_kW') 
+                    dias.append('DiasMes'+f'{dia}{month:02d}')     
+            for month in range(1,13):
+                    colunas_ene.append('EnerMedid'+f'{month:02d}_MWh')
+            columns = ['CodDist','CodConsBT','TipCrvaCarga','CodAlim','CodTrafo','fcDU','fcSA','fcDO'] + colunas_ene + colunas[::2] + dias + colunas[1::2]
             
             df_energ_load = pd.DataFrame(columns=columns)
             df_energ_load['CodAlim'] = self.feeder 
-            df_energ_load.set_index('CodConsBT', inplace=True)
+             #df_energ_load.set_index('CodConsBT', inplace=True)
         else:
             ...
-
+        #TODO corrigir aqui
+        if self.entity == 'BT_IP':  
+            df_energ_load.at[self.load, f'CodConsBT'] = 'IP' + self.load
+        else:
+            df_energ_load.at[self.load, f'CodConsBT'] = self.load
         df_energ_load.at[self.load, f'PropEnerMens{tip_dia}{mes}'] = prop
+        df_energ_load.at[self.load, f'EnerMedid{mes}_MWh'] = float(energia)/1000
+        df_energ_load.at[self.load, f'DemMax{tip_dia}{mes}_kW'] = kw
+        df_energ_load.at[self.load, f'DiasMes{tip_dia}{mes}'] = return_day_type(tip_dia,str(mes))
         df_energ_load.at[self.load, f'fc{tip_dia}'] = fc
         df_energ_load.at[self.load, 'TipCrvaCarga'] = crvcarga
         df_energ_load.at[self.load, 'CodAlim'] = self.feeder
         df_energ_load.at[self.load, 'CodTrafo'] = self.transformer
 
-    def export_df_loads():
+    def export_df_loads(output,feeder,data_bdgd,cod_bdgd):
         global df_energ_load
-        df_energ_load.to_csv(r"C:\Users\mozar\OneDrive\Desktop\creluz\tabelapropcargas.csv",sep=';',encoding='utf-8', index=False)
+        df_energ_load['CodDist'] = data_bdgd + cod_bdgd
+        df_energ_mtload = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1)
+        df_energ_mtload.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
+        df_energ_btload = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')]
+        output_folder = create_output_folder(feeder=feeder, output_folder=output)
+        path_file_bt = output_folder + r"/AuxCargaBTNT" + f"_{feeder}.csv"
+        path_file_mt = output_folder + r"/AuxCargaMTNT" + f"_{feeder}.csv"
+        df_energ_btload.to_csv(path_file_bt,encoding='utf-8', decimal='.', index=False)
+        df_energ_mtload.to_csv(path_file_mt,encoding='utf-8', decimal='.',index=False)
         return(print('Tabela de perdas técnicas criada'))
-    
         
