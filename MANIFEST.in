@@ -3,6 +3,17 @@ include CONTRIBUTING.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
+include config/bdgd2dss.json
+include config/bdgd2dss_private.json
+include config/PRODIST_MOD7_MONO_15kvmax.csv
+include config/PRODIST_MOD7_MONO_24.2kvmax.csv
+include config/PRODIST_MOD7_MONO_36.2kvmax.csv
+include config/PRODIST_MOD7_TRIF_15kvmax.csv
+include config/PRODIST_MOD7_TRIF_24.2kvmax.csv
+include config/PRODIST_MOD7_TRIF_36.2kvmax.csv
+
+
+
 
 recursive-include tests *
 recursive-exclude * __pycache__
