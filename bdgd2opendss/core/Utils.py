@@ -620,7 +620,7 @@ def create_output_folder(feeder, output_folder:Optional[str] = None):
                     output_directory = f'{output_folder}/sub__{substation}/{feeder}'
                 else:
                     output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
-                    
+
         except FileNotFoundError:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
@@ -879,12 +879,9 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 def get_substation(sub:Optional[str] = None):
     global substation
     if sub == None:
-        return(substation)
+        substation = ""
     else:
-        if len(sub) < 1:
-            substation = "SE_X"
-        else:
-            substation = sub
+        substation = sub
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
 #     df = pd.DataFrame(columns=colunas)
