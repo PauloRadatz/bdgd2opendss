@@ -8,8 +8,9 @@ from tqdm import tqdm
 from bdgd2opendss.core.Settings import settings
 
 from bdgd2opendss.model.Converter import convert_tten
-from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior,create_output_folder
+from bdgd2opendss.core.Utils import create_output_file, limitar_tensao_superior,create_output_folder, get_substation
 from dataclasses import dataclass
+import os
 
 # TODO vide TO DO em case/output_master
 kv = []
@@ -23,6 +24,7 @@ class Circuit:
     _bus1: str = ""
     _r1: float = 0.0000
     _x1: float = 0.0001
+    _sub: str = ""
 
     @property
     def circuit(self) -> str:
@@ -131,6 +133,8 @@ class Circuit:
             if mapping_key == 'bus1':#(settings) captura o PAC inicial para colocar os medidores de barramento
                 global pac_ctmt
                 pac_ctmt=row[mapping_value]
+            if mapping_key == 'sub':
+                get_substation(sub=row[mapping_value])
             setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
     @staticmethod
@@ -216,9 +220,9 @@ class Circuit:
         
         if settings.TabelaPT: #criar tabela CircMT
             Circuit.create_df_circuit(dataframe,getattr(circuit_,'basekv'),getattr(circuit_,'pu'),getattr(circuit_,'circuit'),pastadesaida, codedata)
-
+        
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
-
+        
         #_kVbaseObj.MV_kVbase = circuit_.basekv
         return circuits, file_name
     
@@ -251,6 +255,10 @@ class Circuit:
         df = df[list(primeiras_colunas) + outras_colunas]
         #df.sort_index(axis=1)
         pastadesaida = create_output_folder(feeder=feeder, output_folder=output_folder)
-        path_file = pastadesaida + r"\\CircMT" + f"_{feeder}.csv"
+        print('a')
+        if not os.path.exists(f"{pastadesaida}/csv_files"):
+                os.mkdir(f"{pastadesaida}/csv_files")
+        path_folder = f"{pastadesaida}/csv_files"
+        path_file = path_folder + f"/Circ_MT_{feeder}.csv"
         df.to_csv(path_file,sep=';',encoding='utf-8', index=False)
         return(print('Tabela CircMT criada'))

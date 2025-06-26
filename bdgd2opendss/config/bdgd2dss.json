@@ -19,7 +19,8 @@
                 "direct_mapping": {
                     "bus1": "PAC_INI",
                     "circuit": "COD_ID",
-                    "pu": "TEN_OPE"
+                    "pu": "TEN_OPE",
+                    "sub": "SUB"
                 },
                 "indirect_mapping": {
                     "basekv": [
@@ -668,6 +669,7 @@
                     "TEN_NOM",
                     "TEN_OPE",
                     "PAC_INI",
+                    "SUB",
                     "ENE_01",
                     "ENE_02",
                     "ENE_03",

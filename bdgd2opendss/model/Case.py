@@ -252,11 +252,12 @@ buscoords buscoords.csv'''
 
         get_cod_year_bdgd(cod=self.cod_bdgd,data=self.data_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
         count_day_type(self.year_bdgd)#calcula du,sa, do/feriados a partir do ano da BDGD
+        
+        self.Populates_CTMT()
+        
         get_configuration(feeder=self.feeder,output_folder=self.output_folder) #Identifica as configurações escolhidas pelo usuário e transforma em uma string
 
         self.GenGeographicCoord()
-
-        self.Populates_CTMT()
 
         df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa

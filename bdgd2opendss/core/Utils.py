@@ -17,7 +17,7 @@ tr_vazios = []
 sufixo_config = ""
 lista_isolados = []
 tensao_dict = {}
-
+substation = ""
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
@@ -608,11 +608,19 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
 def create_output_folder(feeder, output_folder:Optional[str] = None):
     if output_folder is not None:
         try:
-            if not os.path.exists(f'{output_folder}/{feeder}'):
-                os.mkdir(f'{output_folder}/{feeder}')
-                output_directory = f'{output_folder}/{feeder}'
+            if len(substation) == 0:
+                if not os.path.exists(f'{output_folder}/{feeder}'):
+                    os.makedirs(f'{output_folder}/{feeder}', exist_ok=True)
+                    output_directory = f'{output_folder}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}'+ f'/{feeder}'
             else:
-                output_directory = f'{output_folder}/{feeder}'
+                if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
+                    os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
+                    output_directory = f'{output_folder}/sub__{substation}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
+                    
         except FileNotFoundError:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
@@ -867,6 +875,16 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
                 else:
                     tensao_dict[seq[1]] = kv
         return(print('Sequência elétrica na média tensão realizada!'))
+    
+def get_substation(sub:Optional[str] = None):
+    global substation
+    if sub == None:
+        return(substation)
+    else:
+        if len(sub) < 1:
+            substation = "SE_X"
+        else:
+            substation = sub
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
 #     df = pd.DataFrame(columns=colunas)
