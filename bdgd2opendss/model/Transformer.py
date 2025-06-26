@@ -14,7 +14,6 @@ import copy
 import re
 from typing import Any, Optional
 import numpy
-from idlelib.pyparse import trans
 import geopandas as gpd
 from tqdm import tqdm
 import csv
@@ -250,7 +249,7 @@ class Transformer:
     @Tip_Lig.setter
     def Tip_Lig(self, value):
         self._Tip_Lig = value
-    
+
     @property
     def sit_ativ(self):
         return self._sit_ativ
@@ -266,7 +265,7 @@ class Transformer:
     @posse.setter
     def posse(self, value: str):
         self._posse = value
-    
+
     def adapting_string_variables(self):
 
         """
@@ -302,7 +301,7 @@ class Transformer:
             else:
                 if self.conn_s == 'Wye':
                     self.kv2 = f'{float(self.kv2)/numpy.sqrt(3):.13f}'
-                    
+
         if self.MRT == 1: #Condições usadas pela geoperdas de declarar as tensões de secundário e primário de TRAFO
             if '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
@@ -311,7 +310,7 @@ class Transformer:
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
                 if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
-                    kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.13f}'                    
+                    kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.13f}'
                 else:
                     kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
@@ -323,7 +322,7 @@ class Transformer:
                 kvas = f'{self.kvas} {self.kvas}'
                 conns = f'{self.conn_p} {self.conn_s}'
             MRT = self.pattern_MRT()
-        else: 
+        else:
             if self.Tip_Lig == 'T':
                 kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
@@ -336,7 +335,7 @@ class Transformer:
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
             elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
                 if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
-                    kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.13f}'                    
+                    kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.13f}'
                 else:
                     kvs = f'{self.kv1} {self.kv2}'
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
@@ -365,7 +364,7 @@ class Transformer:
                 f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_3" nphases=3 basefreq=60 r1=15000 x1=0 units=km normamps=0\n'
                 f'{self._coment}New "Linecode.LC_MRT_TRF_{self.transformer}_4" nphases=4 basefreq=60 r1=15000 x1=0 units=km normamps=0\n' #alteração feita por Mozart - 26/06 às 11h
                 f'{self._coment}New "Line.Resist_MTR_TRF_{self.transformer}" phases=1 bus1="{self.bus1}.{self.bus1_nodes}" bus2="MRT_{self.bus1}TRF_{self.transformer}.{self.bus1_nodes}" linecode="LC_MRT_TRF_{self.transformer}_1" length=0.001 units=km \n')
-    
+
     def coords_MRT(self):
         global output
         output_directory = create_output_folder(self.feeder,output_folder=output)
@@ -444,7 +443,7 @@ class Transformer:
             return("")
         else:
             self.kvs, self.buses, self.conns, self.kvas, self.taps, kva, MRT= Transformer.adapting_string_variables(self)
- 
+
             return (f'New \"Transformer.TRF_{self.transformer}" phases={self.phases} '
                 f'windings={self.windings} '
                 f'buses=[{self.buses}] '
@@ -455,17 +454,17 @@ class Transformer:
                 f'%loadloss={(float(self.totalloss)-float(self.noloadloss))/(10*float(kva)):.6f} %noloadloss={float(self.noloadloss)/(10*float(kva)):.6f}\n'
                 f'{MRT}'
                 f'{self.pattern_reactor()}')
-        
+
     def sec_phase_kv(transformer:Optional[str] = None,kv2:Optional[float] = None,bus2_nodes:Optional[str] = None,bus3_nodes:Optional[str] = None, trload:Optional[str] = None, tip_trafo:Optional[str] = None): #retorna um dicionario de tensões de fase para cargas de acordo com critérios do Geoperdas
         if trload == None:
             # 1 - M, 2 - MT, 3 - B, 4 - T, 5 - DA, 6 - DF
             #if bus3_nodes != 'XX' and (kv2 == 0.24 or kv2 == 0.44):
             if bus3_nodes != 'XX' and tip_trafo == 'MT':
-                dict_phase_kv[transformer] = kv2/2 
+                dict_phase_kv[transformer] = kv2/2
             #elif kv2 != 0.38 and not ((len(bus2_nodes) == 5 and '4' in bus2_nodes) or (len(bus2_nodes) == 3 and '4' not in bus2_nodes)):
             elif tip_trafo == 'M' or tip_trafo == 'B':
-                dict_phase_kv[transformer] = kv2  
-            else: 
+                dict_phase_kv[transformer] = kv2
+            else:
                 dict_phase_kv[transformer] = kv2/numpy.sqrt(3)
         else:
             try:
@@ -474,7 +473,7 @@ class Transformer:
                 kv2 = float('nan')
             return(kv2)
             # return(dict_phase_kv[trload])
-        
+
     def sec_line_kv(transformer:Optional[str] = None,kv2:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:
             dicionario_kv[transformer] = kv2
@@ -485,27 +484,27 @@ class Transformer:
                 kv2 = float('nan')
             return(kv2)
             #return(dicionario_kv[trload])
-    
+
     def dict_pot_tr(transformer:Optional[str] = None,kva:Optional[float] = None, trload:Optional[str] = None): #retornar um dicionario de tensões de linha para a carga e acordo com critérios do Geoperdas
         if trload == None:
             dict_pot_tr[transformer] = kva
         else:
             return(dict_pot_tr[trload])
-    
-    @staticmethod    
+
+    @staticmethod
     def dict_kv():
         return(dicionario_kv)
-    
-    @staticmethod    
+
+    @staticmethod
     def list_dsativ():
         return(list_dsativ)
-    
+
     def dict_kv_pri():
         return(dicionario_kv_pri)
-    
+
     def list_posse():
         return(list_posse)
-        
+
     @staticmethod
     def _process_static(transformer_, value):
         """
@@ -566,7 +565,7 @@ class Transformer:
         If the value is not a list, the method directly sets the corresponding attribute on
         the transformer object using the value from the row.
         """
-        
+
         for mapping_key, mapping_value in value.items():
             if isinstance(mapping_value, list):
                 param_name, function_name = mapping_value
@@ -638,9 +637,9 @@ class Transformer:
             transformer_ = Transformer._create_transformer_from_row(transformer_config, row)
             transformers.append(transformer_)
             progress_bar.set_description(f"Processing transformer {_ + 1}")
-        
+
 
         file_name = create_output_file(transformers, transformer_config["arquivo"], feeder=transformer_.feeder, output_folder=pastadesaida)
 
         return transformers, file_name
-    
+
