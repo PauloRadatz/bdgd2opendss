@@ -689,7 +689,7 @@ class Load:
         output_folder = create_output_folder(feeder=feeder, output_folder=output)
         path_file_bt = output_folder + r"/csv_files" + r"/AuxCargaBTNT" + f"_{feeder}.csv"
         path_file_mt = output_folder + r"/csv_files" + r"/AuxCargaMTNT" + f"_{feeder}.csv"
-        df_energ_btload.to_csv(path_file_bt,encoding='utf-8', decimal='.', index=False)
-        df_energ_mtload.to_csv(path_file_mt,encoding='utf-8', decimal='.',index=False)
+        df_energ_btload.to_csv(path_file_bt,encoding='utf-8', decimal='.',sep=';', index=False)
+        df_energ_mtload.to_csv(path_file_mt,encoding='utf-8', decimal='.',sep=';',index=False)
         return(print('Tabela de perdas técnicas criada'))
         

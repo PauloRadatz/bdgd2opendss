@@ -262,7 +262,6 @@ class Circuit:
         df = df[list(primeiras_colunas) + outras_colunas]
         #df.sort_index(axis=1)
         pastadesaida = create_output_folder(feeder=feeder, output_folder=output_folder)
-        print('a')
         if not os.path.exists(f"{pastadesaida}/csv_files"):
                 os.mkdir(f"{pastadesaida}/csv_files")
         path_folder = f"{pastadesaida}/csv_files"
