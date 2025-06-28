@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Sample:
-    _dir_aneel = "sample/raw/aneel"
+    _dir_aneel = "sample/raw/aneel" # pasta padrão
 
     @property
     def dir_aneel(self) -> str:
