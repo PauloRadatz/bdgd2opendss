@@ -608,24 +608,18 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
 def create_output_folder(feeder, output_folder:Optional[str] = None):
     if output_folder is not None:
         try:
-            if not os.path.exists(f'{output_folder}/{feeder}'):
-                os.makedirs(f'{output_folder}/{feeder}', exist_ok=True)
-                output_directory = f'{output_folder}/{feeder}'
+            if len(substation) == 0:
+                if not os.path.exists(f'{output_folder}/{feeder}'):
+                    os.makedirs(f'{output_folder}/{feeder}', exist_ok=True)
+                    output_directory = f'{output_folder}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}'+ f'/{feeder}'
             else:
-                output_directory = f'{output_folder}'+ f'/{feeder}'
-            # if len(substation) == 0:
-            #     if not os.path.exists(f'{output_folder}/{feeder}'):
-            #         os.makedirs(f'{output_folder}/{feeder}', exist_ok=True)
-            #         output_directory = f'{output_folder}/{feeder}'
-            #     else:
-            #         output_directory = f'{output_folder}'+ f'/{feeder}'
-            # else:
-            #     if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
-            #         os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
-            #         output_directory = f'{output_folder}/sub__{substation}/{feeder}'
-            #     else:
-            #         output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
-
+                if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
+                    os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
+                    output_directory = f'{output_folder}/sub__{substation}/{feeder}'
+                else:
+                    output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
         except FileNotFoundError:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
