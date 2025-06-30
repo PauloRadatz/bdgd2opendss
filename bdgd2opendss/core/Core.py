@@ -48,11 +48,22 @@ def export_feeder_list(feeder_list, feeder):
             output.write(str(k)+"\n")
     return f'Lista de alimentadores criada em {path}'
 
+def bdgd_type(path):
+    arquivos = os.listdir(path)
+    for item in arquivos:
+        x,ext = os.path.splitext(item)
+        if ext == '.dbf' or ext == '.shp' or ext == '.shx' or ext == '.prj':
+            settings.TipoBDGD = True
+            break
+        elif ext == '.gdbtable' or ext == '.gdbtablx' or ext == '.gdbindexes':
+            break
+        
 def run(bdgd_file_path: Union[str, pathlib.Path],
         output_folder: Optional[Union[str, pathlib.Path]] = None,
         all_feeders: bool = True,
         lst_feeders: Optional[List[str]] = None) :
-
+    
+    bdgd_type(bdgd_file_path) #define automaticamente se a bdgd é pública ou privada
     #
     if settings.TipoBDGD:
         json_file_name = bdgd2dss_private_json
