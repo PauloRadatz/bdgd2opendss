@@ -282,7 +282,7 @@
                 },
                 "indirect_mapping": {
                     "phases": [
-                        "LIG_FAS_P",
+                        "FAS_CON_P",
                         "convert_tfascon_phases_trafo"
                     ],
                     "kvas": [

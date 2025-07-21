@@ -219,6 +219,7 @@ class Circuit:
             progress_bar.set_description(f"Processing Circuit {_+1}")
         
         if settings.TabelaPT: #criar tabela CircMT
+
             Circuit.create_df_circuit(dataframe,getattr(circuit_,'basekv'),getattr(circuit_,'pu'),getattr(circuit_,'circuit'),pastadesaida, codedata)
         
         file_name = create_output_file(circuits, circuit_config["arquivo"], output_folder=pastadesaida, feeder=circuit_.circuit)
@@ -255,8 +256,13 @@ class Circuit:
         for month in range(1,13):
             df.at[1,f"EnerCirc{month:02d}_MWh"] = float(dataframe[f"ENE_{month:02d}"])/1000
             df.at[1,f"PerdCirc{month:02d}_MWh"] = float(dataframe[f"PNTMT_{month:02d}"])/1000
-            df.at[1,f"PropPerdNTecnMT{month:02d}_pu"] = float(dataframe[f"PNTMT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
-            df.at[1,f"PropPerdNTecnBT{month:02d}_pu"] = float(dataframe[f"PNTBT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
+            try:
+                df.at[1,f"PropPerdNTecnMT{month:02d}_pu"] = float(dataframe[f"PNTMT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
+                df.at[1,f"PropPerdNTecnBT{month:02d}_pu"] = float(dataframe[f"PNTBT_{month:02d}"])/(float(dataframe[f"PNTBT_{month:02d}"])+float(dataframe[f"PNTMT_{month:02d}"]))
+            except ZeroDivisionError:
+                df.at[1,f"PropPerdNTecnMT{month:02d}_pu"] = 0
+                df.at[1,f"PropPerdNTecnBT{month:02d}_pu"] = 0
+
         primeiras_colunas = df.columns[:4]  # Manter as 2 primeiras colunas
         outras_colunas = sorted(df.columns[4:])  # Ordenar o resto alfabeticamente
         df = df[list(primeiras_colunas) + outras_colunas]

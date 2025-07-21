@@ -23,7 +23,8 @@ def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
     if not logger.hasHandlers():
         path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        file_path = os.path.join(path, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
+        new_path = os.path.dirname(path)
+        file_path = os.path.join(new_path, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
@@ -606,20 +607,14 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
         return(sufixo_config)
 
 def create_output_folder(feeder, output_folder:Optional[str] = None):
+    global substation
     if output_folder is not None:
         try:
-            if len(substation) == 0:
-                if not os.path.exists(f'{output_folder}/{feeder}'):
-                    os.makedirs(f'{output_folder}/{feeder}', exist_ok=True)
-                    output_directory = f'{output_folder}/{feeder}'
-                else:
-                    output_directory = f'{output_folder}'+ f'/{feeder}'
+            if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
+                os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
+                output_directory = f'{output_folder}/sub__{substation}/{feeder}'
             else:
-                if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
-                    os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
-                    output_directory = f'{output_folder}/sub__{substation}/{feeder}'
-                else:
-                    output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
+                output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
         except FileNotFoundError:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
@@ -748,6 +743,24 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_pip['ELEM'] = 'PIP'
         df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
         df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,df_aux_pip,df_aux_ucbt,df_aux_ucmt], ignore_index=True)
+        ##################################### TODO REMOVER ISSO APOS TESTE
+        # trafo = '005038'
+        # df_trafo_teste = dataframe['UNTRMT']['gdf'].query("COD_ID == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        # df_trafo_teste['ELEM'] = 'TRAFO'
+        # df_ssdbt_teste = dataframe['SSDBT']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        # df_ssdbt_teste['ELEM'] = 'SEGMBT'
+        # df_ramalig_teste = dataframe['RAMLIG']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        # df_ramalig_teste['ELEM'] = 'RML'
+        # df_ucbt_teste = dataframe[ucbt]['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
+        # df_ucbt_teste['PAC_2'] = ''
+        # df_ucbt_teste['ELEM'] = 'LDBT'
+        # df_ucbt_teste = df_ucbt_teste.rename(columns={'PAC':'PAC_1'})
+        # df_pip_teste = dataframe['PIP']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
+        # df_pip_teste['PAC_2'] = ''
+        # df_pip_teste['ELEM'] = 'PIP'
+        # df_pip_teste = df_pip_teste.rename(columns={'PAC':'PAC_1'})
+        # df_total = pd.concat([df_trafo_teste,df_ssdbt_teste,df_ramalig_teste,df_ucbt_teste,df_pip_teste])
+        ###################################################
         grafo = nx.Graph()
         for index,row in df_total.iterrows():
             grafo.add_node(row['PAC_1'])
@@ -881,6 +894,7 @@ def get_substation(sub:Optional[str] = None):
         substation = ""
     else:
         substation = sub
+
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
 #     df = pd.DataFrame(columns=colunas)
