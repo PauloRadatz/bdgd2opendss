@@ -682,6 +682,8 @@ class Load:
 
     def export_df_loads(output,feeder,data_bdgd,cod_bdgd):
         global df_energ_load
+        if df_energ_load.empty:
+            return(print("Não foi possível gerar a tabela de perdas técnicas, pois não há cargas neste alimentador"))
         df_energ_load['CodDist'] = data_bdgd + cod_bdgd
         df_energ_mtload = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1)
         df_energ_mtload.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
