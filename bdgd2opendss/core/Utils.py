@@ -22,9 +22,7 @@ substation = ""
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
     if not logger.hasHandlers():
-        path = os.path.dirname(create_output_folder(feeder=feeder,output_folder=output_directory))
-        new_path = os.path.dirname(path)
-        file_path = os.path.join(new_path, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
+        file_path = os.path.join(output_directory, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
             format='%(levelname)s - %(message)s',  # Formato sem data/hora, apenas o nível e a mensagem
@@ -894,6 +892,13 @@ def get_substation(sub:Optional[str] = None):
         substation = ""
     else:
         substation = sub
+
+def list_subs(df,output_path): 
+    if os.path.exists(output_path, f'lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv'):
+        return
+    df_sub = df[['COD_ID','SUB']]
+    file_path = os.path.join(output_path, f'lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv')
+    df_sub.to_csv(file_path, index=False, encoding='utf-8')
 
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
