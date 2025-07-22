@@ -314,8 +314,10 @@ class RegControl:
             self.buses, self.kvas, self.kvs, kv, kva, ptratio = RegControl.adapting_string_variables(self)
         
         try: #trata erros numéricos
-            loadloss = f'{(self.totalloss - self.noloadloss)/(1000*kva)}'
-            noloadloss = f'{self.noloadloss/(1000*kva)}'
+            #loadloss = f'{(self.totalloss - self.noloadloss)/(1000*kva)}'
+            #noloadloss = f'{self.noloadloss/(1000*kva)}'
+            loadloss = f'{(self.totalloss - self.noloadloss)/(10*kva)}' #valor correto pois é em porcentagem 100/1000 - Proggeoperdas usa no calculo de perdas
+            noloadloss = f'{self.noloadloss/(10*kva)}'
         except ZeroDivisionError as e:
             print(f"An error occurred: {str(e)}")
             loadloss = float('nan')
