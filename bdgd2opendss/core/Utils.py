@@ -894,10 +894,10 @@ def get_substation(sub:Optional[str] = None):
         substation = sub
 
 def list_subs(df,output_path): 
-    if os.path.exists(output_path, f'lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv'):
+    if os.path.exists(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv"):
         return
     df_sub = df[['COD_ID','SUB']]
-    file_path = os.path.join(output_path, f'lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv')
+    file_path = os.path.join(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv")
     df_sub.to_csv(file_path, index=False, encoding='utf-8')
 
 # def pvsystem_stats(dfs,output_folder):
