@@ -22,6 +22,9 @@ substation = ""
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
     if not logger.hasHandlers():
+        if output_directory == None: #caso não exista o caminho para uma pasta de saída
+            output_directory = create_output_folder(feeder=ctmt,output_folder=output_directory)
+            #output_directory = os.path.dirname(file_path)
         file_path = os.path.join(output_directory, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
@@ -604,7 +607,7 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
     else:
         return(sufixo_config)
 
-def create_output_folder(feeder, output_folder:Optional[str] = None):
+def create_output_folder(feeder:Optional[str] = None, output_folder:Optional[str] = None):
     global substation
     if output_folder is not None:
         try:
@@ -624,11 +627,12 @@ def create_output_folder(feeder, output_folder:Optional[str] = None):
     else:
         if not os.path.exists("dss_models_output"):
             os.mkdir("dss_models_output")
-
-        if not os.path.exists(f'dss_models_output/{feeder}'):
-            os.mkdir(f'dss_models_output/{feeder}')
-
-        output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
+        if feeder is not None:
+            if not os.path.exists(f'dss_models_output/sub__{substation}/{feeder}'):
+                os.makedirs(f'dss_models_output/sub__{substation}/{feeder}', exist_ok=True)
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output/sub__{substation}/{feeder}')
+        else:
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output')
     
     return(output_directory)
 
@@ -894,10 +898,12 @@ def get_substation(sub:Optional[str] = None):
         substation = sub
 
 def list_subs(df,output_path): 
-    if os.path.exists(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv"):
+    if output_path == None:
+        output_path = create_output_folder(output_folder=output_path)
+    file_path = os.path.join(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv")
+    if os.path.exists(file_path):
         return
     df_sub = df[['COD_ID','SUB']]
-    file_path = os.path.join(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv")
     df_sub.to_csv(file_path, index=False, encoding='utf-8')
 
 # def pvsystem_stats(dfs,output_folder):
