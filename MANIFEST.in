@@ -1,22 +1,28 @@
-include AUTHORS.rst
-include CONTRIBUTING.rst
-include HISTORY.rst
+graft docs
+graft src
+graft ci
+graft tests
+
+include .bumpversion.cfg
+include .coveragerc
+include .cookiecutterrc
+include .editorconfig
+include *.ipynb
+include *.txt
+include *.pdf
+
+include CHANGELOG.rst
 include LICENSE
-include README.rst
-include config/bdgd2dss.json
-include config/bdgd2dss_private.json
-include config/PRODIST_MOD7_MONO_15kvmax.csv
-include config/PRODIST_MOD7_MONO_24.2kvmax.csv
-include config/PRODIST_MOD7_MONO_36.2kvmax.csv
-include config/PRODIST_MOD7_TRIF_15kvmax.csv
-include config/PRODIST_MOD7_TRIF_24.2kvmax.csv
-include config/PRODIST_MOD7_TRIF_36.2kvmax.csv
+include README.md
+include *.py
+include *.csv
+include *.json
 
 
+# Include all Config
+recursive-include src/bdgd2opendss/config *.json
+recursive-include src/bdgd2opendss/config *.csv
 
+include tox.ini .travis.yml .appveyor.yml .readthedocs.yml
 
-recursive-include tests *
-recursive-exclude * __pycache__
-recursive-exclude * *.py[co]
-
-recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+global-exclude *.py[cod] __pycache__/* *.so *.dylib

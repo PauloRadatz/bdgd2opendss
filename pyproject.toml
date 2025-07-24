@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bdgd2opendss"
+version = "1.0.0"
+description = "BDGD2OpenDSS converts BDGD data into OpenDSS models."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+  {name = "Paulo Radatz", email = "paulo.radatz@gmail.com"}
+]
+dependencies = [
+]
+requires-python = ">=3.11"
+keywords = ["OpenDSS", "Python", "Power Systems", "Distribution Systems", "Energy", "OpenDSS"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "sphinx-rtd-theme",
+  "nbsphinx",
+  "black",
+  "pre-commit",
+  "tox",
+  "twine",
+  "ipython",
+  "flake8"
+]
+
+
+[project.urls]
+"Issue Tracker" = "https://github.com/PauloRadatz/bdgd2opendss/issues"
+"Source" = "https://github.com/PauloRadatz/bdgd2opendss"
+
+[tool.setuptools]
+packages = { find = {where = ["src"]} }         
+
+[tool.setuptools.package-data]
+"bdgd2opendss" = ["config/*.json", "config/*.csv"] 
