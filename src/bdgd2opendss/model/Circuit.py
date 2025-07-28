@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import os
 
 # TODO vide TO DO em case/output_master
-kv = []
+kv = ""
 pac_ctmt = ""
 @dataclass
 class Circuit:
@@ -94,7 +94,8 @@ class Circuit:
 
     @staticmethod
     def kvbase(): #retorna a tensão nominal do alimentador
-        return(kv[0])
+        global kv
+        return(kv)
     
     def pac_ctmt(): #retorna o barramento do CTMT
         return(pac_ctmt)
@@ -163,7 +164,8 @@ class Circuit:
                 param_value = row[param_name]
                 setattr(circuit_, f"_{mapping_key}", function_(str(param_value)))        # corrigingo para string para encontrar valor no dicionario
                 if mapping_key == 'basekv':
-                    kv.append(function_(str(param_value))) #captura a tensão nominal do alimentador
+                    global kv
+                    kv = function_(str(param_value)) #captura a tensão nominal do alimentador
             else:
                 setattr(circuit_, f"_{mapping_key}", row[mapping_value])
 
