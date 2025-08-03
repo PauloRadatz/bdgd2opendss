@@ -330,7 +330,7 @@ def create_dfs_coords(filename="", feeder=""):
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
     #print('aqui')
-    # TODO evitar tomar decisoes
+    # TODO evitar tomar decisoes 
     if len(dicionario_kv) > 0:
         for value in dicionario_kv.values(): 
             if value >= 0.22:
@@ -338,11 +338,6 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
             else:
                 ...
         x=set(lista)
-        if max(lista) == 0.38:
-            try:
-                x.remove(0.22)
-            except KeyError:
-                ...
         return(list(x))
     else:
         return(lista)
