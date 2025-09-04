@@ -118,6 +118,7 @@ def inner_entities_tables(entity1_df, enetity2_df, left_column: str = "", right_
     - Columns with '_y' suffix have the suffix removed.
 
     """
+
     merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
     # if left_column == 'UN_RE':
     #     merged_dfs = pd.merge(entity1_df, enetity2_df, left_on=left_column, right_on=right_column, how='inner')
@@ -318,6 +319,7 @@ def create_dfs_coords(filename="", feeder=""):
     gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
                               columns=cols,
                               ignore_geometry=False, engine='pyogrio', use_arrow=True)
+
     gdf_SSDMT = gdf_SSDMT.loc[gdf_SSDMT['CTMT'] == feeder]
 
     gdf_SSDBT = gpd.read_file(path_object, layer='SSDBT',
@@ -760,9 +762,12 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         ###################################################
         grafo = nx.Graph()
         for index,row in df_total.iterrows():
-            grafo.add_node(row['PAC_1'])
-            grafo.add_node(row['PAC_2'])
-            grafo.add_edge(row['PAC_1'], row['PAC_2'])
+            try:
+                grafo.add_node(row['PAC_1'])
+                grafo.add_node(row['PAC_2'])
+                grafo.add_edge(row['PAC_1'], row['PAC_2'])
+            except ValueError:
+                print("valor do tipo none")
         try:
             grafo.remove_node('')
         except:
@@ -781,7 +786,10 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
             else:
                 log_erros(df_not_connected,alimentador,output_folder)
                 lista_isolados = []
-                df_not_connected.fillna('Nulo',inplace=True)
+                
+                if df_not_connected.isnull().values.any():
+                    df_not_connected.fillna('Nulo', inplace=True)
+
                 for cod_id in df_not_connected['COD_ID'].values:
                     if df_not_connected.loc[df_not_connected['COD_ID'] == cod_id, 'ELEM'].iloc[0] == 'SEGMBT': 
                         lista_isolados.append(f'SBT_{cod_id}')

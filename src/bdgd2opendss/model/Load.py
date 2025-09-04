@@ -30,7 +30,9 @@ import math
 import numpy as np
 
 from dataclasses import dataclass
+
 df_energ_load = pd.DataFrame()
+df_dias = pd.DataFrame()
 
 @dataclass
 class Load:
@@ -647,6 +649,7 @@ class Load:
 
     def create_df_loads(self,tip_dia,mes,crvcarga,prop,fc,kw,energia):
         global df_energ_load
+        
         if df_energ_load.empty:
             colunas = []
             dias = []
@@ -684,14 +687,40 @@ class Load:
         global df_energ_load
         if df_energ_load.empty:
             return(print("Não foi possível gerar a tabela de perdas técnicas, pois não há cargas neste alimentador"))
+        
         df_energ_load['CodDist'] = data_bdgd + cod_bdgd
         df_energ_mtload = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1)
         df_energ_mtload.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
         df_energ_btload = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')]
+        df_energ_btnt = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')] #df cargas não técnicas
+        df_energ_mtnt = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1) #df cargas não técnicas
+        columns = df_energ_load.columns.tolist()
+        for column in columns:
+            if "EnerMedid" in column or "DemMax" in column:
+                df_energ_btnt[column] = 0
+                df_energ_mtnt[column] = 0
         output_folder = create_output_folder(feeder=feeder, output_folder=output)
-        path_file_bt = output_folder + r"/csv_files" + r"/AuxCargaBTNT" + f"_{feeder}.csv"
-        path_file_mt = output_folder + r"/csv_files" + r"/AuxCargaMTNT" + f"_{feeder}.csv"
+        Load.create_csv_dias(output_folder=output_folder,feeder=feeder)
+        path_file_bt = output_folder + r"/csv_files" + r"/AuxCargaBT" + f"_{feeder}.csv"
+        path_file_mt = output_folder + r"/csv_files" + r"/AuxCargaMT" + f"_{feeder}.csv"
+        path_file_btnt = output_folder + r"/csv_files" + r"/AuxCargaBTNT" + f"_{feeder}.csv"
+        path_file_mtnt = output_folder + r"/csv_files" + r"/AuxCargaMTNT" + f"_{feeder}.csv"
         df_energ_btload.to_csv(path_file_bt,encoding='utf-8', decimal='.',sep=';', index=False)
         df_energ_mtload.to_csv(path_file_mt,encoding='utf-8', decimal='.',sep=';',index=False)
+        df_energ_btnt.to_csv(path_file_btnt,encoding='utf-8', decimal='.',sep=';', index=False)
+        df_energ_mtnt.to_csv(path_file_mtnt,encoding='utf-8', decimal='.',sep=';',index=False)
         return(print('Tabela de perdas técnicas criada'))
         
+    def create_csv_dias(output_folder,feeder):
+        global df_dias
+        df_dias = pd.DataFrame(columns=['Mês','DU','SA','DO'])
+        tipo_dia = ['DU','SA','DO']
+        for month in range(1,13):
+            df_dias.at[month,'Mês'] = f'{month:02d}'
+            for dia in tipo_dia:
+                df_dias.at[month,dia] = return_day_type(tip_dia=dia,mes=f'{month:02d}')
+
+        path_file = output_folder + r"/csv_files" + r"/contagem_dias" + f"_{feeder}.csv"
+        df_dias.to_csv(path_file,encoding='utf-8', decimal='.',sep=';', index=False)
+
+                
