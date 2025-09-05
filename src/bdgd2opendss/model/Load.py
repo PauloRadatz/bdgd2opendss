@@ -694,6 +694,7 @@ class Load:
         df_energ_btload = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')]
         df_energ_btnt = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')] #df cargas não técnicas
         df_energ_mtnt = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1) #df cargas não técnicas
+        df_energ_mtnt.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
         columns = df_energ_load.columns.tolist()
         for column in columns:
             if "EnerMedid" in column or "DemMax" in column:
