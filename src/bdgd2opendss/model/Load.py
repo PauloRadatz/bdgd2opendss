@@ -32,6 +32,7 @@ import numpy as np
 from dataclasses import dataclass
 
 df_energ_load = pd.DataFrame()
+df_energ_loadmt = pd.DataFrame()
 df_dias = pd.DataFrame()
 
 @dataclass
@@ -413,7 +414,6 @@ class Load:
     # @jit(nopython=True)
     def calculate_kw(self, df, tip_dia="", mes="01"):
         #global flag_loadshape 
-        global df_energ_load
         df = df.copy()
         df["prop_pot_tipdia_mes"] = None 
         #print('aqui')
@@ -638,8 +638,7 @@ class Load:
 
 
             progress_bar.set_description(f"Processing load {entity} {_ + 1}")
-        global df_energ_load
-        df_energ_load['CodDist'] = get_cod_year_bdgd()
+
         file_name = Load._create_output_load_files(DU_meses, "DU", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
         Load._create_output_load_files(SA_meses, "SA", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
         Load._create_output_load_files(DO_meses, "DO", name= load_config["arquivo"], feeder=load_.feeder, pastadesaida=pastadesaida)
@@ -649,7 +648,7 @@ class Load:
 
     def create_df_loads(self,tip_dia,mes,crvcarga,prop,fc,kw,energia):
         global df_energ_load
-        
+        global df_energ_loadmt
         if df_energ_load.empty:
             colunas = []
             dias = []
@@ -665,37 +664,50 @@ class Load:
             columns = ['CodDist','CodConsBT','TipCrvaCarga','CodAlim','CodTrafo','fcDU','fcSA','fcDO'] + colunas_ene + colunas[::2] + dias + colunas[1::2]
             
             df_energ_load = pd.DataFrame(columns=columns)
+            df_energ_loadmt = pd.DataFrame(columns=columns).drop('CodTrafo', axis=1)
+            df_energ_loadmt.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
             df_energ_load['CodAlim'] = self.feeder 
+            df_energ_loadmt['CodAlim'] = self.feeder 
              #df_energ_load.set_index('CodConsBT', inplace=True)
         else:
             ...
-        #TODO corrigir aqui
-        if self.entity == 'BT_IP':  
-            df_energ_load.at[self.load, f'CodConsBT'] = 'IP' + self.load
-        else:
-            df_energ_load.at[self.load, f'CodConsBT'] = self.load
-        df_energ_load.at[self.load, f'PropEnerMens{tip_dia}{mes}'] = prop
-        df_energ_load.at[self.load, f'EnerMedid{mes}_MWh'] = float(energia)/1000
-        df_energ_load.at[self.load, f'DemMax{tip_dia}{mes}_kW'] = kw
-        df_energ_load.at[self.load, f'DiasMes{tip_dia}{mes}'] = return_day_type(tip_dia,str(mes))
-        df_energ_load.at[self.load, f'fc{tip_dia}'] = fc
-        df_energ_load.at[self.load, 'TipCrvaCarga'] = crvcarga
-        df_energ_load.at[self.load, 'CodAlim'] = self.feeder
-        df_energ_load.at[self.load, 'CodTrafo'] = self.transformer
+        #TODO corrigir aqui tem que fazer dois dfs um para MT e outro para BT
+        if self.entity == 'MT_':
+            df_energ_loadmt.at[self.load, f'CodConsMT'] = self.load
+            df_energ_loadmt.at[self.load, f'PropEnerMens{tip_dia}{mes}'] = prop
+            df_energ_loadmt.at[self.load, f'EnerMedid{mes}_MWh'] = float(energia)/1000
+            df_energ_loadmt.at[self.load, f'DemMax{tip_dia}{mes}_kW'] = kw
+            df_energ_loadmt.at[self.load, f'DiasMes{tip_dia}{mes}'] = return_day_type(tip_dia,str(mes))
+            df_energ_loadmt.at[self.load, f'fc{tip_dia}'] = fc
+            df_energ_loadmt.at[self.load, 'TipCrvaCarga'] = crvcarga
+            df_energ_loadmt.at[self.load, 'CodAlim'] = self.feeder
 
+        else:
+            if self.entity == 'BT_IP':  
+                df_energ_load.at[self.load, f'CodConsBT'] = 'IP' + self.load
+            else:
+                df_energ_load.at[self.load, f'CodConsBT'] = self.load
+            df_energ_load.at[self.load, f'PropEnerMens{tip_dia}{mes}'] = prop
+            df_energ_load.at[self.load, f'EnerMedid{mes}_MWh'] = float(energia)/1000
+            df_energ_load.at[self.load, f'DemMax{tip_dia}{mes}_kW'] = kw
+            df_energ_load.at[self.load, f'DiasMes{tip_dia}{mes}'] = return_day_type(tip_dia,str(mes))
+            df_energ_load.at[self.load, f'fc{tip_dia}'] = fc
+            df_energ_load.at[self.load, 'TipCrvaCarga'] = crvcarga
+            df_energ_load.at[self.load, 'CodAlim'] = self.feeder
+            df_energ_load.at[self.load, 'CodTrafo'] = self.transformer
+        
     def export_df_loads(output,feeder,data_bdgd,cod_bdgd):
         global df_energ_load
+        global df_energ_loadmt
         if df_energ_load.empty:
             return(print("Não foi possível gerar a tabela de perdas técnicas, pois não há cargas neste alimentador"))
         
         df_energ_load['CodDist'] = data_bdgd + cod_bdgd
-        df_energ_mtload = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1)
-        df_energ_mtload.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
-        df_energ_btload = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')]
-        df_energ_btnt = df_energ_load[~df_energ_load['TipCrvaCarga'].str.contains('MT')] #df cargas não técnicas
-        df_energ_mtnt = df_energ_load[df_energ_load['TipCrvaCarga'].str.contains('MT')].drop('CodTrafo', axis=1) #df cargas não técnicas
-        df_energ_mtnt.rename(columns={'CodConsBT': 'CodConsMT'}, inplace=True)
-        columns = df_energ_load.columns.tolist()
+        df_energ_loadmt['CodDist'] = data_bdgd + cod_bdgd
+        df_energ_btnt = df_energ_load.copy(deep=True)
+        df_energ_mtnt = df_energ_loadmt.copy(deep=True)
+        columns = df_energ_loadmt.columns.tolist()
+        columns.pop(1)
         for column in columns:
             if "EnerMedid" in column or "DemMax" in column:
                 df_energ_btnt[column] = 0
@@ -706,8 +718,8 @@ class Load:
         path_file_mt = output_folder + r"/csv_files" + r"/AuxCargaMT" + f"_{feeder}.csv"
         path_file_btnt = output_folder + r"/csv_files" + r"/AuxCargaBTNT" + f"_{feeder}.csv"
         path_file_mtnt = output_folder + r"/csv_files" + r"/AuxCargaMTNT" + f"_{feeder}.csv"
-        df_energ_btload.to_csv(path_file_bt,encoding='utf-8', decimal='.',sep=';', index=False)
-        df_energ_mtload.to_csv(path_file_mt,encoding='utf-8', decimal='.',sep=';',index=False)
+        df_energ_load.to_csv(path_file_bt,encoding='utf-8', decimal='.',sep=';', index=False)
+        df_energ_loadmt.to_csv(path_file_mt,encoding='utf-8', decimal='.',sep=';',index=False)
         df_energ_btnt.to_csv(path_file_btnt,encoding='utf-8', decimal='.',sep=';', index=False)
         df_energ_mtnt.to_csv(path_file_mtnt,encoding='utf-8', decimal='.',sep=';',index=False)
         return(print('Tabela de perdas técnicas criada'))
