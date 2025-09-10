@@ -10,6 +10,7 @@ import networkx as nx
 import geopandas as gpd
 import pandas as pd
 from bdgd2opendss.core.Settings import settings
+import bdgd2opendss.config
 import logging
 
 cod_year_bdgd = []
@@ -438,10 +439,11 @@ def create_df_trafos_vazios(df_ucbt: Optional[pd.DataFrame] = None,df_ip: Option
         return(tr_vazios)
     
 def perdas_trafos_abnt(fases,kv,pot,perda):
+    config_dir = os.path.dirname(bdgd2opendss.config.__file__)
     if fases == '3':
         if float(kv) < 15:
             try:
-                file_tri_15kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_15kvmax.csv")
+                file_tri_15kv = os.path.join(config_dir, "PRODIST_MOD7_TR_TRIF_15kvmax.csv")
                 df_tri_15kv = pd.read_csv(file_tri_15kv, index_col=0)
                 return(df_tri_15kv.loc[pot,perda])
             except:
@@ -453,7 +455,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                     return(loss)
         elif float(kv) < 24.2:
             try:
-                file_tri_24kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_24.2kvmax.csv")
+                file_tri_24kv = os.path.join(config_dir, "PRODIST_MOD7_TR_TRIF_24.2kvmax.csv")
                 df_tri_24kv = pd.read_csv(file_tri_24kv, index_col=0)
                 return(df_tri_24kv.loc[pot,perda])
             except:
@@ -465,7 +467,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                     return(loss)
         else:
             try:
-                file_tri_36kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_TRIF_36.2kvmax.csv")
+                file_tri_36kv = os.path.join(config_dir, "PRODIST_MOD7_TR_TRIF_36.2kvmax.csv")
                 df_tri_36kv = pd.read_csv(file_tri_36kv, index_col=0)
                 return(df_tri_36kv.loc[pot,perda])
             except:
@@ -478,7 +480,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
     else:
         if float(kv) < 15:
             try:
-                file_mono_15kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_15kvmax.csv")
+                file_mono_15kv = os.path.join(config_dir, "PRODIST_MOD7_TR_MONO_15kvmax.csv")
                 df_mono_15kv = pd.read_csv(file_mono_15kv, index_col=0)
                 return(int(fases)*df_mono_15kv.loc[pot,perda])
             except:
@@ -490,7 +492,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                     return(loss)
         elif float(kv) < 24.2:
             try:
-                file_mono_24kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_24.2kvmax.csv")
+                file_mono_24kv = os.path.join(config_dir, "PRODIST_MOD7_TR_MONO_24.2kvmax.csv")
                 df_mono_24kv = pd.read_csv(file_mono_24kv, index_col=0)
                 return(int(fases)*df_mono_24kv.loc[pot,perda])
             except:
@@ -502,7 +504,7 @@ def perdas_trafos_abnt(fases,kv,pot,perda):
                     return(loss)
         else:
             try:
-                file_mono_36kv = os.path.join(os.getcwd(), "PRODIST_MOD7_TR_MONO_36.2kvmax.csv")
+                file_mono_36kv = os.path.join(config_dir, "PRODIST_MOD7_TR_MONO_36.2kvmax.csv")
                 df_mono_36kv = pd.read_csv(file_mono_36kv, index_col=0)
                 return(int(fases)*df_mono_36kv.loc[pot,perda])
             except:
