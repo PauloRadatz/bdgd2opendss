@@ -346,13 +346,8 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
         return(lista)
 
 def standard_curves_pv():
-        return(f'New "LoadShape.PVIrrad_diaria" npts=24 interval=1 \n'
-               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
-               f'New XYCurve.MyPvsT npts=4  xarray=[0  25  75  100]  yarray=[1.2 1.0 0.8  0.6] \n'
-               f'New XYCurve.MyEff npts=4  xarray=[0.1  0.2  0.4  1.0]  yarray=[0.86  0.9  0.93  0.97] \n'
-               f'New Tshape.MyTemp npts=24 interval=1 \n'
-               f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
-               )
+        return(f'New "LoadShape.default_daily" npts=24 interval=1 \n'
+               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n')
 
 def check_duplicate_loads_names(df_load, consumer_type: str = ""):
     if consumer_type == 'BT':
@@ -743,7 +738,16 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_pip['PAC_2'] = ''
         df_aux_pip['ELEM'] = 'PIP'
         df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
-        df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,df_aux_pip,df_aux_ucbt,df_aux_ucmt], ignore_index=True)
+        df_aux_ugbt = dataframe[ugbt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
+        df_aux_ugbt['PAC_2'] = ''
+        df_aux_ugbt = df_aux_ugbt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
+        df_aux_ugbt['ELEM'] = 'GDBT'
+        df_aux_ugmt = dataframe[ugmt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
+        df_aux_ugmt['PAC_2'] = ''
+        df_aux_ugmt = df_aux_ugmt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
+        df_aux_ugmt['ELEM'] = 'GDMT'
+        df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,
+                              df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
         ##################################### TODO REMOVER ISSO APOS TESTE
         # trafo = '005038'
         # df_trafo_teste = dataframe['UNTRMT']['gdf'].query("COD_ID == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]

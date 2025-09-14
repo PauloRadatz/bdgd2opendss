@@ -19,7 +19,7 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from bdgd2opendss.model.Converter import convert_ttranf_phases, convert_tfascon_bus, convert_tten, convert_tfascon_conn_load, convert_tfascon_phases, convert_tfascon_phases_load
-from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases
+from bdgd2opendss.core.Utils import create_output_file, create_voltage_bases, elem_isolados
 from bdgd2opendss.model.Transformer import Transformer
 from bdgd2opendss.model.Circuit import Circuit
 
@@ -150,19 +150,20 @@ class PVsystem:
             return(Circuit.kvbase())
     
     def full_string(self) -> str:
+        if self.PVsys in elem_isolados():
+            return("")
         if self.kv < 1:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         kv = PVsystem.adapting_string_variables_pvsystem(self)
-        return (f'New \"PVsystem.{self.PVsys}" phases={self.phases} '
+        return (f'New \"generator.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
+                f'basefreq=60 '
                 f'conn={self.conn} '
                 f'kv={kv} '
                 f'pf={self.pf} '
-                f'pmpp={self.pmpp} '
-                f'kva={numpy.ceil(self.pmpp)} '
-                f'irradiance={self.irradiance} \n'
-                f'~ temperature=25 %cutin=0.1 %cutout=0.1 effcurve=Myeff P-TCurve=MyPvsT Daily=PVIrrad_diaria TDaily=MyTemp \n')
+                f'kw={self.pmpp} '
+                f'daily=default_daily \n')
 
     def __repr__(self):
         if self.kv < 1:
