@@ -605,11 +605,11 @@ def create_output_folder(feeder:Optional[str] = None, output_folder:Optional[str
     global substation
     if output_folder is not None:
         try:
-            if not os.path.exists(f'{output_folder}/sub__{substation}/{feeder}'):
-                os.makedirs(f'{output_folder}/sub__{substation}/{feeder}', exist_ok=True)
-                output_directory = f'{output_folder}/sub__{substation}/{feeder}'
+            if not os.path.exists(f'{output_folder}/sub{substation}/{feeder}'):
+                os.makedirs(f'{output_folder}/sub{substation}/{feeder}', exist_ok=True)
+                output_directory = f'{output_folder}/sub{substation}/{feeder}'
             else:
-                output_directory = f'{output_folder}/sub__{substation}'+ f'/{feeder}'
+                output_directory = f'{output_folder}/sub{substation}'+ f'/{feeder}'
         except FileNotFoundError:
             if not os.path.exists("dss_models_output"):
                 os.mkdir("dss_models_output")
@@ -622,9 +622,9 @@ def create_output_folder(feeder:Optional[str] = None, output_folder:Optional[str
         if not os.path.exists("dss_models_output"):
             os.mkdir("dss_models_output")
         if feeder is not None:
-            if not os.path.exists(f'dss_models_output/sub__{substation}/{feeder}'):
-                os.makedirs(f'dss_models_output/sub__{substation}/{feeder}', exist_ok=True)
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output/sub__{substation}/{feeder}')
+            if not os.path.exists(f'dss_models_output/sub{substation}/{feeder}'):
+                os.makedirs(f'dss_models_output/sub{substation}/{feeder}', exist_ok=True)
+            output_directory = os.path.join(os.getcwd(), f'dss_models_output/sub{substation}/{feeder}')
         else:
             output_directory = os.path.join(os.getcwd(), f'dss_models_output')
     
@@ -901,10 +901,10 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
     
 def get_substation(sub:Optional[str] = None):
     global substation
-    if sub == None:
-        substation = ""
+    if sub == None or len(sub) == 0 or " " in sub:
+        substation = "__"
     else:
-        substation = sub
+        substation = "__" + sub
 
 def list_subs(df,output_path): 
     if output_path == None:
