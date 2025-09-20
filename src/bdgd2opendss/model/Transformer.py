@@ -370,13 +370,16 @@ class Transformer:
         output_directory = create_output_folder(self.feeder,output_folder=output)
         path = os.path.join(output_directory,"buscoords.csv")
         df = pd.read_csv(path)
-        result = df[df['PAC'] == self.bus1]
-        dados = [
-            [f"MRT_{self.bus1}TRF_{self.transformer}",result.loc[result.index[0],'long'],result.loc[result.index[0],'lat']]
-        ]
-        with open(path, mode="a", newline='') as arquivo:
-            escritor = csv.writer(arquivo)
-            escritor.writerows(dados)
+        if self.bus1 in df['PAC'].tolist():
+            result = df[df['PAC'] == self.bus1]
+            dados = [
+                [f"MRT_{self.bus1}TRF_{self.transformer}",result.loc[result.index[0],'long'],result.loc[result.index[0],'lat']]
+            ]
+            with open(path, mode="a", newline='') as arquivo:
+                escritor = csv.writer(arquivo)
+                escritor.writerows(dados)
+        else:
+            ...
 
     def full_string(self) -> str:
         if self.transformer in elem_isolados():
