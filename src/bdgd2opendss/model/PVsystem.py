@@ -153,8 +153,12 @@ class PVsystem:
         if self.PVsys in elem_isolados():
             return("")
         if self.kv < 1:
+            daily = 'default_pv_daily_bt'
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
+        else:
+            daily = 'default_pv_daily_mt'
+
         kv = PVsystem.adapting_string_variables_pvsystem(self)
         return (f'New \"generator.{self.PVsys}" phases={self.phases} '
                 f'bus1={self.bus1}.{self.bus_nodes} '
@@ -163,7 +167,7 @@ class PVsystem:
                 f'kv={kv} '
                 f'pf={self.pf} '
                 f'kw={self.pmpp} '
-                f'daily=default_daily \n')
+                f'daily={daily} \n')
 
     def __repr__(self):
         if self.kv < 1:

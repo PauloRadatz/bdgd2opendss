@@ -346,7 +346,9 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
         return(lista)
 
 def standard_curves_pv():
-        return(f'New "LoadShape.default_daily" npts=24 interval=1 \n'
+        return(f'New "LoadShape.default_pv_daily_bt" npts=24 interval=1 \n'
+               f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
+               f'New "LoadShape.default_pv_daily_mt" npts=24 interval=1 \n'
                f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n')
 
 def check_duplicate_loads_names(df_load, consumer_type: str = ""):
