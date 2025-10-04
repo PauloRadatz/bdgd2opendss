@@ -26,7 +26,7 @@ class Case:
     _loads: list[Load] = field(init=False)
     _PVsystems: list[PVsystem] = field(init=False)
     _dfs: dict = field(init=False)
-    
+
     def __init__(self, jsonData, geodataframes, folder_bdgd, feeder, output_folder):
         self._jsonData = jsonData
         self._dfs = geodataframes
@@ -47,7 +47,7 @@ class Case:
             self.ucmt = "UCMT_tab"
             self.ugbt = "UGBT_tab"
             self.ugmt = "UGMT_tab"
-        
+
         print(f"\nFeeder: {feeder}")
 
         # init list
@@ -194,7 +194,7 @@ Set tolerance = 0.0001
 Set maxcontroliter = 10
 !Set algorithm = newton
 !Solve mode = direct
-Solve
+!Solve
 buscoords buscoords.csv'''
 
         create_master_file(file_name=f'Master_{tip_dia}{mes}', feeder=self.feeder, master_content=master, output_folder=self.output_folder)
@@ -248,9 +248,9 @@ buscoords buscoords.csv'''
 
         get_cod_year_bdgd(cod=self.cod_bdgd,data=self.data_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
         count_day_type(self.year_bdgd)#calcula du,sa, do/feriados a partir do ano da BDGD
-        
+
         self.Populates_CTMT()
-        
+
         get_configuration(feeder=self.feeder,output_folder=self.output_folder) #Identifica as configurações escolhidas pelo usuário e transforma em uma string
 
         self.GenGeographicCoord()
@@ -263,11 +263,11 @@ buscoords buscoords.csv'''
         self.Populates_SEGCON()
 
         self.Populates_UNTRMT()
-        
+
         self.Populates_Entity()
 
         self.Populates_UNREMT()
-        
+
         self.Populates_energymeters(df_tramo,df_aux_trafo)
 
         self.Popula_CRVCRG()
@@ -280,7 +280,7 @@ buscoords buscoords.csv'''
 
         if settings.TabelaPT:
             Load.export_df_loads(self.output_folder,self.feeder,self.data_bdgd,self.cod_bdgd)#exporta tabela de perdas técnicas para cargas
-        
+
         self.Populates_UGBT()
 
         self.Populates_UGMT()
@@ -304,7 +304,7 @@ buscoords buscoords.csv'''
 
     # CTMT
     def Populates_CTMT(self):#TODO colocar o local e a pasta criada no create from json
-        
+
         alimentador = self.feeder
 
         try:
@@ -329,7 +329,7 @@ buscoords buscoords.csv'''
     def Popula_UCBT(self):
 
         if not self._dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty:
-            
+
             try:
                 _loads, fileName = Load.create_load_from_json(self._jsonData,
                                                               self._dfs[self.ucbt]['gdf'].query("CTMT==@alimentador"),
@@ -389,7 +389,7 @@ buscoords buscoords.csv'''
         merged_dfs = Utils.inner_entities_tables(self.dfs['EQTRMT']['gdf'],
                                            self.dfs['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                            left_column='UNI_TR_MT', right_column='COD_ID')
-        
+
         Utils.adapt_regulators_names(merged_dfs,'transformer')
         #settings - criação de dataframe para eliminar transformadores em vazio
         if not self.dfs[self.ucbt]['gdf'].query("CTMT == @alimentador").empty and settings.intAdequarTrafoVazio:
@@ -429,7 +429,7 @@ buscoords buscoords.csv'''
 
             if not settings.TipoBDGD:#apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
                 Utils.check_duplicate_loads_names(df_ucbt,"BT") #deve-se passar o tipo de consumidor (BT ou MT)
-            
+
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   df_ucbt,
@@ -453,7 +453,7 @@ buscoords buscoords.csv'''
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,
                                                                   self.dfs['PIP']['gdf'].query("CTMT==@alimentador"),
                                                                   self.dfs['CRVCRG']['gdf'], 'PIP',pastadesaida=self.output_folder)
-                #self.list_files_name.append(fileName) #já está sendo criado dentro do arquivo cargasBT 
+                #self.list_files_name.append(fileName) #já está sendo criado dentro do arquivo cargasBT
 
             except UnboundLocalError:
                 print("Error in PIP\n")
@@ -495,7 +495,7 @@ buscoords buscoords.csv'''
                                                                               self.dfs[self.ugbt]['gdf'].query(
                                                                                   "CTMT==@alimentador"), self.ugbt, pastadesaida=self.output_folder)
                 self.list_files_name.append(fileName)
-                
+
             except UnboundLocalError:
                 print("Error in UGBT\n")
 
