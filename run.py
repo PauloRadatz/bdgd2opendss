@@ -14,7 +14,7 @@ if __name__ == '__main__':
     bdgd_file_path = pathlib.Path(script_path, "bdgd2opendss", "sample", "raw", "aneel", r"C:\Users\mozar\Downloads\base_Creluz_BDGD_2023")
     bdgd_file_path = r"C:\PauloRadatz\GitHub\bdgd2opendss\bdgd2opendss\sample\raw\aneel\Creluz-D_598_2023-12-31_V11_20240715-1111.gdb\Creluz-D_598_2023-12-31_V11_20240715-1111.gdb"
     bdgd_file_path = r"C:\PauloRadatz\GitHub\ProjetoPerdas\BDGD\base_Creluz_BDGD_2023"
-    lst_feeders = ['17_SE001_1']#lista
+    lst_feeders = ['1_3PAS_1']#lista
     #pastadesaida = r"C:\Users\mozar\OneDrive\Desktop\creluz\casos_bdgd2opendss_todos"
 
     # You can change setting below if needed

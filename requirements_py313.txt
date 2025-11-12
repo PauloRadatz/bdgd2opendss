@@ -1,0 +1,18 @@
+-e git+https://github.com/PauloRadatz/bdgd2opendss.git@c4c3797a0f45b40c3ecbc2fe33634be8df71c30b#egg=bdgd2opendss
+certifi==2025.11.12
+colorama==0.4.6
+geopandas==1.1.1
+holidays==0.84
+networkx==3.5
+numpy==2.3.4
+packaging==25.0
+pandas==2.3.3
+pyarrow==22.0.0
+pyogrio==0.11.1
+pyproj==3.7.2
+python-dateutil==2.9.0.post0
+pytz==2025.2
+shapely==2.1.2
+six==1.17.0
+tqdm==4.67.1
+tzdata==2025.2

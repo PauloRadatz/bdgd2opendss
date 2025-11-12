@@ -12,6 +12,137 @@ authors = [
   {name = "Paulo Radatz", email = "paulo.radatz@gmail.com"}
 ]
 dependencies = [
+    # Core dependencies - same across Python versions
+    "click>=8.1.3",
+    "click-plugins>=1.1.1",
+    "cligj>=0.7.2",
+    "customtkinter>=5.1.2",
+    "darkdetect>=0.8.0",
+    "docopt>=0.6.2",
+    
+    # Version-specific core dependencies
+    "colorama==0.4.6; python_version < '3.13'",
+    "holidays==0.61; python_version < '3.13'",
+    "networkx==3.4.2; python_version < '3.13'",
+    "six==1.16.0; python_version < '3.13'",
+
+    # Python version-specific dependencies
+    # Python 3.11
+    "attrs==22.2.0; python_version < '3.12'",
+    "certifi==2022.12.7; python_version < '3.12'",
+    "charset-normalizer==3.1.0; python_version < '3.12'",
+    "Fiona==1.9.2; python_version < '3.12'",
+    "geopandas==0.12.2; python_version < '3.12'",
+    "idna==3.4; python_version < '3.12'",
+    "importlib-metadata==6.1.0; python_version < '3.12'",
+    "iniconfig==2.0.0; python_version < '3.12'",
+    "munch==2.5.0; python_version < '3.12'",
+    "numpy==1.24.2; python_version < '3.12'",
+    "packaging==23.0; python_version < '3.12'",
+    "pandas==1.5.3; python_version < '3.12'",
+    "pluggy>=1.0.0,<2.0.0; python_version < '3.12'",
+    "pyproj==3.4.1; python_version < '3.12'",
+    "python-dateutil==2.8.2; python_version < '3.12'",
+    "pytz==2023.2; python_version < '3.12'",
+    "requests==2.28.2; python_version < '3.12'",
+    "shapely==2.0.1; python_version < '3.12'",
+    "tomli==2.0.1; python_version < '3.12'",
+    "urllib3==1.26.15; python_version < '3.12'",
+    "yarg==0.1.9; python_version < '3.12'",
+    "zipp==3.15.0; python_version < '3.12'",
+    "pyogrio==0.9.0; python_version < '3.12'",
+    "pyarrow==17.0.0; python_version < '3.12'",
+    "setuptools==67.2.0; python_version < '3.12'",
+    "matplotlib==3.7.1; python_version < '3.12'",
+    "exceptiongroup==1.1.1; python_version < '3.12'",
+    "tqdm==4.65.0; python_version < '3.12'",
+
+    # Python 3.12 (only)
+    "attrs==23.2.0; python_version >= '3.12' and python_version < '3.13'",
+    "certifi==2024.6.2; python_version >= '3.12' and python_version < '3.13'",
+    "charset-normalizer==3.3.2; python_version >= '3.12' and python_version < '3.13'",
+    "fiona==1.9.6; python_version >= '3.12' and python_version < '3.13'",
+    "geopandas==0.14.4; python_version >= '3.12' and python_version < '3.13'",
+    "idna==3.7; python_version >= '3.12' and python_version < '3.13'",
+    "numpy==2.0.0; python_version >= '3.12' and python_version < '3.13'",
+    "packaging==24.0; python_version >= '3.12' and python_version < '3.13'",
+    "pandas==2.2.2; python_version >= '3.12' and python_version < '3.13'",
+    "pyproj==3.6.1; python_version >= '3.12' and python_version < '3.13'",
+    "python-dateutil==2.9.0.post0; python_version >= '3.12' and python_version < '3.13'",
+    "pytz==2024.1; python_version >= '3.12' and python_version < '3.13'",
+    "requests==2.32.3; python_version >= '3.12' and python_version < '3.13'",
+    "shapely==2.0.4; python_version >= '3.12' and python_version < '3.13'",
+    "urllib3==2.2.1; python_version >= '3.12' and python_version < '3.13'",
+    "pyogrio==0.8.0; python_version >= '3.12' and python_version < '3.13'",
+    "pyarrow==16.1.0; python_version >= '3.12' and python_version < '3.13'",
+    "setuptools==71.0.3; python_version >= '3.12' and python_version < '3.13'",
+    "matplotlib==3.9.0; python_version >= '3.12' and python_version < '3.13'",
+    "tqdm==4.66.4; python_version >= '3.12' and python_version < '3.13'",
+    
+    # Additional dependencies for Python 3.12 only (from requirements_py312.txt)
+    "bdgd-tools==1.0.4; python_version >= '3.12' and python_version < '3.13'",
+    "beautifulsoup4==4.12.3; python_version >= '3.12' and python_version < '3.13'",
+    "cffi==1.17.0; python_version >= '3.12' and python_version < '3.13'",
+    "cloudpickle==3.0.0; python_version >= '3.12' and python_version < '3.13'",
+    "comtypes==1.4.4; python_version >= '3.12' and python_version < '3.13'",
+    "contourpy==1.2.1; python_version >= '3.12' and python_version < '3.13'",
+    "cycler==0.12.1; python_version >= '3.12' and python_version < '3.13'",
+    "dask==2024.7.1; python_version >= '3.12' and python_version < '3.13'",
+    "dask-expr==1.1.9; python_version >= '3.12' and python_version < '3.13'",
+    "dask-geopandas==0.4.1; python_version >= '3.12' and python_version < '3.13'",
+    "distributed==2024.7.1; python_version >= '3.12' and python_version < '3.13'",
+    "dss-python==0.15.7; python_version >= '3.12' and python_version < '3.13'",
+    "dss-python-backend==0.14.5; python_version >= '3.12' and python_version < '3.13'",
+    "fonttools==4.52.4; python_version >= '3.12' and python_version < '3.13'",
+    "fsspec==2024.6.1; python_version >= '3.12' and python_version < '3.13'",
+    "Jinja2==3.1.4; python_version >= '3.12' and python_version < '3.13'",
+    "Js2Py==0.74; python_version >= '3.12' and python_version < '3.13'",
+    "kiwisolver==1.4.5; python_version >= '3.12' and python_version < '3.13'",
+    "locket==1.0.0; python_version >= '3.12' and python_version < '3.13'",
+    "MarkupSafe==2.1.5; python_version >= '3.12' and python_version < '3.13'",
+    "msgpack==1.0.8; python_version >= '3.12' and python_version < '3.13'",
+    "partd==1.4.2; python_version >= '3.12' and python_version < '3.13'",
+    "pillow==10.3.0; python_version >= '3.12' and python_version < '3.13'",
+    "pipwin==0.5.2; python_version >= '3.12' and python_version < '3.13'",
+    "psutil==6.0.0; python_version >= '3.12' and python_version < '3.13'",
+    "py-dss-interface==2.0.4; python_version >= '3.12' and python_version < '3.13'",
+    "pycparser==2.22; python_version >= '3.12' and python_version < '3.13'",
+    "pyjsparser==2.7.1; python_version >= '3.12' and python_version < '3.13'",
+    "pyparsing==3.1.2; python_version >= '3.12' and python_version < '3.13'",
+    "pypiwin32==223; python_version >= '3.12' and python_version < '3.13'",
+    "PyPrind==2.11.3; python_version >= '3.12' and python_version < '3.13'",
+    "pySmartDL==1.3.4; python_version >= '3.12' and python_version < '3.13'",
+    "pywin32==306; python_version >= '3.12' and python_version < '3.13'",
+    "PyYAML==6.0.1; python_version >= '3.12' and python_version < '3.13'",
+    "sortedcontainers==2.4.0; python_version >= '3.12' and python_version < '3.13'",
+    "soupsieve==2.5; python_version >= '3.12' and python_version < '3.13'",
+    "tblib==3.0.0; python_version >= '3.12' and python_version < '3.13'",
+    "toolz==0.12.1; python_version >= '3.12' and python_version < '3.13'",
+    "tornado==6.4.1; python_version >= '3.12' and python_version < '3.13'",
+    "typing_extensions==4.12.2; python_version >= '3.12' and python_version < '3.13'",
+    "tzdata==2024.1; python_version >= '3.12' and python_version < '3.13'",
+    "tzlocal==5.2; python_version >= '3.12' and python_version < '3.13'",
+    "wheel==0.43.0; python_version >= '3.12' and python_version < '3.13'",
+    "zict==3.0.0; python_version >= '3.12' and python_version < '3.13'",
+    
+    # Python 3.13+ (from requirements_py313.txt)
+    "certifi==2025.11.12; python_version >= '3.13'",
+    "colorama==0.4.6; python_version >= '3.13'",
+    "geopandas==1.1.1; python_version >= '3.13'",
+    "holidays==0.84; python_version >= '3.13'",
+    "networkx==3.5; python_version >= '3.13'",
+    "numpy==2.3.4; python_version >= '3.13'",
+    "packaging==25.0; python_version >= '3.13'",
+    "pandas==2.3.3; python_version >= '3.13'",
+    "pyarrow==22.0.0; python_version >= '3.13'",
+    "pyogrio==0.11.1; python_version >= '3.13'",
+    "pyproj==3.7.2; python_version >= '3.13'",
+    "python-dateutil==2.9.0.post0; python_version >= '3.13'",
+    "pytz==2025.2; python_version >= '3.13'",
+    "shapely==2.1.2; python_version >= '3.13'",
+    "six==1.17.0; python_version >= '3.13'",
+    "tqdm==4.67.1; python_version >= '3.13'",
+    "tzdata==2025.2; python_version >= '3.13'",
 ]
 requires-python = ">=3.11"
 keywords = ["OpenDSS", "Python", "Power Systems", "Distribution Systems", "Energy", "OpenDSS"]
@@ -49,7 +180,7 @@ dev = [
 "Source" = "https://github.com/PauloRadatz/bdgd2opendss"
 
 [tool.setuptools]
-packages = { find = {where = ["src"]} }         
+packages = { find = {where = ["src"]} }
 
 [tool.setuptools.package-data]
-"bdgd2opendss" = ["config/*.json", "config/*.csv"] 
+"bdgd2opendss" = ["config/*.json", "config/*.csv"]
