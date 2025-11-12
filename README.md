@@ -1,15 +1,12 @@
-bdgd2opendss
-============
+# bdgd2opendss
 
 `bdgd2opendss` is a powerful tool designed to facilitate the integration and analysis of distribution systems in OpenDSS. It builds on core functionalities initially developed in the `bdgd-tools` project, extending them with new features focused on improving conversion efficiency and accuracy. In addition to its technical benefits, bdgd2opendss serves an important educational purpose, aimed at democratizing Brazilian distribution system modeling by making real Brazilian distribution system models accessible to students and researchers.
 
-What does `bdgd2opendss` do?
-----------------------------
+## What does `bdgd2opendss` do?
 
 `bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`.
 
-Why a New Repository?
----------------------
+## Why a New Repository?
 
 `bdgd2opendss` was created to continue and evolve the work from the `bdgd-tools` project with a clearer focus on performing only the conversion from `bdgd` to OpenDSS. While `bdgd-tools` provided a solid foundation, the decision to create a new repository stems from several key reasons:
 
@@ -19,8 +16,7 @@ Why a New Repository?
 
 By creating `bdgd2opendss`, I aim to push the boundaries of what was accomplished in `bdgd-tools`, while ensuring the project remains relevant, focused, and adaptable to the specific challenges of converting `bdgd` models to OpenDSS.
 
-Acknowledgments
----------------
+## Acknowledgments
 
 The development of `bdgd2opendss` builds upon the efforts of the contributors to the original `bdgd-tools` project. Special thanks to the following individuals who played a significant role in the success of the original project:
 
@@ -33,51 +29,70 @@ The development of `bdgd2opendss` builds upon the efforts of the contributors to
 
 Without their dedication and expertise, this continuation of the project would not have been possible.
 
-Installation
-------------
+## Installation
 
-To install `bdgd2opendss`, follow the steps below. If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course `Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos <https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7>`_. Aula 6.1 summarizes the process of downloading and installing a repository like this one.
+### Install from PyPI (Recommended)
+
+The easiest way to install `bdgd2opendss` is using pip:
+
+```bash
+pip install bdgd2opendss
+```
+
+The package supports Python 3.11, 3.12, and 3.13. Dependencies are automatically installed based on your Python version.
+
+### Install from Source
+
+If you prefer to install from source or need to modify the code:
 
 1. Clone the repository:
 
-    .. code-block:: bash
-
-        git clone https://github.com/pauloradatz/bdgd2opendss.git
+```bash
+git clone https://github.com/pauloradatz/bdgd2opendss.git
+```
 
 2. Navigate to the project directory:
 
-    .. code-block:: bash
+```bash
+cd bdgd2opendss
+```
 
-        cd bdgd2opendss
+3. Install the required dependencies:
 
-3. Install the required dependencies (It works well with Python 3.11. We need to test other versions and create requirement files for them):
+```bash
+pip install -r requirements_py311.txt  # For Python 3.11
+pip install -r requirements_py312.txt  # For Python 3.12
+pip install -r requirements_py313.txt  # For Python 3.13
+```
 
-    .. code-block:: bash
+4. Install the package in editable mode:
 
-        pip install -r requirements_py311.txt
+```bash
+pip install -e .
+```
 
-Usage
------
+### Installation Support
+
+If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course [Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos](https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7). Aula 6.1 summarizes the process of downloading and installing a repository like this one.
+
+## Usage
 
 After installation, you can start using `bdgd2opendss` by importing it into your Python scripts or running the provided command-line tools. Detailed usage examples can be found in the `examples` folder or in the documentation.
 
-.. code-block:: python
+```python
+import bdgd2opendss
+# Example usage
+```
 
-    import bdgd2opendss
-    # Example usage
+## License
 
-License
--------
+This project is licensed under the MIT License. See the `LICENSE` file for more information.
 
-This project is licensed under the MIT License. See the ``LICENSE`` file for more information.
+## Contributing
 
-Contributing
-------------
+Contributions to `bdgd2opendss` are welcome! Please refer to our contribution guidelines in `CONTRIBUTING.md` for details on how you can help improve the project.
 
-Contributions to `bdgd2opendss` are welcome! Please refer to our contribution guidelines in ``CONTRIBUTING.md`` for details on how you can help improve the project.
-
-How to Cite
------------
+## How to Cite
 
 If you use `bdgd2opendss` in your academic work, please reference it as follows:
 
@@ -87,19 +102,19 @@ If you use `bdgd2opendss` in your academic work, please reference it as follows:
 
 **BibTeX Entry:**
 
-.. code-block:: bibtex
-
-    @software{radatz2024bdgd2opendss,
-      author = {Paulo Radatz and Contributors},
-      title = {bdgd2opendss: A BDGD to OpenDSS conversion tool},
-      year = {2024},
-      version = {X.X.X},
-      url = {https://github.com/pauloradatz/bdgd2opendss}
-    }
+```bibtex
+@software{radatz2024bdgd2opendss,
+  author = {Paulo Radatz and Contributors},
+  title = {bdgd2opendss: A BDGD to OpenDSS conversion tool},
+  year = {2024},
+  version = {X.X.X},
+  url = {https://github.com/pauloradatz/bdgd2opendss}
+}
+```
 
 Please replace `X.X.X` with the version of the package you are using.
 
-Contact
--------
+## Contact
 
-For questions, support, or consulting inquiries, please contact Paulo Radatz at [paulo.radatz@gmail.com].
+For questions, support, or consulting inquiries, please contact Paulo Radatz at [paulo.radatz@gmail.com](mailto:paulo.radatz@gmail.com).
+

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bdgd2opendss"
-version = "1.0.0"
+version = "1.0.1"
 description = "BDGD2OpenDSS converts BDGD data into OpenDSS models."
 readme = "README.md"
 license = {text = "MIT"}
@@ -19,7 +19,7 @@ dependencies = [
     "customtkinter>=5.1.2",
     "darkdetect>=0.8.0",
     "docopt>=0.6.2",
-    
+
     # Version-specific core dependencies
     "colorama==0.4.6; python_version < '3.13'",
     "holidays==0.61; python_version < '3.13'",
@@ -78,7 +78,7 @@ dependencies = [
     "setuptools==71.0.3; python_version >= '3.12' and python_version < '3.13'",
     "matplotlib==3.9.0; python_version >= '3.12' and python_version < '3.13'",
     "tqdm==4.66.4; python_version >= '3.12' and python_version < '3.13'",
-    
+
     # Additional dependencies for Python 3.12 only (from requirements_py312.txt)
     "bdgd-tools==1.0.4; python_version >= '3.12' and python_version < '3.13'",
     "beautifulsoup4==4.12.3; python_version >= '3.12' and python_version < '3.13'",
@@ -124,7 +124,7 @@ dependencies = [
     "tzlocal==5.2; python_version >= '3.12' and python_version < '3.13'",
     "wheel==0.43.0; python_version >= '3.12' and python_version < '3.13'",
     "zict==3.0.0; python_version >= '3.12' and python_version < '3.13'",
-    
+
     # Python 3.13+ (from requirements_py313.txt)
     "certifi==2025.11.12; python_version >= '3.13'",
     "colorama==0.4.6; python_version >= '3.13'",
