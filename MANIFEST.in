@@ -13,7 +13,6 @@ include *.pdf
 
 include CHANGELOG.rst
 include LICENSE
-include README.rst
 include README.md
 include *.py
 include *.csv
