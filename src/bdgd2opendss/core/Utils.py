@@ -16,8 +16,6 @@ import logging
 cod_year_bdgd = []
 tr_vazios = []
 sufixo_config = ""
-lista_isolados = []
-tensao_dict = {}
 substation = ""
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
@@ -332,7 +330,6 @@ def create_dfs_coords(filename="", feeder=""):
 
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
-    #print('aqui')
     # TODO evitar tomar decisoes
     if len(dicionario_kv) > 0:
         for value in dicionario_kv.values():
@@ -700,11 +697,11 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         ugbt = "UGBT_tab"
         ugmt = "UGMT_tab"
     if dataframe != None:
-
+        lista_isolados = []
         alimentador = feeder
-        df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
+        df_trafo = inner_entities_tables(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UNI_TR_MT', right_column='COD_ID')
-        df_reg = merge_df_aux_tr(dataframe['EQRE']['gdf'], dataframe['UNREMT']['gdf'].query("CTMT==@alimentador"),
+        df_reg = inner_entities_tables(dataframe['EQRE']['gdf'], dataframe['UNREMT']['gdf'].query("CTMT==@alimentador"),
                                 left_column='UN_RE', right_column='COD_ID')
 
         adapt_regulators_names(df_trafo,'transformer')
@@ -716,7 +713,6 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_ssdbt['ELEM'] = 'SEGMBT'
         df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_ramalig['ELEM'] = 'RML'
-        #df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
@@ -757,24 +753,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_ugmt['ELEM'] = 'GDMT'
         df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,
                               df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
-        ##################################### TODO REMOVER ISSO APOS TESTE
-        # trafo = '005038'
-        # df_trafo_teste = dataframe['UNTRMT']['gdf'].query("COD_ID == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
-        # df_trafo_teste['ELEM'] = 'TRAFO'
-        # df_ssdbt_teste = dataframe['SSDBT']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
-        # df_ssdbt_teste['ELEM'] = 'SEGMBT'
-        # df_ramalig_teste = dataframe['RAMLIG']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
-        # df_ramalig_teste['ELEM'] = 'RML'
-        # df_ucbt_teste = dataframe[ucbt]['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
-        # df_ucbt_teste['PAC_2'] = ''
-        # df_ucbt_teste['ELEM'] = 'LDBT'
-        # df_ucbt_teste = df_ucbt_teste.rename(columns={'PAC':'PAC_1'})
-        # df_pip_teste = dataframe['PIP']['gdf'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
-        # df_pip_teste['PAC_2'] = ''
-        # df_pip_teste['ELEM'] = 'PIP'
-        # df_pip_teste = df_pip_teste.rename(columns={'PAC':'PAC_1'})
-        # df_total = pd.concat([df_trafo_teste,df_ssdbt_teste,df_ramalig_teste,df_ucbt_teste,df_pip_teste])
-        ###################################################
+
         grafo = nx.Graph()
         for index,row in df_total.iterrows():
             try:
@@ -800,7 +779,6 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 return(print('Não existem elementos isolados!'))
             else:
                 log_erros(df_not_connected,alimentador,output_folder)
-                lista_isolados = []
 
                 if df_not_connected.isnull().values.any():
                     df_not_connected.fillna('Nulo', inplace=True)
@@ -924,17 +902,3 @@ def list_subs(df,output_path):
     df_sub = df[['COD_ID','SUB']]
     df_sub.to_csv(file_path, index=False, encoding='utf-8')
 
-# def pvsystem_stats(dfs,output_folder):
-#     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
-#     df = pd.DataFrame(columns=colunas)
-#     for index,feeder in enumerate(dfs["CTMT"]['gdf']['COD_ID'].tolist()):
-#         alimentador = feeder
-#         df_ugbt = dfs['UGBT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
-#         df_ugmt = dfs['UGMT_tab']['gdf'].query("CTMT==@alimentador & SIT_ATIV == 'AT'")
-#         df_pvbt = df_ugbt[df_ugbt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
-#         df_pvmt = df_ugmt[df_ugmt['CEG_GD'].str.contains('GD.CE.001',case=False,na=False)]
-#         df.loc[index,'CTMT'] = feeder
-#         df.loc[index,'POT_PV_TOTAL_INSTALADA'] = float(df_pvmt["POT_INST"].sum() + df_pvbt["POT_INST"].sum())
-#         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
-#     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
-#     df.to_csv(file_path, index=False, encoding='utf-8')

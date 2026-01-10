@@ -328,11 +328,15 @@ class Transformer:
                 buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}"'
                 kvas = f'{self.kvas} {self.kvas}'
                 conns = f'{self.conn_p} {self.conn_s}'
-            elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':
+            elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':#verificar essa condição aqui no geoperdas
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
                 kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}.{self.bus3_nodes}" '
+                if self.bus3_nodes != "1.4" and self.bus3_nodes != "2.4" and self.bus3_nodes != "3.4":
+                    buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}" '
+                else:
+                    buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}.{self.bus3_nodes}" '
                 conns = f'{self.conn_p} {self.conn_s} {self.conn_t}'
+                self.windings = 3
             elif len(self.bus3_nodes) == 0 and (len(self.bus2_nodes) == 3 or self.bus2_nodes == '1.2.3'):
                 if len(self.bus2_nodes) == 5 and '4' in self.bus2_nodes:
                     kvs = f'{self.kv1} {self.kv2/numpy.sqrt(3):.13f}'

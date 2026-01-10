@@ -2,10 +2,11 @@
 import inspect
 import os.path
 import pathlib
+import copy
 from typing import List, Union, Optional
-
 from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.model.Case import Case
+from bdgd2opendss.model.validador_bdgd import ValidadorBDGD #etapa17
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.config.paths import bdgd2dss_json, bdgd2dss_private_json
 
@@ -62,7 +63,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
         output_folder: Optional[Union[str, pathlib.Path]] = None,
         all_feeders: bool = True,
         lst_feeders: Optional[List[str]] = None) :
-    
+
     bdgd_type(bdgd_file_path) #define automaticamente se a bdgd é pública ou privada
     #
     if settings.TipoBDGD:
@@ -71,7 +72,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
         json_file_name = bdgd2dss_json
     json_obj = JsonData(json_file_name)
     geodataframes = json_obj.create_geodataframes(bdgd_file_path)
-
+    #TODO implementar aqui o ValidadorBDGD.run(geodataframes,output_file)
     # generates all feeders
     if all_feeders:
 
@@ -91,3 +92,46 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
             case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
             case.PopulaCase()
+
+def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Optional[bool] = True, lst_feeders: Optional[list] = None,
+            output_folder: Optional[Union[str, pathlib.Path]] = None):
+    bdgd_type(bdgd_file_path)
+
+    if settings.TipoBDGD:
+        #json_file_name = bdgd2dss_private_json
+        json_file_name = r"C:/Users/mozar/OneDrive/Documentos/GitHub/bdgd2opendss/src/bdgd2opendss/config/bdgd2dss_error_private.json"
+    else:
+        #json_file_name = bdgd2dss_json
+        json_file_name = r"C:/Users/mozar/OneDrive/Documentos/GitHub/bdgd2opendss/src/bdgd2opendss/config/bdgd2dss_error.json"
+        bdgd_pub = ['UCBT_tab','UCMT_tab','UGBT_tab','UGMT_tab']
+
+    json_obj = JsonData(json_file_name)
+
+    geodataframe,tables = json_obj.create_geodataframe_errors(bdgd_file_path)
+    
+    if not settings.TipoBDGD: #se for BDGD pública
+        for key in bdgd_pub:
+            geodataframe[key[0:4]] = geodataframe.pop(key)
+
+    if all_feeders:
+        validation = ValidadorBDGD(df=geodataframe,output_folder=output_folder,tables=tables)
+        
+        validation.run_validation()
+    else:
+        gdf = copy.deepcopy(geodataframe)
+        lst_entity = ['BASE','UNTRAT','SEGCON','CRVCRG','EQTRMT','EQRE']
+        keys = [x for x in gdf.keys() if x not in lst_entity]
+
+        for feeder in lst_feeders:
+            alimentador = feeder
+            for key in keys: #resetar os índices será ?
+                if key == 'CTMT':
+                    gdf['CTMT'] = geodataframe['CTMT'][geodataframe['CTMT']['COD_ID'] == feeder].reset_index(drop=True)
+                else:
+                    gdf[key] = geodataframe[key].query("CTMT == @alimentador").reset_index(drop=True)
+    
+            validation = ValidadorBDGD(df=gdf,output_folder=output_folder,tables=tables,feeders=feeder)
+            
+            validation.run_validation()
+
+            

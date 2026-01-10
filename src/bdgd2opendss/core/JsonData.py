@@ -2,6 +2,7 @@ import json
 import time
 import geopandas as gpd
 
+
 # import os
 # from typing import Optional
 
@@ -101,7 +102,7 @@ class JsonData:
             load_times = []
             conversion_times = []
             gdf_converted = None
-
+            #TODO fazer um try/except aqui para, caso não exista a tabela, não quebrar o código
             for _ in range(runs):
                 start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
@@ -141,3 +142,25 @@ class JsonData:
                 'gdf': gdf_
             }
         return geodataframes
+
+    def create_geodataframe_errors(self,file_name,runs=1):
+
+        geodataframes = {}
+        
+        for table_name, table in self.tables.items():
+            load_times = []
+            conversion_times = []
+            #TODO fazer um try/except aqui para, caso não exista a tabela, não quebrar o código
+            for _ in range(runs):
+                start_time = time.time()
+                print(f'Creating geodataframe {table.name}')
+                gdf_ = gpd.read_file(file_name, layer=table.name,
+                                columns=table.columns,ignore_geometry=table.ignore_geometry, 
+                                     engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
+
+            geodataframes[table_name] = gdf_
+            
+        return geodataframes,self.tables
+    
+
+        
