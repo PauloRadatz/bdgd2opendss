@@ -469,11 +469,11 @@ class ValidadorBDGD:
             df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,
                                 df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
             grafo = nx.Graph()
-            for index,row in df_total.iterrows():
+            for row in df_total.itertuples(index=False):
                 try:
-                    grafo.add_node(row['PAC_1'])
-                    grafo.add_node(row['PAC_2'])
-                    grafo.add_edge(row['PAC_1'], row['PAC_2'])
+                    grafo.add_node(row.PAC_1)
+                    grafo.add_node(row.PAC_2)
+                    grafo.add_edge(row.PAC_1, row.PAC_2)
                 except ValueError:
                     print("valor do tipo none")
             try:
@@ -497,45 +497,45 @@ class ValidadorBDGD:
                     if df_not_connected.isnull().values.any():
                         df_not_connected.fillna('Nulo', inplace=True)
 
-                    for i,elem in df_not_connected.iterrows():
-                        if elem['ELEM'] == 'SSDMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Segmento de média tensão isolado.", 
-                            "detalhamento":f"Elemento SSDMT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'SSDBT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Segmento de baixa tensão isolado.",
-                            "detalhamento": f"Elemento SSDBT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'RAMLIG': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Ramal de baixa tensão isolado.",
-                            "detalhamento": f"Elemento RAMLIG:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UNTRMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Transformador isolado.",
-                            "detalhamento": f"Elemento UNTRMT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UNREMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Regulador de tensão isolado.",
-                            "detalhamento": f"Elemento UNREMT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UCBT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Carga BT isolada.",
-                            "detalhamento":f"Elemento UCBT:{elem['COD_ID']} - PAC={elem['PAC_1']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'PIP': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Carga BT de iluminação pública isolada.",
-                            "detalhamento":f"Elemento PIP:{elem['COD_ID']} - PAC={elem['PAC_1']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UCMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'],"erro":f"Carga MT isolada",
-                            "detalhamento":f"Elemento UCMT:{elem['COD_ID']} - PAC={elem['PAC_1']}, Alimentador (CTMT) = {feeder}."})
-                        elif elem['ELEM'] == 'UNSEMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Chave MT isolada.",
-                            "detalhamento": f"Elemento UNSEMT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UNSEBT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Chave BT isolada.",
-                            "detalhamento":f"Elemento UNSEBT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}, Alimentador (CTMT)={feeder}."})
-                        elif elem['ELEM'] == 'UGBT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'],"erro":f"Geração Distribuída BT isolada.",
-                            "detalhamento":f"Elemento UGBT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, Alimentador (CTMT)={feeder}."})
+                    for elem in df_not_connected.itertuples(index=False):
+                        if elem.ELEM == 'SSDMT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Segmento de média tensão isolado.", 
+                            "detalhamento":f"Elemento SSDMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'SSDBT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Segmento de baixa tensão isolado.",
+                            "detalhamento": f"Elemento SSDBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'RAMLIG': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Ramal de baixa tensão isolado.",
+                            "detalhamento": f"Elemento RAMLIG:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UNTRMT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Transformador isolado.",
+                            "detalhamento": f"Elemento UNTRMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UNREMT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Regulador de tensão isolado.",
+                            "detalhamento": f"Elemento UNREMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UCBT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Carga BT isolada.",
+                            "detalhamento":f"Elemento UCBT:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'PIP': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Carga BT de iluminação pública isolada.",
+                            "detalhamento":f"Elemento PIP:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UCMT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID,"erro":f"Carga MT isolada",
+                            "detalhamento":f"Elemento UCMT:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT) = {feeder}."})
+                        elif elem.ELEM == 'UNSEMT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Chave MT isolada.",
+                            "detalhamento": f"Elemento UNSEMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UNSEBT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Chave BT isolada.",
+                            "detalhamento":f"Elemento UNSEBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
+                        elif elem.ELEM == 'UGBT': 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID,"erro":f"Geração Distribuída BT isolada.",
+                            "detalhamento":f"Elemento UGBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
                         else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'],"erro":f"Geração Distribuída MT isolada.",
-                            "detalhamento":f"Elemento UGMT:{elem['COD_ID']} - PAC_1={elem['PAC_1']}, Alimentador (CTMT)={feeder}."})
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID,"erro":f"Geração Distribuída MT isolada.",
+                            "detalhamento":f"Elemento UGMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
             else:
-                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":"CTMT", "Código":{feeder}, "erro":"CTMT isolado",
+                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":"CTMT", "Código":feeder, "erro":"CTMT isolado",
                 "detalhamento":f"O alimentador ({feeder}) não tem conexão com a fonte."})
         
         df_erros = pd.DataFrame(erros)
@@ -549,8 +549,11 @@ class ValidadorBDGD:
         dataframe = dataframe da tabela UNTRMT.
         df_isolados = dataframe de elementos isolados."""
         erros = []
-
+        ##cod_id do trafo = None
         for trafo in dataframe['UNTRMT']['COD_ID'].tolist():
+            if trafo == None:
+                print('trafo com COD_ID = None')
+                continue
             df = dataframe['UNTRMT'].query("COD_ID == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
             pac_trafo = df['PAC_2'].values[0]
             df_ssdbt_teste = dataframe['SSDBT'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
@@ -578,11 +581,11 @@ class ValidadorBDGD:
                                 "detalhamento":f"O transformador {trafo} não possui nenhuma carga associada, UCBT ou PIP - (UNI_TR_MT)"})
                 continue
             grafo = nx.Graph()
-            for index,row in df_total.iterrows():
+            for row in df_total.itertuples(index=False):
                 try:
-                    grafo.add_node(row['PAC_1'])
-                    grafo.add_node(row['PAC_2'])
-                    grafo.add_edge(row['PAC_1'], row['PAC_2'])
+                    grafo.add_node(row.PAC_1)
+                    grafo.add_node(row.PAC_2)
+                    grafo.add_edge(row.PAC_1, row.PAC_2)
                 except ValueError:
                     print("valor do tipo none")
             try:
@@ -600,13 +603,13 @@ class ValidadorBDGD:
                 if not df_not_connected.empty:
                     df_tr_errado = df_not_connected[~df_not_connected['COD_ID'].isin(lista_isolados)] #A lista de isolados em TODOS OS CTMTs deve ser criada antes dessa função aqui. 
                     if not df_tr_errado.empty:
-                        for i,elem in df_tr_errado.iterrows():
-                            if elem['ELEM'] == 'SSDBT' or elem['ELEM'] == 'RAMLIG':
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"O código do transformador declarado não guarda correspondência com o do transformador obtido após o sequenciamento elétrico",
-                                "detalhamento":f"O código do transformador declarado ({trafo}) não guarda correspondência com o do transformador obtido após o sequenciamento elétrico. PAC_1={elem['PAC_1']}, PAC_2={elem['PAC_2']}. Alimentador - {elem['CTMT']}."})
+                        for elem in df_tr_errado.itertuples(index=False):
+                            if elem.ELEM == 'SSDBT' or elem.ELEM == 'RAMLIG':
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"O código do transformador declarado não guarda correspondência com o do transformador obtido após o sequenciamento elétrico",
+                                "detalhamento":f"O código do transformador declarado ({trafo}) não guarda correspondência com o do transformador obtido após o sequenciamento elétrico. PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}. Alimentador - {elem.CTMT}."})
                             else:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro": f"O código do transformador declarado não guarda correspondência com o do transformador obtido após o sequenciamento elétrico",
-                                "detalhamento":f"O código do transformador declarado ({trafo}) não guarda correspondência com o do transformador obtido após o sequenciamento elétrico. PAC={elem['PAC_1']}. Alimentador - {elem['CTMT']}"})
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro": f"O código do transformador declarado não guarda correspondência com o do transformador obtido após o sequenciamento elétrico",
+                                "detalhamento":f"O código do transformador declarado ({trafo}) não guarda correspondência com o do transformador obtido após o sequenciamento elétrico. PAC={elem.PAC_1}. Alimentador - {elem.CTMT}"})
                 continue        
             else:
                 print(f'Transformador {trafo} isolado no secundário.')
@@ -639,66 +642,52 @@ class ValidadorBDGD:
                 lista_crvcrg = gdf["COD_ID"].tolist()
             elif table_name == 'UNTRMT':
                 lista_untrmt = gdf["COD_ID"].tolist()
-            print('j')
+
             for column in table.data_types.keys():
-                if type(table.data_types[column]) is list: 
+                if isinstance(table.data_types[column],list): 
                     for index,value in enumerate(gdf[column]):
                         if value not in table.data_types[column] or pd.isnull(value) or value == "" or value == None:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. Valores esperados: {table.data_types[column]}"})
-                            continue
+                                    "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. Tipo de valores esperados: {table.data_types[column]}"})
                         else: 
-                            continue     
+                            continue    
+
                 elif table.data_types[column] == 'int':
                     for index,value in enumerate(gdf[column]):
-                        try:
-                            int(value)
+                        if isinstance(value,int):
                             continue
-                        except ValueError or TypeError: 
+                        else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número inteiro"})
                 
                 elif table.data_types[column] == 'float':
                     for index,value in enumerate(gdf[column]):
-                        try:
-                            float(value)
+                        if isinstance(value,float):
                             continue
-                        except ValueError or TypeError: 
+                        else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":table_name, "Código":gdf.loc[index,table.columns[0]],
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número."})
                 
                 elif table.data_types[column] == 'string':
                     for index,value in enumerate(gdf[column]):
-                        try:
-                            str(value)
-                            if len(value) == 0:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O atributo {column} possui valor não nulo:{gdf.loc[index,column]}. O valor esperado deve ser uma string"})
+                        if isinstance(value,str) and value != "":
                             continue
-                        except ValueError or TypeError: 
+                        else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser uma string"})
                 
                 elif table.data_types[column] == "category":
                     if column == 'CTMT':
                         for index,value in enumerate(gdf[column]):
-                            if value == None and (table_name == 'SSDMT' or table_name == 'UNSEMT'):
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":'2%', "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O código do alimentador (CTMT) não foi declarado."})
-                            elif value == None:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":'0%', "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O código do alimentador (CTMT) não foi declarado."})
-                            elif value not in lista_ctmt:
+                            if value not in lista_ctmt:
                                 erros.append({"COD_BASE": self.cod_base, "Erro máx":'AVISO!', "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
                                     "erro":f"O atributo CTMT possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de CTMTs(alimentadores) desta BDGD"})
                     if column == 'TIP_CND':
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_segcon:
                                 erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O atributo TIP_CND possui valor não :{gdf.loc[index,column]}. Não está dentro da lista de SEGCONs(linecodes) desta BDGD"})
+                                    "erro":f"O atributo TIP_CND possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de SEGCONs(linecodes) desta BDGD"})
                     if column == 'UNI_TR_MT':
-                        if table_name == 'EQTRMT' or table_name == 'EQRE':
-                            continue
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_untrmt:
                                 erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
@@ -715,10 +704,6 @@ class ValidadorBDGD:
                     inicio,fim = intervalo
                     lista = list(range(inicio,fim))
                     for index,value in enumerate(gdf[column]):
-                        if pd.isnull(value) or value == "" or value == None:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
-                                    "erro":f"O atributo {column} possui valor fora dos limites:{gdf.loc[index,column]}. Os valores esperados devem estar dentro do intervalo: {table.data_types[column]}"})
-                            continue
                         if int(value) not in lista:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
                                     "erro":f"O atributo {column} possui valor fora dos limites:{gdf.loc[index,column]}. Os valores esperados devem estar dentro do intervalo: {table.data_types[column]}"})
@@ -850,18 +835,18 @@ class ValidadorBDGD:
         erros = []
         
         df_filtrado = merged_dfs[((merged_dfs['TIP_TRAFO'] == 'DF') | (merged_dfs['TIP_TRAFO'] == 'DA')) & merged_dfs['BANC'] == 1] #fasedeltafechado ou aberto problematico
-        for index,row in df_filtrado.iterrows():
-            df = df_filtrado[df_filtrado['COD_ID'] == row['COD_ID']]
+        for row in df_filtrado.itertuples(index=False):
+            df = df_filtrado[df_filtrado['COD_ID'] == row.COD_ID]
             lista = []
-            for index,row in df.iterrows():
-                lista.append(row['LIG_FAS_P'])
-                lista.append(row['LIG_FAS_S'])
-                lista.append(row['LIG_FAS_T'])
-            verificador = VerificadorFaseamentoTrafo(tip_lig=row['TIP_TRAFO'])
+            for row in df.itertuples(index=False):
+                lista.append(row.LIG_FAS_P)
+                lista.append(row.LIG_FAS_S)
+                lista.append(row.LIG_FAS_T)
+            verificador = VerificadorFaseamentoTrafo(tip_lig=row.TIP_TRAFO)
             resultado = verificador.eh_incorreto(lista)
             if resultado:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":{row['UNI_TR_MT']},"erro":f"Faseamento interno do transformador inconsistente.",
-                "detalhamento":f"Tipo do trafo - {row['TIP_TRAFO']}. FAS_CON_P:{row['LIG_FAS_P']},FAS_CON_S:{row['LIG_FAS_S']},FAS_CON_T:{row['LIG_FAS_T']}. Alimentador - {row['CTMT']}"})
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":row.UNI_TR_MT,"erro":f"Faseamento interno do transformador inconsistente.",
+                "detalhamento":f"Tipo do trafo - {row.TIP_TRAFO}. FAS_CON_P:{row.LIG_FAS_P},FAS_CON_S:{row.LIG_FAS_S},FAS_CON_T:{row.LIG_FAS_T}. Alimentador - {row.CTMT}"})
         
         return(pd.DataFrame(erros))
 
@@ -882,7 +867,7 @@ class ValidadorBDGD:
                 df_erro = pd.concat([df_erro,df_y],ignore_index=True)
         df_erro = df_erro.drop_duplicates(keep='first')#remove linhas duplicadas
         for index,elem in df_erro.iterrows():
-            erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":{row['UN_RE']},"erro":f"Faseamento interno do regulador inconsistente.",
+            erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":row['UN_RE'],"erro":f"Faseamento interno do regulador inconsistente.",
             "detalhamento":f"Tipo do regulador - {row['TIP_TRAFO']}. FAS_CON_P:{row['LIG_FAS_P']},FAS_CON_S:{row['LIG_FAS_S']}. Alimentador - {row['CTMT']}"})
         return(pd.DataFrame(erros))
 
@@ -982,10 +967,10 @@ class ValidadorBDGD:
 
             grafo = nx.Graph()
 
-            for index, row in df_elements.iterrows():
-                grafo.add_node(row['PAC_1'])
-                grafo.add_node(row['PAC_2'])
-                grafo.add_edge(row['PAC_1'], row['PAC_2'])
+            for row in df_elements.itertuples(index=False):
+                grafo.add_node(row.PAC_1)
+                grafo.add_node(row.PAC_2)
+                grafo.add_edge(row.PAC_1, row.PAC_2)
             try:
                 grafo.remove_node('')
             except:
@@ -1034,29 +1019,34 @@ class ValidadorBDGD:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.", 
                             "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
             #verificação do faseamento nos transformadores e nas cargas de média tensão
-            for index, elem in df_aux_ucmt_tr.iterrows():
-                if elem['COD_ID'] in isolados: #remove os elementos isolados da checagem de faseamento
+            for elem in df_aux_ucmt_tr.itertuples(index=False):
+                if elem.COD_ID in isolados: #remove os elementos isolados da checagem de faseamento
                     continue
-                indices = df_elements.index[(df_elements[pac2] == elem['PAC_1'])|(df_elements[pac1] == elem['PAC_1'])].tolist()
+                indices = df_elements.index[(df_elements[pac2] == elem.PAC_1)|(df_elements[pac1] == elem.PAC_1)].tolist()
+                if len(indices) == 0: #elemento conectado no nível de tensão errado
+                    continue
                 if len(indices) == 1:
                     fase = df_elements.at[indices[0],'FAS_CON']
-                    if set(elem['FAS_CON']) <= set(fase+'N'):
+                    if set(elem.FAS_CON) <= set(fase+'N'):
                         continue #faseamento correto
                     else:
-                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                        "detalhamento":f"Elemento analisado = {elem['ELEM']}:{elem['COD_ID']} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem['CTMT']}."})
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 else:
                     for i in indices:
                         fase = df_elements.at[i,'FAS_CON']
-                        if set(elem['FAS_CON']) <= set(fase+'N'):
+                        if set(elem.FAS_CON) <= set(fase+'N'):
                             find = True
                             break
                     if find:
                         continue
-                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                    "detalhamento":f"Elemento analisado = {elem['ELEM']}:{elem['COD_ID']} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem['CTMT']}."})         
+                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
             #faseamento das linhas de baixa tensão 
             for trafo in df_aux_trafo['COD_ID'].tolist():
+                if trafo == None:
+                    print('trafo sem COD_ID')
+                    continue
                 sequencia = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
                 if sequencia:
                     pac_trafo = sequencia[0][0]
@@ -1090,37 +1080,41 @@ class ValidadorBDGD:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
                     voltage_dict[df_aux_trafo.at[i,'PAC_2']] = df_aux_trafo.at[i,'TEN_LIN_SE']
                     print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
-            #faseamento das cargas de baixa tensão
-            for index, elem in df_aux_ucbt_pip.iterrows():
-                if elem['COD_ID'] in lista_isolados:#remove os elementos isolados da checagem de faseamento
-                    continue
-                indices = df_elements_bt.index[(df_elements_bt['PAC_2'] == elem['PAC_1'])|(df_elements_bt['PAC_1'] == elem['PAC_1'])].tolist()
+            #faseamento das cargas de baixa tensão 
+            for elem in df_aux_ucbt_pip.itertuples(index=False):
+                if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
+                        continue
+                indices = df_elements_bt.index[(df_elements_bt['PAC_2'] == elem.PAC_1)|(df_elements_bt['PAC_1'] == elem.PAC_1)].tolist()
                 if len(indices) == 1:
                     i = indices[0]
                     fase = df_elements_bt.at[i,'FAS_CON']
-                    if set(elem['FAS_CON']) <= set(fase+'N'):
+                    if set(elem.FAS_CON) <= set(fase+'N'):
                         continue #faseamento correto
                     else:
-                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                        "detalhamento":f"Elemento analisado = {elem['ELEM']}:{elem['COD_ID']} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem['CTMT']}."})
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 elif len(indices) > 1:
                     for i in indices:
                         fase = df_elements_bt.at[i,'FAS_CON']
-                        if set(elem['FAS_CON']) <= set(fase+'N'):
+                        if set(elem.FAS_CON) <= set(fase+'N'):
                             find = True
                             break
                     if find:
                         continue
-                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                    "detalhamento":f"Elemento analisado = {elem['ELEM']}:{elem['COD_ID']} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem['CTMT']}."})
+                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 else:#se não tiver num ramal ou linha de BT está em um trafo
-                    i = df_aux_trafo.index[df_aux_trafo['PAC_2'] == elem['PAC_1']].tolist()[0]
+                    try:
+                        i = df_aux_trafo.index[df_aux_trafo['PAC_2'] == elem.PAC_1].tolist()[0]
+                    except:
+                        i = df_aux_trafo.index[df_aux_trafo['PAC_1'] == elem.PAC_1].tolist()[0]
+                        print(f'Carga BT {elem.COD_ID} conectada no primário do trafo {df_aux_trafo.at[i,'COD_ID']}!!')
                     fase = df_elements_bt.at[i,'FAS_CON']
-                    if set(elem['FAS_CON']) <= set(fase+'N'):
+                    if set(elem.FAS_CON) <= set(fase+'N'):
                         continue #faseamento correto
                     else:
-                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem['ELEM'], "Código":elem['COD_ID'], "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                        "detalhamento":f"Elemento analisado = {elem['ELEM']}:{elem['COD_ID']} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem['CTMT']}."})
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
             #df_total = pd.concat([df_elements,df_aux_ucmt_tr,df_elements_bt,df_aux_ucbt_pip],ignore_index=True)
         self.voltage_dict = voltage_dict 
         return(pd.DataFrame(erros))
@@ -1130,26 +1124,26 @@ class ValidadorBDGD:
         df = dataframe completo com a coluna 'ELEM' """
         voltage_dict = self.voltage_dict
         erros = []
-        for index,elem in df.iterrows():
-            if elem['COD_ID'] in self.isolados:
+        for elem in df.itertuples(index=False):
+            if elem.COD_ID in self.isolados:
                 continue
             try: #elementos que estão isolados do seu trafo (são de outros trafos vão dar erro)
-                if elem['ELEM'] == 'UNTRMT' or elem['ELEM'] == 'UCMT':
-                    if voltage_dict[elem['PAC_1']] < 2.3:
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem['ELEM'],"Código":{elem['COD_ID']},"erro":f"{elem['ELEM']} com tensão inadequada após sequenciamento elétrico.",
-                        "detalhamento":f"Tensão inadequada - {voltage_dict[elem['PAC_1']]} kV< 2.3 kV. Barra PAC:{elem['PAC_1']}. Alimentador - {elem['CTMT']}"})
-                elif elem['ELEM'] == 'UCBT' or elem['ELEM'] == 'PIP':
-                    if voltage_dict[elem['PAC_1']] >= 2.3:
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem['ELEM'],"Código":{elem['COD_ID']},"erro":f"{elem['ELEM']} com tensão inadequada após sequenciamento elétrico.",
-                        "detalhamento":f"Tensão inadequada - {voltage_dict[elem['PAC_1']]} kV>2.3 kV. Barra PAC:{elem['PAC_1']}. Alimentador - {elem['ELEM']}."})
-                elif (elem['ELEM'] == 'SSDBT' or elem['ELEM'] == 'RAMLIG' or elem['ELEM'] == 'UNSEBT'):
-                    if voltage_dict[elem['PAC_1']] >= 2.3 or voltage_dict[elem['PAC_2']] >= 2.3:
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem['ELEM'],"Código":{elem['COD_ID']},"erro":f"{elem['ELEM']} com tensão inadequada após sequenciamento elétrico.",
-                        "detalhamento":f"Tensão inadequada {voltage_dict[elem['PAC_1']]} kV>2.3 kV. Barras PAC_1:{elem['PAC_1']}, PAC_2:{elem['PAC_2']}. Alimentador - {elem['ELEM']}."})
+                if elem.ELEM == 'UNTRMT' or elem.ELEM == 'UCMT':
+                    if voltage_dict[elem.PAC_1] < 2.3:
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":f"{elem.ELEM} com tensão inadequada após sequenciamento elétrico.",
+                        "detalhamento":f"Tensão inadequada - {voltage_dict[elem.PAC_1]} kV< 2.3 kV. Barra PAC:{elem.PAC_1}. Alimentador - {elem.CTMT}"})
+                elif elem.ELEM == 'UCBT' or elem.ELEM == 'PIP':
+                    if voltage_dict[elem.PAC_1] >= 2.3:
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":f"{elem.ELEM} com tensão inadequada após sequenciamento elétrico.",
+                        "detalhamento":f"Tensão inadequada - {voltage_dict[elem.PAC_1]} kV>2.3 kV. Barra PAC:{elem.PAC_1}. Alimentador - {elem.ELEM}."})
+                elif (elem.ELEM == 'SSDBT' or elem.ELEM == 'RAMLIG' or elem.ELEM == 'UNSEBT'):
+                    if voltage_dict[elem.PAC_1] >= 2.3 or voltage_dict[elem.PAC_2] >= 2.3:
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":f"{elem.ELEM} com tensão inadequada após sequenciamento elétrico.",
+                        "detalhamento":f"Tensão inadequada {voltage_dict[elem.PAC_1]} kV>2.3 kV. Barras PAC_1:{elem.PAC_1}, PAC_2:{elem.PAC_2}. Alimentador - {elem.ELEM}."})
                 else:
-                    if voltage_dict[elem['PAC_1']] < 2.3 or voltage_dict[elem['PAC_2']] < 2.3:
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem['ELEM'],"Código":{elem['COD_ID']},"erro":f"{elem['ELEM']} com tensão inadequada após sequenciamento elétrico.",
-                        "detalhamento":f"Tensão inadequada {voltage_dict[elem['PAC_2']]} kV<2.3 kV. Barras PAC_1:{elem['PAC_1']}, PAC_2:{elem['PAC_2']}. Alimentador - {elem['ELEM']}."})
+                    if voltage_dict[elem.PAC_1] < 2.3 or voltage_dict[elem.PAC_2] < 2.3:
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":f"{elem.ELEM} com tensão inadequada após sequenciamento elétrico.",
+                        "detalhamento":f"Tensão inadequada {voltage_dict[elem.PAC_2]} kV<2.3 kV. Barras PAC_1:{elem.PAC_1}, PAC_2:{elem.PAC_2}. Alimentador - {elem.ELEM}."})
             except KeyError:
                 continue
         return(pd.DataFrame(erros))
@@ -1159,18 +1153,21 @@ class ValidadorBDGD:
         df_trafo = dataframe com todos os trafos da BDGD"""
         voltage_dict = self.voltage_dict
         erros = []
-        for i,trf in df_trafo.iterrows():
-            if trf['COD_ID'] in self.isolados:
+        for trf in df_trafo.itertuples(index=False):
+            if trf.COD_ID in self.isolados:
                 continue
-            v1 = voltage_dict[trf['PAC_1']]
-            v2 = voltage_dict[trf['PAC_2']]
+            try:
+                v1 = voltage_dict[trf.PAC_1]
+                v2 = voltage_dict[trf.PAC_2]
+            except:
+                print(f'erro pac1 - {trf.PAC_1}/ pac2 - {trf.PAC_2}. COD_ID - {trf.COD_ID}')
             if v1 == v2:
-                if self.df['CTMT'].at[self.df['CTMT'][self.df['CTMT']['COD_ID'] == trf['CTMT']].index[0],'ATIP'] == 1:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":{trf['COD_ID']},"erro":"Tensão no Primário igual ao Secundário no Trafo. Possível inversão de sequencia elétrica em circuito atípico.",
-                    "detalhamento":f"Tensão no primário do trafo (PAC_1:{trf['PAC_1']}) igual a do secundário (PAC_2:{trf['PAC_2']}). Tensão:{v1} kV. Alimentador - {trf['CTMT']}"})
+                if self.df['CTMT'].at[self.df['CTMT'][self.df['CTMT']['COD_ID'] == trf.CTMT].index[0],'ATIP'] == 1:
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trf.COD_ID,"erro":"Tensão no Primário igual ao Secundário no Trafo. Possível inversão de sequencia elétrica em circuito atípico.",
+                    "detalhamento":f"Tensão no primário do trafo (PAC_1:{trf.PAC_1}) igual a do secundário (PAC_2:{trf.PAC_2}). Tensão:{v1} kV. Alimentador - {trf.CTMT}"})
                 else:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":{trf['COD_ID']},"erro":"Tensão no Primário igual ao Secundário no Trafo após sequenciamento elétrico.",
-                    "detalhamento":f"Tensão no primário do trafo (barra:{trf['PAC_1']}) igual a do secundário (barra:{trf['PAC_2']}). Tensão:{v1} kV. Alimentador - {trf['CTMT']}"})
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trf.COD_ID,"erro":"Tensão no Primário igual ao Secundário no Trafo após sequenciamento elétrico.",
+                    "detalhamento":f"Tensão no primário do trafo (barra:{trf.PAC_1}) igual a do secundário (barra:{trf.PAC_2}). Tensão:{v1} kV. Alimentador - {trf.CTMT}"})
                 
     def pac_iguais(self,df):
         """ Verifica se os pontos de acoplamento elétrico são iguais para as linhas de média e baixa tensão, incluindo ramais.
@@ -1181,7 +1178,7 @@ class ValidadorBDGD:
         indices = df[(df['PAC_1'] == df['PAC_2'])].index.tolist()
         if len(indices) > 0:
             for i in indices:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":{df.loc[i,'ELEM']},"Código":{df.loc[i,'COD_ID']},"erro":"O ponto de acoplamento 1 tem que ser diferente do ponto de acoplamento 2.",
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":df.loc[i,'ELEM'],"Código":df.loc[i,'COD_ID'],"erro":"O ponto de acoplamento 1 tem que ser diferente do ponto de acoplamento 2.",
                 "detalhamento":f"PAC_1 e PAC_2 = {df.loc[i,'PAC_1']}. Alimentador - {df.loc[i,'CTMT']}"})
         else:
             return(None)
@@ -1200,19 +1197,19 @@ class ValidadorBDGD:
         #TODO continuar aqui
         df_erro = df[((df['TIP_TRAFO'] != 'M') & (df['TIP_TRAFO'] != 'MT'))|(~df['LIG_FAS_P'].isin(fas_p))|(~df['LIG_FAS_S'].isin(fas_s))|((~df['LIG_FAS_T'].isin(fas_t)))]
         if not df_erro.empty:
-            for index,elem in df_erro.iterrows():
-                if elem['TIP_TRAFO'] != 'M' and elem['TIP_TRAFO'] != 'MT':
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem['COD_ID'],"erro":"Tipo do transformador inconsistente com o valor declarado no campo MRT.",
-                    "detalhamento":f"Tipo do transformador:{elem['TIP_TRAFO']} inconsistente com o valor declarado no campo MRT (1). Tipos válidos: M, MT. Alimentador - {elem['CTMT']}"})
-                elif elem['LIG_FAS_P'] not in fas_p:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem['COD_ID'],"erro":"Código da fase primária não é compatível com o valor declarado no campo MRT.",
-                    "detalhamento":f"Código da fase primária ({elem['LIG_FAS_P']}) inconsistente com o valor do campo MRT (1). Códigos válidos: A,B,C. Alimentador - {elem['CTMT']}"})
-                elif elem['LIG_FAS_S'] not in fas_s:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem['COD_ID'],"erro":"Código da fase secundária não é compatível com o valor declarado no campo MRT.",
-                    "detalhamento":f"Código da fase secundária ({elem['LIG_FAS_S']}) inconsistente com o valor do campo MRT (1). Códigos válidos: AN,BN,CN. Alimentador - {elem['CTMT']}"})
+            for elem in df_erro.itertuples(index=False):
+                if elem.TIP_TRAFO != 'M' and elem.TIP_TRAFO != 'MT':
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem.COD_ID,"erro":"Tipo do transformador inconsistente com o valor declarado no campo MRT.",
+                    "detalhamento":f"Tipo do transformador:{elem.TIP_TRAFO} inconsistente com o valor declarado no campo MRT (1). Tipos válidos: M, MT. Alimentador - {elem.CTMT}"})
+                elif elem.LIG_FAS_P not in fas_p:
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem.COD_ID,"erro":"Código da fase primária não é compatível com o valor declarado no campo MRT.",
+                    "detalhamento":f"Código da fase primária ({elem.LIG_FAS_P}) inconsistente com o valor do campo MRT (1). Códigos válidos: A,B,C. Alimentador - {elem.CTMT}"})
+                elif elem.LIG_FAS_S not in fas_s:
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem.COD_ID,"erro":"Código da fase secundária não é compatível com o valor declarado no campo MRT.",
+                    "detalhamento":f"Código da fase secundária ({elem.LIG_FAS_S}) inconsistente com o valor do campo MRT (1). Códigos válidos: AN,BN,CN. Alimentador - {elem.CTMT}"})
                 else:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem['COD_ID'],"erro":"Código da fase terciária não é compatível com o valor declarado no campo MRT.",
-                    "detalhamento":f"Código da fase terciária ({elem['LIG_FAS_T']}) inconsistente com o valor do campo MRT (1). Códigos válidos: AN,BN,CN,XX,NULL. Alimentador - {elem['CTMT']}"})
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem.COD_ID,"erro":"Código da fase terciária não é compatível com o valor declarado no campo MRT.",
+                    "detalhamento":f"Código da fase terciária ({elem.LIG_FAS_T}) inconsistente com o valor do campo MRT (1). Códigos válidos: AN,BN,CN,XX,NULL. Alimentador - {elem.CTMT}"})
         
         return(pd.DataFrame(erros))
     
@@ -1281,19 +1278,19 @@ class ValidadorBDGD:
         df_filtrado['PAC_2'] = df_filtrado['PAC_2'].replace('',np.nan) #transforma as colunas '' criadas no df_total em NaN.
 
         lista_pacs = df_filtrado['PAC_1'].tolist() + df_filtrado['PAC_2'].tolist()
-        for i,elem in df_isolados.iterrows():
-            if elem['ELEM'] == 'UNREMT':
+        for elem in df_isolados.itertuples(index=False):
+            if elem.ELEM == 'UNREMT':
                 erromax = '2%'
             else:
                 erromax = '0.5%'
-            if elem['PAC_1'] in lista_pacs:
-                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem['PAC_1'])|(df_filtrado['PAC_2'] == elem['PAC_1'])].index[0],'CTMT']
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem['ELEM'],"Código":elem['COD_ID'],"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
-                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem['CTMT']}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
-            elif elem['PAC_2'] in lista_pacs:
-                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem['PAC_2'])|(df_filtrado['PAC_2'] == elem['PAC_2'])].index[0],'CTMT']
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem['ELEM'],"Código":elem['COD_ID'],"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
-                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem['CTMT']}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
+            if elem.PAC_1 in lista_pacs:
+                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem.PAC_1)|(df_filtrado['PAC_2'] == elem.PAC_1)].index[0],'CTMT']
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
+                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem.CTMT}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
+            elif elem.PAC_2 in lista_pacs:
+                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem.PAC_2)|(df_filtrado['PAC_2'] == elem.PAC_2)].index[0],'CTMT']
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
+                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem.CTMT}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
             else:
                 continue
         return(pd.DataFrame(erros),df_total,df_linhas)
@@ -1319,28 +1316,26 @@ class ValidadorBDGD:
     def check_pacs(self):
         """Checa se há algum ponto de acoplamento elétrico com valor nulo"""
         erros = [] 
-
-        for key in self.df.keys():
-            if key in ['BASE','SEGCON','CRVCRG','UNTRAT','EQTRMT','EQRE']:
-                continue
-            elif key == 'CTMT':
-                for index,elem in self.df[key].iterrows():
-                   if len(elem['PAC_INI']) == 0 or not isinstance(elem['PAC_INI'],str):
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem['COD_ID'],"erro":f"Não foi declarado o ponto de acoplamento inicial.","detalhamento":
+        keys = [x for x in self.df.keys() if x not in ['BASE','SEGCON','CRVCRG','UNTRAT','EQTRMT','EQRE']]
+        for key in keys:
+            if key == 'CTMT':
+                for elem in self.df[key].itertuples(index=False):
+                   if len(elem.PAC_INI) == 0 or not isinstance(elem.PAC_INI,str):
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento inicial.","detalhamento":
                                       f"Ponto de acoplamento inicial do alimentador não foi declarado."})
             elif key in ['UCMT','UCBT','UGBT','UGMT','PIP']:
-                for index,elem in self.df[key].iterrows():
-                   if len(elem['PAC']) == 0 or not isinstance(elem['PAC'],str):
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem['COD_ID'],"erro":f"Não foi declarado o ponto de acoplamento 1.","detalhamento":
-                                      f"Ponto de acoplamento declarado = {elem['PAC']}. Alimentador - {elem['CTMT']}."})
+                for elem in self.df[key].itertuples(index=False):
+                   if not isinstance(elem.PAC,str) or len(elem.PAC) == 0:
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento 1.","detalhamento":
+                                      f"Ponto de acoplamento declarado = {elem.PAC}. Alimentador - {elem.CTMT}."})
             else:
-                for index,elem in self.df[key].iterrows():
-                   if len(elem['PAC_1']) == 0 or not isinstance(elem['PAC_1'],str):
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem['COD_ID'],"erro":f"Não foi declarado o ponto de acoplamento 1.","detalhamento":
-                                      f"Ponto de acoplamento declarado = {elem['PAC_1']}.  Alimentador - {elem['CTMT']}."})
-                   elif len(elem['PAC_2']) == 0 or not isinstance(elem['PAC_2'],str): 
-                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem['COD_ID'],"erro":f"Não foi declarado o ponto de acoplamento 2.","detalhamento":
-                                      f"Ponto de acoplamento declarado = {elem['PAC_2']}.  Alimentador - {elem['CTMT']}."})
+                for elem in self.df[key].itertuples(index=False):
+                   if len(elem.PAC_1) == 0 or not isinstance(elem.PAC_1,str):
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento 1.","detalhamento":
+                                      f"Ponto de acoplamento declarado = {elem.PAC_1}.  Alimentador - {elem.CTMT}."})
+                   elif len(elem.PAC_2) == 0 or not isinstance(elem.PAC_2,str): 
+                        erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento 2.","detalhamento":
+                                      f"Ponto de acoplamento declarado = {elem.PAC_2}.  Alimentador - {elem.CTMT}."})
         return(pd.DataFrame(erros))
 
     def check_transformer(self,df_trafo):
@@ -1350,43 +1345,42 @@ class ValidadorBDGD:
         fas_p = ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN"]
         fas_s = ["A","B","C","AN","BN","CN","AB","BC","CA","ABN","BCN","CAN","ABC","ABCN"]
         fas_t = ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN","XX","0"]
-        for index,trafo in df_trafo.iterrows():
-            if trafo['LIG_FAS_P'] not in fas_p or trafo['LIG_FAS_S'] not in fas_s or trafo['LIG_FAS_T'] not in fas_t:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":trafo['COD_ID'],"erro":f"O código do faseamento (primário, secundário ou terciário) possui um valor não esperado. Valores esperados são ABCN, ABC, AB, BC, CA, AN, BN, CN, A, B, C, e para o caso do terciário também valores nulos.",
-                "detalhamento":f"Fase de primário:{trafo['LIG_FAS_P']},Fase de secundário:{trafo['LIG_FAS_S']},Fase de terciário:{trafo['LIG_FAS_T']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['TIP_TRAFO'] not in  ["M","B","T","MT","DA","DF"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo['COD_ID'],"erro":f"O código do tipo de transformador possui um valor não esperado. Valores esperados são M, B, MT, T, DF, DA.",
-                "detalhamento":f"O tipo de transformador declarado no campo 'TIP_TRAFO' foi: {trafo['TIP_TRAFO']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['MRT'] not in  [0,1]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo['COD_ID'],"erro":f"O campo para identificar transformador MRT possui valor não esperado. Valores esperados são 0,1.",
-                "detalhamento":f"O tipo de transformador declarado no campo 'TIP_TRAFO' foi: {trafo['TIP_TRAFO']} e no campo MRT: {trafo['MRT']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['ARE_LOC'] not in ['UB','NU']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo['COD_ID'],"erro":f"O campo para identificar a classe do transformador possui valor não esperado. Valores esperados são 'UB', 'NU'.",
-                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {trafo['ARE_LOC']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['POS'] not in ["PD", "OD", "T", "G", "CS", "CO", "A", "O"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo['COD_ID'],"erro":f"O campo para identificar o proprietário do transformador possui valor não esperado. Valores esperados são 'PD', 'OD', 'T', 'G', 'CS', 'CO', 'A', 'O'.",
-                "detalhamento":f"O campo 'POS' foi declarado como: {trafo['POS']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['PER_FER'] > trafo['PER_TOT']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo['COD_ID'],"erro":f"O campo da perda potência ferro é maior que o campo perda potência total. Valores esperados são abaixo da perda potência total.",
-                "detalhamento":f"O valor de perda total do trafo ('PER_TOT') é de: {trafo['PER_TOT']}, sendo menor que as perdas no ferro (PER_FER), de :{trafo['PER_FER']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['LIG_FAS_T'] not in ['AN','BN','CN','XX'] and trafo['LIG_FAS_T'] != None and trafo['LIG_FAS_T'] != "0": #o 0 entra pois no geoperdas ele vira None
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":trafo['COD_ID'],"erro":f"O código do faseamento do terciário possui valor não esperado. Valores esperados: AN, BN, CN.",
-                "detalhamento":f"O código de fase do terciário (LIG_FAS_T) é: {trafo['LIG_FAS_T']}. Alimentador: {trafo['CTMT']}"})
-            if trafo['TIP_TRAFO'] in ['M','MT','B','T'] and trafo['LIG_FAS_S'] in ["A","B","C","AB","BC","CA","ABC"] and trafo['TEN_LIN_SE'] < 2.3:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo['COD_ID'],"erro":f"O código do faseamento do secundário possui valor não esperado. A rede BT não possui neutro?",
-                "detalhamento":f"Tipo do transformador: {trafo['TIP_TRAFO']}, fase do primário (LIG_FAS_P):{trafo['LIG_FAS_P']}, fase do secundário (LIG_FAS_S):{trafo['LIG_FAS_S']}. Alimentador - {trafo['CTMT']} "})
+        for trafo in df_trafo.itertuples(index=False):
+            if trafo.LIG_FAS_P not in fas_p or trafo.LIG_FAS_S not in fas_s or trafo.LIG_FAS_T not in fas_t:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"O código do faseamento (primário, secundário ou terciário) possui um valor não esperado. Valores esperados são ABCN, ABC, AB, BC, CA, AN, BN, CN, A, B, C, e para o caso do terciário também valores nulos.",
+                "detalhamento":f"Fase de primário:{trafo.LIG_FAS_P},Fase de secundário:{trafo.LIG_FAS_S},Fase de terciário:{trafo.LIG_FAS_T}. Alimentador: {trafo.CTMT}"})
+            if trafo.TIP_TRAFO not in  ["M","B","T","MT","DA","DF"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo.COD_ID,"erro":f"O código do tipo de transformador possui um valor não esperado. Valores esperados são M, B, MT, T, DF, DA.",
+                "detalhamento":f"O tipo de transformador declarado no campo 'TIP_TRAFO' foi: {trafo.TIP_TRAFO}. Alimentador: {trafo.CTMT}"})
+            if trafo.MRT not in  [0,1]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo.COD_ID,"erro":f"O campo para identificar transformador MRT possui valor não esperado. Valores esperados são 0,1.",
+                "detalhamento":f"O tipo de transformador declarado no campo 'TIP_TRAFO' foi: {trafo.TIP_TRAFO} e no campo MRT: {trafo.MRT}. Alimentador: {trafo.CTMT}"})
+            if trafo.ARE_LOC not in ['UB','NU']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo.COD_ID,"erro":f"O campo para identificar a classe do transformador possui valor não esperado. Valores esperados são 'UB', 'NU'.",
+                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {trafo.ARE_LOC}. Alimentador: {trafo.CTMT}"})
+            if trafo.POS not in ["PD", "OD", "T", "G", "CS", "CO", "A", "O"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo.COD_ID,"erro":f"O campo para identificar o proprietário do transformador possui valor não esperado. Valores esperados são 'PD', 'OD', 'T', 'G', 'CS', 'CO', 'A', 'O'.",
+                "detalhamento":f"O campo 'POS' foi declarado como: {trafo.POS}. Alimentador: {trafo.CTMT}"})
+            if trafo.PER_FER > trafo.PER_TOT:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trafo.COD_ID,"erro":f"O campo da perda potência ferro é maior que o campo perda potência total. Valores esperados são abaixo da perda potência total.",
+                "detalhamento":f"O valor de perda total do trafo ('PER_TOT') é de: {trafo.PER_TOT}, sendo menor que as perdas no ferro (PER_FER), de :{trafo.PER_FER}. Alimentador: {trafo.CTMT}"})
+            if trafo.LIG_FAS_T not in ['AN','BN','CN','XX'] and trafo.LIG_FAS_T != None and trafo.LIG_FAS_T != "0": #o 0 entra pois no geoperdas ele vira None
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"O código do faseamento do terciário possui valor não esperado. Valores esperados: AN, BN, CN.",
+                "detalhamento":f"O código de fase do terciário (LIG_FAS_T) é: {trafo.LIG_FAS_T}. Alimentador: {trafo.CTMT}"})
+            if trafo.TIP_TRAFO in ['M','MT','B','T'] and trafo.LIG_FAS_S in ["A","B","C","AB","BC","CA","ABC"] and trafo.TEN_LIN_SE < 2.3:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"O código do faseamento do secundário possui valor não esperado. A rede BT não possui neutro?",
+                "detalhamento":f"Tipo do transformador: {trafo.TIP_TRAFO}, fase do primário (LIG_FAS_P):{trafo.LIG_FAS_P}, fase do secundário (LIG_FAS_S):{trafo.LIG_FAS_S}. Alimentador - {trafo.CTMT} "})
             try:
-                if ((convert_tpotaprt(trafo['POT_NOM']) > 100 and trafo['TIP_TRAFO'] != 'T') or (convert_tpotaprt(trafo['POT_NOM']) > 300 and trafo['TIP_TRAFO'] == 'T')) and trafo['TEN_LIN_SE'] < 2.3:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo['COD_ID'],"erro":f"A potência aparente nominal do transformador de distribuição possui valor não esperado. Valores esperados são inferiores a 300 para trifásicos e inferiores a 100 para monofásicos e bifásicos.",
-                    "detalhamento":f"Potência declarada (POT_NOM):{convert_tpotaprt(trafo['POT_NOM'])}, barras - PAC_1:{trafo['PAC_1']}/PAC_2:{trafo['PAC_2']}. Alimentador: {trafo['CTMT']}"})
-                if trafo['PER_TOT']/(convert_tpotaprt(trafo['POT_NOM'])*1000) > 0.05:
-                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo['COD_ID'],"erro":f"O campo da perda potência total possui valor não esperado. Valores esperados são abaixo de 5%.",
-                    "detalhamento":f"Perda total (PER_TOT) = {trafo['PER_TOT']} W, {(trafo['PER_TOT'] / (convert_tpotaprt(trafo['POT_NOM']) * 1000)) * 100:.2f}%. Alimentador - {trafo['CTMT']}"})
+                if ((convert_tpotaprt(trafo.POT_NOM) > 100 and trafo.TIP_TRAFO != 'T') or (convert_tpotaprt(trafo.POT_NOM) > 300 and trafo.TIP_TRAFO == 'T')) and trafo.TEN_LIN_SE < 2.3:
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"A potência aparente nominal do transformador de distribuição possui valor não esperado. Valores esperados são inferiores a 300 para trifásicos e inferiores a 100 para monofásicos e bifásicos.",
+                    "detalhamento":f"Potência declarada (POT_NOM):{convert_tpotaprt(trafo.POT_NOM)}, barras - PAC_1:{trafo.PAC_1}/PAC_2:{trafo.PAC_2}. Alimentador: {trafo.CTMT}"})
+                if trafo.PER_TOT/(convert_tpotaprt(trafo.POT_NOM)*1000) > 0.05:
+                    erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"O campo da perda potência total possui valor não esperado. Valores esperados são abaixo de 5%.",
+                    "detalhamento":f"Perda total (PER_TOT) = {trafo.PER_TOT} W, {(trafo.PER_TOT / (convert_tpotaprt(trafo.POT_NOM) * 1000)) * 100:.2f}%. Alimentador - {trafo.CTMT}"})
             except ValueError:
-                print(f'Valor de potência ou perdas declarado errado: {convert_tpotaprt(trafo['POT_NOM'])}kVA, {trafo['PER_TOT']}W')
+                print(f'Valor de potência ou perdas declarado errado: {convert_tpotaprt(trafo.POT_NOM)}kVA, {trafo.PER_TOT}W')
         return(pd.DataFrame(erros))
     
-    #TODO implementar os AVISOS
     def check_regulator(self,df_reg):
         """Faz a verificação dos parâmetros dos reguladores MT
         df_reg = dataframe da união do UNREMT e EQRE"""
@@ -1443,25 +1437,25 @@ class ValidadorBDGD:
         else:
             ucbt = 'PIP'
         
-        for index, load in self.df[ucbt].iterrows():
-            if load['FAS_CON'] in ['AC','ACN','CB','CBN','BA','BAN']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
-                "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load['FAS_CON']}. Alimentador: {load['CTMT']}"})
-            if load['FAS_CON'] not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
-                "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load['FAS_CON']}. Alimentador: {load['CTMT']}"})
-            if load['CTMT'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O alimentador não foi declarado.",
+        for load in self.df[ucbt].itertuples(index=False):
+            if load.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
+                "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
+            if load.FAS_CON not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
+                "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
+            if load.CTMT is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O alimentador não foi declarado.",
                 "detalhamento":f"O atributo CTMT da carga BT não foi declarado."})
-            if load['TIP_CC'] not in lista_crvcrg:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0% CG","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O código da curva de carga declarada na tabela CargaBT não apresenta correspondência com o declarado na tabela CrvCrgBT.",
-                "detalhamento":f"O atributo TIP_CC da carga BT declarada não tem correspondência na entidade CRVCRG da BDGD analisada. Alimentador: {load['CTMT']}"})
-            if load['UNI_TR_MT'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O transformador não foi declarado.",
-                "detalhamento":f"O atributo UNI_TR_MT da carga BT não foi declarado. Alimentador: {load['CTMT']}"})
-            if load_type == 'UCBT' and load['SEMRED'] not in [0,1]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load['COD_ID'],"erro":f"O campo para identificar presença de rede possui valor não esperado. Valores esperados são 0 e 1.",
-                "detalhamento":f"O atributo SEMRED da carga BT foi declarado como:{load['SEMRED']}. Alimentador: {load['CTMT']}"})
+            if load.TIP_CC not in lista_crvcrg:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0% CG","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código da curva de carga declarada na tabela CargaBT não apresenta correspondência com o declarado na tabela CrvCrgBT.",
+                "detalhamento":f"O atributo TIP_CC da carga BT declarada não tem correspondência na entidade CRVCRG da BDGD analisada. Alimentador: {load.CTMT}"})
+            if load.UNI_TR_MT is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O transformador não foi declarado.",
+                "detalhamento":f"O atributo UNI_TR_MT da carga BT não foi declarado. Alimentador: {load.CTMT}"})
+            if load_type == 'UCBT' and load.SEMRED not in [0,1]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O campo para identificar presença de rede possui valor não esperado. Valores esperados são 0 e 1.",
+                "detalhamento":f"O atributo SEMRED da carga BT foi declarado como:{load.SEMRED}. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
     
@@ -1604,10 +1598,10 @@ class ValidadorBDGD:
 
         grafo = nx.Graph()
 
-        for index, row in df_line_bt.iterrows():
-            grafo.add_node(row['PAC_1'])
-            grafo.add_node(row['PAC_2'])
-            grafo.add_edge(row['PAC_1'], row['PAC_2'])
+        for row in df_line_bt.itertuples(index=False):
+            grafo.add_node(row.PAC_1)
+            grafo.add_node(row.PAC_2)
+            grafo.add_edge(row.PAC_1, row.PAC_2)
 
         conectados = list(nx.connected_components(grafo))
 
@@ -1792,37 +1786,6 @@ class ValidadorBDGD:
         else:
             return(anterior)
         
-    # def exportar_erros_excel(self,df: pd.DataFrame, output_folder: str, feeder: Optional[str] = ""):
-    #     """criação do arquivo de erros em formato xlsx
-    #     df = dataframe consolidado dos erros encontrados na verificação
-    #     output_folder = pasta de saída"""
-    #     path = os.path.join(output_folder, f'{feeder}_etapa17_{self.cod_base}.xlsx')
-        
-    #     with pd.ExcelWriter(path, engine="xlsxwriter") as writer:
-    #         df.to_excel(writer, index=False, sheet_name="Erros")
-
-    #         workbook  = writer.book
-    #         worksheet = writer.sheets["Erros"]
-
-    #         # Ajuste de largura das colunas (ajuste conforme necessário)
-    #         worksheet.set_column("A:A", 12)  # COD_BASE
-    #         worksheet.set_column("B:B", 10)  # Erro máx
-    #         worksheet.set_column("C:C", 12)  # Tabela
-    #         worksheet.set_column("D:D", 15)  # Código
-    #         worksheet.set_column("E:E", 120)  # erro (texto descritivo)
-    #         worksheet.set_column("F:F", 120)  # detalhamento (texto descritivo)
-
-    #         # Formatação do cabeçalho
-    #         header_format = workbook.add_format({
-    #             "bold": True,
-    #             "bg_color": "#D0D0D0",
-    #             "border": 1
-    #         })
-
-    #         for col_num, value in enumerate(df.columns.values):
-    #             worksheet.write(0, col_num, value, header_format)
-
-    #     print(f"✅ Arquivo Excel exportado com sucesso: {path}")
 
     def exportar_erros_excel(self, df: pd.DataFrame, output_folder: str, feeder: Optional[str] = ""):
         """Criação do arquivo de erros em formato xlsx
@@ -1881,3 +1844,38 @@ class ValidadorBDGD:
                 worksheet2.write(0, col_num, value, header_format)
 
         print(f"✅ Arquivo Excel exportado com sucesso: {path}")
+
+    def exportar_scan_excel(self, df: pd.DataFrame, output_folder: str, feeder: Optional[str] = ""):
+        """Criação do arquivo de erros em formato xlsx para a pré-validação da BDGD
+        df = dataframe consolidado dos erros encontrados na verificação
+        output_folder = pasta de saída
+        """
+        path = os.path.join(output_folder, f'{feeder}_scan_{self.cod_base}.xlsx')
+        
+        with pd.ExcelWriter(path, engine="xlsxwriter") as writer:
+
+            # === ABA 1: LISTA COMPLETA DE ERROS ===
+            df.to_excel(writer, index=False, sheet_name="Erros")
+
+            workbook  = writer.book
+            worksheet = writer.sheets["Erros"]
+
+            # Ajuste de largura das colunas
+            worksheet.set_column("A:A", 12)   # COD_BASE
+            worksheet.set_column("B:B", 10)   # Erro máx
+            worksheet.set_column("C:C", 12)   # Tabela
+            worksheet.set_column("D:D", 15)   # Código
+            worksheet.set_column("E:E", 120)  # erro
+            worksheet.set_column("F:F", 120)  # detalhamento
+
+            # Formatação cabeçalho
+            header_format = workbook.add_format({
+                "bold": True,
+                "bg_color": "#D0D0D0",
+                "border": 1
+            })
+
+            for col_num, value in enumerate(df.columns.values):
+                worksheet.write(0, col_num, value, header_format)
+            
+        print(f"✅ Arquivo Excel de Scan pré validação exportado com sucesso: {path}")

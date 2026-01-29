@@ -70,6 +70,8 @@
                     "PERD_A4A3A"  
                 ],
                 "type": {
+                    "COD_ID":"string",
+                    "PAC_INI":"string",
                     "TEN_NOM": "[0,79]",
                     "TEN_OPE": "float"
                 },
@@ -86,7 +88,8 @@
                 "type": {
                     "R1": "float",
                     "X1": "float",
-                    "R_REGUL": "string"
+                    "R_REGUL": "string",
+                    "COD_ID":"string"
                 },
                 "ignore_geometry": "False"
             },
@@ -97,6 +100,8 @@
                     "GRU_TEN"
                 ],
                 "type": {
+                    "COD_ID":"string",
+                    "TIP_DIA":["DU","DO","SA"]
                 },
                 "ignore_geometry": "False"
             },
@@ -113,6 +118,7 @@
                     "ARE_LOC"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TIP_CND": "category",
                     "COMP": "float"
                 },
@@ -128,6 +134,7 @@
                     "CTMT"
                 ],
                 "type": {
+                    "COD_ID":"string"
                 },
                 "ignore_geometry": "False"
             },
@@ -157,9 +164,7 @@
                     "COD_ID":"string",
                     "TIP_TRAFO": ["T","DF"],
                     "PER_FER":"float",
-                    "PER_TOT":"float",
-                    "ALOC_PERD": ["0","A1","A2","A3"],
-                    "POS": ["PD", "OD", "T", "G", "CS", "CO", "A", "O"]
+                    "PER_TOT":"float"
                 },
                 "ignore_geometry": "False"
             },
@@ -182,12 +187,10 @@
                     "POS"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TAP": "float",
                     "PER_FER": "float",
                     "PER_TOT": "float",
-                    "FAS_CON_P": ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN"],
-                    "FAS_CON_S": ["A","B","C","AN","BN","CN","AB","BC","CA","ABN","BCN","CAN","ABC","ABCN"],
-                    "FAS_CON_T": ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN","XX","0"],
                     "TEN_LIN_SE": "float"
                 },
                 "ignore_geometry": "False"
@@ -208,6 +211,9 @@
                     "TEN_PRI": "[0,109]",
                     "TEN_SEC": "[0,109]",
                     "TEN_TER": "[0,109]",
+                    "LIG_FAS_P": ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN"],
+                    "LIG_FAS_S": ["A","B","C","AN","BN","CN","AB","BC","CA","ABN","BCN","CAN","ABC","ABCN"],
+                    "LIG_FAS_T": ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN","XX","0"],
                     "POT_NOM": "[0,106]"
                 },
                 "ignore_geometry": "False"
@@ -224,7 +230,8 @@
                     "SIT_ATIV"
                 ],
                 "type": {
-                    "TIP_REGU": ["M","T","DA","DF"]
+                    "TIP_REGU": ["M","T","DA","DF"],
+                    "COD_ID":"string"
                 },
                 "ignore_geometry": "False"
             },
@@ -264,6 +271,8 @@
                     "POS"
                 ],
                 "type": {
+                    "COD_ID":"string",
+                    "COMP":"float",
                     "TIP_CND":"category"
                 },
                 "ignore_geometry": "False"
@@ -282,6 +291,7 @@
                     "POS"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TIP_CND":"category",
                     "COMP":"float"
                 },
@@ -310,6 +320,7 @@
                     "CTMT"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TEN_FORN":"[23,79]",
                     "TIP_CC":"category"
                 },
@@ -340,6 +351,7 @@
                     "SEMRED"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TEN_FORN":"[0,22]",
                     "TIP_CC":"category"
                 },
@@ -368,6 +380,7 @@
                     "CTMT"
                 ],
                 "type": {
+                    "COD_ID":"string",
                     "TEN_FORN":"[0,109]",
                     "TIP_CC":"category"
                 },
@@ -397,6 +410,7 @@
                     "ENE_12"
                 ],
                 "type":{
+                    "CEG_GD":"string",
                     "POT_INST":"float",
                     "TEN_CON":"[0,109]"
                 },
@@ -425,6 +439,7 @@
                     "ENE_12"
                 ],
                 "type":{
+                    "CEG_GD":"string",
                     "POT_INST":"float",
                     "TEN_CON":"[0,109]"
                 },
