@@ -252,8 +252,7 @@
                     "PER_FER":"float",
                     "PER_TOT":"float",
                     "XHL":"float",
-                    "TEN_REG":"float",
-                    "REL_TP": "int"
+                    "TEN_REG":"float"
                 },
                 "ignore_geometry": "False"
             },

@@ -755,11 +755,11 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                               df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
 
         grafo = nx.Graph()
-        for index,row in df_total.iterrows():
+        for row in df_total.itertuples(index=False):
             try:
-                grafo.add_node(row['PAC_1'])
-                grafo.add_node(row['PAC_2'])
-                grafo.add_edge(row['PAC_1'], row['PAC_2'])
+                grafo.add_node(row.PAC_1)
+                grafo.add_node(row.PAC_2)
+                grafo.add_edge(row.PAC_1, row.PAC_2)
             except ValueError:
                 print("valor do tipo none")
         try:

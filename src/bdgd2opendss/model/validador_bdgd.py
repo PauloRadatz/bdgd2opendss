@@ -359,8 +359,6 @@ class ValidadorBDGD:
                                 left_column='UNI_TR_MT', right_column='COD_ID') #dataframe de todos os trafos
         df_reg = inner_entities_tables(self.df['EQRE'], self.df['UNREMT'],
                                 left_column='UN_RE', right_column='COD_ID') #dataframe com todos os reguladores
-        
-        #dfe1 = ValidadorBDGD.scan_bdgd(self)
 
         dfene = ValidadorBDGD.check_ctmt_energy(self)
         dfe1 = ValidadorBDGD.check_pacs(self)
@@ -629,6 +627,7 @@ class ValidadorBDGD:
         lista_crvcrg = []
 
         gdf_ = self.df
+        self.cod_base = str(self.df["BASE"]["DIST"].tolist()[0])+str(self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[2]+self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[1])
         
         for table_name, table in self.tables.items():
             gdf = gdf_[table_name].reset_index(drop=True)
@@ -647,7 +646,7 @@ class ValidadorBDGD:
                 if isinstance(table.data_types[column],list): 
                     for index,value in enumerate(gdf[column]):
                         if value not in table.data_types[column] or pd.isnull(value) or value == "" or value == None:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. Tipo de valores esperados: {table.data_types[column]}"})
                         else: 
                             continue    
@@ -657,7 +656,7 @@ class ValidadorBDGD:
                         if isinstance(value,int):
                             continue
                         else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número inteiro"})
                 
                 elif table.data_types[column] == 'float':
@@ -665,7 +664,7 @@ class ValidadorBDGD:
                         if isinstance(value,float):
                             continue
                         else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":table_name, "Código":gdf.loc[index,table.columns[0]],
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":table_name, "Código":gdf.loc[index,table.columns[0]], "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número."})
                 
                 elif table.data_types[column] == 'string':
@@ -673,29 +672,29 @@ class ValidadorBDGD:
                         if isinstance(value,str) and value != "":
                             continue
                         else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}","Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser uma string"})
                 
                 elif table.data_types[column] == "category":
                     if column == 'CTMT':
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_ctmt:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":'AVISO!', "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":'0%', "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo CTMT possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de CTMTs(alimentadores) desta BDGD"})
                     if column == 'TIP_CND':
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_segcon:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo TIP_CND possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de SEGCONs(linecodes) desta BDGD"})
                     if column == 'UNI_TR_MT':
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_untrmt:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo UNI_TR_MT possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de UNTRMTs(transformadores) desta BDGD"})
                     if column == 'TIP_CC':
                         for index,value in enumerate(gdf[column]):
                             if value not in lista_crvcrg:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo TIP_CC possui valor não esperado:{gdf.loc[index,column]}. Não está dentro da lista de CRVCRG(curvas de carga) desta BDGD"})
                     else:
                         continue
@@ -705,11 +704,14 @@ class ValidadorBDGD:
                     lista = list(range(inicio,fim))
                     for index,value in enumerate(gdf[column]):
                         if int(value) not in lista:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}",
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor fora dos limites:{gdf.loc[index,column]}. Os valores esperados devem estar dentro do intervalo: {table.data_types[column]}"})
                             continue
+        df_erros = pd.DataFrame(erros)
+        ValidadorBDGD.exportar_scan_excel(self,df=df_erros,output_folder=self.output_folder,feeder=self.feeders)
         print('passou pelo scan_bdgd')
-        return(pd.DataFrame(erros))  
+        return(df_erros)  
+    
     def check_model(self): #TODO fazer isso só futuramente      
         ...
     def phase_error(self,merged_dfs,tipo): 
@@ -1865,8 +1867,9 @@ class ValidadorBDGD:
             worksheet.set_column("B:B", 10)   # Erro máx
             worksheet.set_column("C:C", 12)   # Tabela
             worksheet.set_column("D:D", 15)   # Código
-            worksheet.set_column("E:E", 120)  # erro
-            worksheet.set_column("F:F", 120)  # detalhamento
+            worksheet.set_column("E:E", 10)   # Índice
+            worksheet.set_column("F:F", 120)  # erro
+            worksheet.set_column("G:G", 120)  # detalhamento
 
             # Formatação cabeçalho
             header_format = workbook.add_format({
