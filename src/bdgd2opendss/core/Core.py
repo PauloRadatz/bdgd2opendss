@@ -116,7 +116,9 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
     if all_feeders:
         validation = ValidadorBDGD(df=geodataframe,output_folder=output_folder,tables=tables)
         
+        validation.scan_bdgd()
         validation.run_validation()
+
     else:
         gdf = copy.deepcopy(geodataframe)
         lst_entity = ['BASE','UNTRAT','SEGCON','CRVCRG','EQTRMT','EQRE']
@@ -132,6 +134,9 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
     
             validation = ValidadorBDGD(df=gdf,output_folder=output_folder,tables=tables,feeders=feeder)
             
+            validation.scan_bdgd()
             validation.run_validation()
+
+
 
             
