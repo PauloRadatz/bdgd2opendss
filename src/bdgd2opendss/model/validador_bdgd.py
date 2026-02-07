@@ -630,7 +630,10 @@ class ValidadorBDGD:
         self.cod_base = str(self.df["BASE"]["DIST"].tolist()[0])+str(self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[2]+self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[1])
         
         for table_name, table in self.tables.items():
-            gdf = gdf_[table_name].reset_index(drop=True)
+            try:
+                gdf = gdf_[table_name].reset_index(drop=True)
+            except KeyError:
+                gdf = gdf_[f'{table_name[:-4]}']
             if gdf.empty:
                 continue
             elif table_name == 'CTMT':

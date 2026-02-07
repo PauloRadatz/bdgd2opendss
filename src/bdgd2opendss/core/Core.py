@@ -8,7 +8,7 @@ from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.model.Case import Case
 from bdgd2opendss.model.validador_bdgd import ValidadorBDGD #etapa17
 from bdgd2opendss.core.Settings import settings
-from bdgd2opendss.config.paths import bdgd2dss_json, bdgd2dss_private_json
+from bdgd2opendss.config.paths import bdgd2dss_json, bdgd2dss_private_json, bdgd2dss_error_json, bdgd2dss_error_private_json
 
 def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
     """
@@ -99,10 +99,10 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
 
     if settings.TipoBDGD:
         #json_file_name = bdgd2dss_private_json
-        json_file_name = r"C:/Users/mozar/OneDrive/Documentos/GitHub/bdgd2opendss/src/bdgd2opendss/config/bdgd2dss_error_private.json"
+        json_file_name = bdgd2dss_error_private_json
     else:
         #json_file_name = bdgd2dss_json
-        json_file_name = r"C:/Users/mozar/OneDrive/Documentos/GitHub/bdgd2opendss/src/bdgd2opendss/config/bdgd2dss_error.json"
+        json_file_name = bdgd2dss_error_json
         bdgd_pub = ['UCBT_tab','UCMT_tab','UGBT_tab','UGMT_tab']
 
     json_obj = JsonData(json_file_name)
