@@ -1,7 +1,7 @@
 from typing import Optional, Union
 from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.core.Settings import settings
-from bdgd2opendss.core.Utils import adapt_regulators_names, inner_entities_tables
+from bdgd2opendss.core.Utils import adapt_regulators_names, inner_entities_tables,create_output_folder
 from bdgd2opendss.model.Converter import convert_tpotaprt,convert_tten
 import pandas as pd
 import numpy as np
@@ -343,11 +343,16 @@ class ValidadorBDGD:
     def __init__(self,df,tables,output_folder:Optional[str] = None,feeders:Optional[str] = ""):
         self.df = df
         self.feeders = feeders
-        self.output_folder = output_folder
         self.cod_base: str
         self.isolados: list = []
         self.voltage_dict: dict
         self.tables = tables
+        if output_folder:
+            self.output_folder = output_folder
+        else:
+            if not os.path.exists("dss_validation"):
+                os.mkdir("dss_validation")
+            self.output_folder = os.path.join(os.getcwd(), f'dss_validation')
     
     def run_validation(self,feeder:Optional[str]=""):
         """Começa a rodar a validação da BDGD escolhida. Simula a Etapa 17 do proggeoperdas"""
@@ -732,12 +737,12 @@ class ValidadorBDGD:
         if tipo == 'transformer':
             #CORRIGIR PARA AVALIAR O SECUNDÁRIO E PRIMÁRIO
             regras = {
-            "M": ["AN", "BN", "CN","AB","BC","CA","A","B","C"],
-            "MT": ["A","B","C","AB","BC","CA","AN", "BN", "CN"],
+            "M": ["AN", "BN", "CN","AX","BX","CX","AB","BC","CA","A","B","C"],
+            "MT": ["A","B","C","AB","BC","CA","AN", "BN", "CN","AX","BX","CX"],
             "B": ["AB","BC","CA"],
             "T": ["ABC", "ABCN"],
-            "DA": ["AN", "BN", "CN","AB","BC","CA","A","B","C"],
-            "DF": ["AN", "BN", "CN","AB","BC","CA","A","B","C"]
+            "DA": ["AN", "BN", "CN","AX","BX","CX","AB","BC","CA","A","B","C"],
+            "DF": ["AN", "BN", "CN","AX","BX","CX","AB","BC","CA","A","B","C"]
             }
             tip = 'TIP_TRAFO'
             fas_s = 'LIG_FAS_S'
@@ -770,10 +775,10 @@ class ValidadorBDGD:
 
         else: # 1 - M, 2 - DA, 3 - T, 4 - DF
             regras = {
-            "M": ["AN","BN","CN","A","B","C"],
+            "M": ["AN","BN","CN","AX","BX","CX","A","B","C"],
             "DA": ["AB", "BC", "CA","AN","BN","CN","A","B","C"],
             "T": ["ABC", "ABCN"],
-            "DF": ["AB", "BC", "CA","AN","BN","CN","A","B","C"]
+            "DF": ["AB", "BC", "CA","AN","BN","CN","AX","BX","CX","A","B","C"]
             }
             tip = 'TIP_REGU'
             fas_s = 'LIG_FAS_S'
@@ -840,6 +845,9 @@ class ValidadorBDGD:
         erros = []
         
         df_filtrado = merged_dfs[((merged_dfs['TIP_TRAFO'] == 'DF') | (merged_dfs['TIP_TRAFO'] == 'DA')) & merged_dfs['BANC'] == 1] #fasedeltafechado ou aberto problematico
+        cols = ['LIG_FAS_P','LIG_FAS_S','LIG_FAS_T'] #TODO fzr nas outras verificações de faseamento
+        mapa = {'AX':'AN','BX':'BN','CX':'CN'}
+        df_filtrado[cols] = df_filtrado[cols].replace(mapa)
         for row in df_filtrado.itertuples(index=False):
             df = df_filtrado[df_filtrado['COD_ID'] == row.COD_ID]
             lista = []
@@ -872,8 +880,8 @@ class ValidadorBDGD:
                 df_erro = pd.concat([df_erro,df_y],ignore_index=True)
         df_erro = df_erro.drop_duplicates(keep='first')#remove linhas duplicadas
         for index,elem in df_erro.iterrows():
-            erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":row['UN_RE'],"erro":f"Faseamento interno do regulador inconsistente.",
-            "detalhamento":f"Tipo do regulador - {row['TIP_TRAFO']}. FAS_CON_P:{row['LIG_FAS_P']},FAS_CON_S:{row['LIG_FAS_S']}. Alimentador - {row['CTMT']}"})
+            erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":elem['UN_RE'],"erro":f"Faseamento interno do regulador inconsistente.",
+            "detalhamento":f"Tipo do regulador - {elem['TIP_TRAFO']}. FAS_CON_P:{elem['LIG_FAS_P']},FAS_CON_S:{elem['LIG_FAS_S']}. Alimentador - {elem['CTMT']}"})
         return(pd.DataFrame(erros))
 
     def bancos_regul(self,dfs):
@@ -1347,9 +1355,9 @@ class ValidadorBDGD:
         """Faz a verificação dos parâmetros do transformador MTMTMTBT
         df_trafo = dataframe da união do UNTRMT e EQTRMT"""
         erros = []
-        fas_p = ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN"]
-        fas_s = ["A","B","C","AN","BN","CN","AB","BC","CA","ABN","BCN","CAN","ABC","ABCN"]
-        fas_t = ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN","XX","0"]
+        fas_p = ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","ABC","ABCN"]
+        fas_s = ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","ABN","BCN","CAN","ABC","ABCN"]
+        fas_t = ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","ABC","ABCN","XX","0"]
         for trafo in df_trafo.itertuples(index=False):
             if trafo.LIG_FAS_P not in fas_p or trafo.LIG_FAS_S not in fas_s or trafo.LIG_FAS_T not in fas_t:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":trafo.COD_ID,"erro":f"O código do faseamento (primário, secundário ou terciário) possui um valor não esperado. Valores esperados são ABCN, ABC, AB, BC, CA, AN, BN, CN, A, B, C, e para o caso do terciário também valores nulos.",
@@ -1390,21 +1398,21 @@ class ValidadorBDGD:
         """Faz a verificação dos parâmetros dos reguladores MT
         df_reg = dataframe da união do UNREMT e EQRE"""
         erros = []
-        fas_con = ["A","B","C","AN","BN","CN","AB","BC","CA","ABC","ABCN"]
-        for index,reg in df_reg.iterrows():
-            if reg['LIG_FAS_P'] not in fas_con or reg['LIG_FAS_S'] not in fas_con:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":reg['COD_ID'],"erro":f"O código do faseamento (primário ou secundário) possui um valor não esperado. Valores esperados são ABCN, ABC, AB, BC, CA, AN, BN, CN, A, B, C.",
-                "detalhamento":f"Fase de primário:{reg['LIG_FAS_P']},Fase de secundário:{reg['LIG_FAS_S']}. Alimentador: {reg['CTMT']}"})
-            if reg['PER_TOT'] < reg['PER_FER']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":reg['COD_ID'],"erro":f"O campo da perda potência ferro é maior que o campo perda potência total. Valores esperados são abaixo da perda potência total.",
-                "detalhamento":f"O valor das perdas totais no regulador é de:{reg['PER_TOT']},já o valor das perdas no ferro é de:{reg['PER_FER']}. Alimentador: {reg['CTMT']}"})
-            if ((convert_tpotaprt(reg['POT_NOM']) < 1000) and reg['TIP_REGU'] != 'T') or ((convert_tpotaprt(reg['POT_NOM']) < 3000) and reg['TIP_REGU'] == 'T'):
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQRE","Código":reg['COD_ID'],"erro":f"A potência aparente nominal do regulador possui um valor não esperado. Valores esperados são superiores a 1000kVA para reguladores monofásicos e 3000kVA para reguladores trifásicos.",
-                "detalhamento":f"O valor da potência nominal do regulador é (POT_NOM):{convert_tpotaprt(reg['POT_NOM'])}, tipo do regulador (TIP_REGU):{reg['TIP_REGU']}. Alimentador: {reg['CTMT']}"})
-            if reg['PER_TOT'] > 7000:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQRE","Código":reg['COD_ID'],"erro":f"O campo da perda de potência total possui valor não esperado. Valores esperados são abaixo de 7kW.",
-                "detalhamento":f"Perda total (PER_TOT):{reg['PER_TOT']} W. Alimentador: {reg['CTMT']}"})
-        
+        fas_con = ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","ABC","ABCN"]
+        for reg in df_reg.itertuples():
+            if reg.LIG_FAS_P not in fas_con or reg.LIG_FAS_S not in fas_con:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"O código do faseamento (primário ou secundário) possui um valor não esperado. Valores esperados são ABCN, ABC, AB, BC, CA, AN, BN, CN, A, B, C.",
+                "detalhamento":f"Fase de primário:{reg.LIG_FAS_P},Fase de secundário:{reg.LIG_FAS_S}. Alimentador: {reg.CTMT}"})
+            if reg.PER_TOT < reg.PER_FER:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"O campo da perda potência ferro é maior que o campo perda potência total. Valores esperados são abaixo da perda potência total.",
+                "detalhamento":f"O valor das perdas totais no regulador é de:{reg.PER_TOT},já o valor das perdas no ferro é de:{reg.PER_FER}. Alimentador: {reg.CTMT}"})
+            if ((convert_tpotaprt(reg.POT_NOM) < 1000) and reg.TIP_REGU != 'T') or ((convert_tpotaprt(reg.POT_NOM) < 3000) and reg.TIP_REGU == 'T'):
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"A potência aparente nominal do regulador possui um valor não esperado. Valores esperados são superiores a 1000kVA para reguladores monofásicos e 3000kVA para reguladores trifásicos.",
+                "detalhamento":f"O valor da potência nominal do regulador é (POT_NOM):{convert_tpotaprt(reg.POT_NOM)}, tipo do regulador (TIP_REGU):{reg.TIP_REGU}. Alimentador: {reg.CTMT}"})
+            if reg.PER_TOT > 7000:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"O campo da perda de potência total possui valor não esperado. Valores esperados são abaixo de 7kW.",
+                "detalhamento":f"Perda total (PER_TOT):{reg.PER_TOT} W. Alimentador: {reg.CTMT}"})
+
         return(pd.DataFrame(erros))
     
     def check_ucmt(self):
@@ -1412,22 +1420,22 @@ class ValidadorBDGD:
         erros = []
         lista_crvcrg = self.df['CRVCRG']['COD_ID'].tolist()
 
-        for index, load in self.df['UCMT'].iterrows():
-            if load['FAS_CON'] in ['AC','ACN','CB','CBN','BA','BAN']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load['COD_ID'],"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
-                "detalhamento":f"A fase da carga MT (FAS_CON) declarada foi:{load['FAS_CON']}. Alimentador: {load['CTMT']}"})
-            if load['FAS_CON'] not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load['COD_ID'],"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
-                "detalhamento":f"A fase da carga MT (FAS_CON) declarada foi:{load['FAS_CON']}. Alimentador: {load['CTMT']}"})
-            if load['SEMRED'] not in [0,1]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load['COD_ID'],"erro":f"O campo para identificar presença de rede possui valor não esperado. Valores esperados são 0 e 1.",
-                "detalhamento":f"O atributo SEMRED da carga MT foi declarado como:{load['SEMRED']}. Alimentador: {load['CTMT']}"})
-            if load['CTMT'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load['COD_ID'],"erro":f"O alimentador não foi declarado.",
-                "detalhamento":f"O atributo CTMT da carga MT não foi declarado ({load['SEMRED']})."})
-            if load['TIP_CC'] not in lista_crvcrg:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0% CG","Tabela":"UCMT","Código":load['COD_ID'],"erro":f"O código da curva de carga declarada na tabela CargaMT não apresenta correspondência com o declarado na tabela CrvCrgMT.",
-                "detalhamento":f"O atributo TIP_CC da carga MT declarada não tem correspondência na entidade CRVCRG da BDGD analisada. Alimentador: {load['CTMT']}"})
+        for load in self.df['UCMT'].itertuples():
+            if load.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
+                "detalhamento":f"A fase da carga MT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
+            if load.FAS_CON not in ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load.COD_ID,"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
+                "detalhamento":f"A fase da carga MT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
+            if load.SEMRED not in [0,1]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load.COD_ID,"erro":f"O campo para identificar presença de rede possui valor não esperado. Valores esperados são 0 e 1.",
+                "detalhamento":f"O atributo SEMRED da carga MT foi declarado como:{load.SEMRED}. Alimentador: {load.CTMT}"})
+            if load.CTMT is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UCMT","Código":load.COD_ID,"erro":f"O alimentador não foi declarado.",
+                "detalhamento":f"O atributo CTMT da carga MT não foi declarado ({load.SEMRED})."})
+            if load.TIP_CC not in lista_crvcrg:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0% CG","Tabela":"UCMT","Código":load.COD_ID,"erro":f"O código da curva de carga declarada na tabela CargaMT não apresenta correspondência com o declarado na tabela CrvCrgMT.",
+                "detalhamento":f"O atributo TIP_CC da carga MT declarada não tem correspondência na entidade CRVCRG da BDGD analisada. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
     
@@ -1446,7 +1454,7 @@ class ValidadorBDGD:
             if load.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
                 "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
-            if load.FAS_CON not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
+            if load.FAS_CON not in ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
                 "detalhamento":f"A fase da carga BT (FAS_CON) declarada foi:{load.FAS_CON}. Alimentador: {load.CTMT}"})
             if load.CTMT is None:
@@ -1481,12 +1489,12 @@ class ValidadorBDGD:
         if not dfy.empty:
             dfy["colunas_acima_100"] = (dfy[colunas] > k*1000).apply(lambda row: list(row[row].index), axis=1)
 
-        for i,load in dfx.iterrows():
-            erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":load_type,"Código":load['COD_ID'],"erro":f"Não houve consumo da carga em nenhum mês?",
-            "detalhamento":f"A soma das energias mensais (ENE_01 a ENE_12) é zero. Alimentador: {load['CTMT']}"})
-        for i,load in dfy.iterrows():
-            erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":load_type,"Código":load['COD_ID'],"erro":f"Consumo da carga maior do que 100 MWh/mês?",
-            "detalhamento":f"Coluna(s): {load["colunas_acima_100"]} com valor acima de {k} MWh. Alimentador: {load['CTMT']}"})
+        for load in dfx.itertuples():
+            erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":load_type,"Código":load.COD_ID,"erro":f"Não houve consumo da carga em nenhum mês?",
+            "detalhamento":f"A soma das energias mensais (ENE_01 a ENE_12) é zero. Alimentador: {load.CTMT}"})
+        for load in dfy.itertuples():
+            erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":load_type,"Código":load.COD_ID,"erro":f"Consumo da carga maior do que 100 MWh/mês?",
+            "detalhamento":f"Coluna(s): {load.colunas_acima_100} com valor acima de {k} MWh. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
     
@@ -1547,33 +1555,32 @@ class ValidadorBDGD:
             comp_max = 80
         else:
             comp_max = 30
-
         erros = []
-        for index,line in self.df[line_type].iterrows():
-            if line['FAS_CON'] in ['AC','ACN','CB','CBN','BA','BAN']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
-                "detalhamento":f"As fases da linha {line_type}:{line['COD_ID']} (FAS_CON) declaradas foram:{line['FAS_CON']}. Alimentador: {line['CTMT']}"})
-            elif line['FAS_CON'] not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
-                "detalhamento":f"As fases da linha {line_type}:{line['COD_ID']} (FAS_CON) declaradas foram:{line['FAS_CON']}. Alimentador: {line['CTMT']}"})
-            if line['COMP'] == 0 or line['COMP'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0.5%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O comprimento do {line_type} foi declarado igual a 0 ou não foi declarado.",
-                "detalhamento":f"O comprimento (COMP) da linha {line_type}:{line['COD_ID']} declarado foi:{line['COMP']}. Alimentador: {line['CTMT']}"})
-            elif line['COMP'] > comp_max:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O comprimento do {line_type} possui valor atípico. Valores típicos abaixo de {comp_max} m.",
-                "detalhamento":f"O comprimento (COMP) da linha {line_type}:{line['COD_ID']} declarado foi:{line['COMP']}, sendo acima do valor máximo estabelecido. Alimentador: {line['CTMT']}"})
-            if line['TIP_CND'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O condutor utilizado no {line_type} não foi declarado.",
-                "detalhamento":f"O parâmetro TIP_CND da tabela {line_type} não foi declarado. Alimentador: {line['CTMT']}"})
-            elif line['TIP_CND'] not in self.df['SEGCON']['COD_ID'].tolist():
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O código do condutor declarado na tabela {line_type} não apresenta correspondência com o declarado na tabela CodCondutor",
-                "detalhamento":f"O parâmetro TIP_CND do {line_type} ({line['TIP_CND']}) não faz parte dos tipos de condutores declarados dessa BDGD (SEGCON). Alimentador: {line['CTMT']}"})
-            if line['CTMT'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"2%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"O alimentador não foi declarado.",
+        for line in self.df[line_type].itertuples():
+            if line.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
+                "detalhamento":f"As fases da linha {line_type}:{line.COD_ID} (FAS_CON) declaradas foram:{line.FAS_CON}. Alimentador: {line.CTMT}"})
+            elif line.FAS_CON not in ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
+                "detalhamento":f"As fases da linha {line_type}:{line.COD_ID} (FAS_CON) declaradas foram:{line.FAS_CON}. Alimentador: {line.CTMT}"})
+            if line.COMP == 0 or line.COMP is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0.5%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O comprimento do {line_type} foi declarado igual a 0 ou não foi declarado.",
+                "detalhamento":f"O comprimento (COMP) da linha {line_type}:{line.COD_ID} declarado foi:{line.COMP}. Alimentador: {line.CTMT}"})
+            elif line.COMP > comp_max:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":line_type,"Código":line.COD_ID,"erro":f"O comprimento do {line_type} possui valor atípico. Valores típicos abaixo de {comp_max} m.",
+                "detalhamento":f"O comprimento (COMP) da linha {line_type}:{line.COD_ID} declarado foi:{line.COMP}, sendo acima do valor máximo estabelecido. Alimentador: {line.CTMT}"})
+            if line.TIP_CND is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O condutor utilizado no {line_type} não foi declarado.",
+                "detalhamento":f"O parâmetro TIP_CND da tabela {line_type} não foi declarado. Alimentador: {line.CTMT}"})
+            elif line.TIP_CND not in self.df['SEGCON']['COD_ID'].tolist():
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O código do condutor declarado na tabela {line_type} não apresenta correspondência com o declarado na tabela CodCondutor",
+                "detalhamento":f"O parâmetro TIP_CND do {line_type} ({line.TIP_CND}) não faz parte dos tipos de condutores declarados dessa BDGD (SEGCON). Alimentador: {line.CTMT}"})
+            if line.CTMT is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"2%","Tabela":line_type,"Código":line.COD_ID,"erro":f"O alimentador não foi declarado.",
                 "detalhamento":f"O atributo CTMT do {line_type} não foi declarado."})
-            if line['ARE_LOC'] not in ['UB','NU']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line['COD_ID'],"erro":f"A classificação do segmento possui um valor não esperado. Valores esperados são UB e NU.",
-                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {line['ARE_LOC']}. Alimentador: {line['CTMT']}"}) 
+            if line.ARE_LOC not in ['UB','NU']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"A classificação do segmento possui um valor não esperado. Valores esperados são UB e NU.",
+                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {line.ARE_LOC}. Alimentador: {line.CTMT}"}) 
         
         return(pd.DataFrame(erros))
     
@@ -1581,16 +1588,16 @@ class ValidadorBDGD:
         """Faz a verificação dos parâmetros elétricos das chaves de MT e BT da BDGD.
         chave = deve ser UNSEMT(chaves de média tensão) ou UNSEBT (chaves de baixa tensão)"""
         erros = []
-        for index,unse in self.df[chave].iterrows():
-            if unse['FAS_CON'] in ['AC','ACN','CB','CBN','BA','BAN']:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":chave,"Código":unse['COD_ID'],"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
-                "detalhamento":f"As fases da chave de média/baixa tensão (FAS_CON) declaradas foram:{unse['FAS_CON']}. Alimentador: {unse['CTMT']}"})
-            elif unse['FAS_CON'] not in ["A","B","C","AN","BN","CN","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":chave,"Código":unse['COD_ID'],"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
-                "detalhamento":f"As fases da chave de média/baixa tensão (FAS_CON) declaradas foram:{unse['FAS_CON']}. Alimentador: {unse['CTMT']}"})
-            if unse['CTMT'] is None:
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":"2%","Tabela":chave,"Código":unse['COD_ID'],"erro":f"O alimentador não foi declarado.",
-                "detalhamento":f"O atributo CTMT da chave não foi declarado."})
+        for unse in self.df[chave].itertuples():
+            if unse.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":chave,"Código":unse.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
+                "detalhamento":f"As fases da chave de média/baixa tensão (FAS_CON) declaradas foram:{unse.FAS_CON}. Alimentador: {unse.CTMT}"})
+            elif unse.FAS_CON not in ["A","B","C","AN","BN","CN","AX","BX","CX","AB","BC","CA","CAN","BCN","ABN","ABC","ABCN"]:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":chave,"Código":unse.COD_ID,"erro":f"O código do faseamento possui valor não esperado. Valores esperados são: ABCN,ABC,ABN,BCN,CAN,AB,BC,CA,AN,BN,CN,A,B,C.",
+                "detalhamento":f"As fases da chave de média/baixa tensão (FAS_CON) declaradas foram:{unse.FAS_CON}. Alimentador: {unse.CTMT}"})
+            if unse.CTMT is None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"2%","Tabela":chave,"Código":unse.COD_ID,"erro":f"O alimentador não foi declarado.",
+                "detalhamento":f"O atributo CTMT da chave não foi declarado."}) 
         
         return(pd.DataFrame(erros))
     
