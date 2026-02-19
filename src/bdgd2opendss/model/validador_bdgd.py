@@ -1406,6 +1406,9 @@ class ValidadorBDGD:
             if reg.PER_TOT < reg.PER_FER:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"O campo da perda potência ferro é maior que o campo perda potência total. Valores esperados são abaixo da perda potência total.",
                 "detalhamento":f"O valor das perdas totais no regulador é de:{reg.PER_TOT},já o valor das perdas no ferro é de:{reg.PER_FER}. Alimentador: {reg.CTMT}"})
+            if reg.TIP_REGU not in ['M','DA','T','DF']:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNREMT","Código":reg.COD_ID,"erro":f"O código do tipo de regulador possui um valor não esperado. Valores esperados são M, DA, T, DF.",
+                "detalhamento":f"Tipo do regulador declarado (TIP_REGU):{reg.TIP_REGU}. Alimentador: {reg.CTMT}"})
             if ((convert_tpotaprt(reg.POT_NOM) < 1000) and reg.TIP_REGU != 'T') or ((convert_tpotaprt(reg.POT_NOM) < 3000) and reg.TIP_REGU == 'T'):
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"EQRE","Código":reg.COD_ID,"erro":f"A potência aparente nominal do regulador possui um valor não esperado. Valores esperados são superiores a 1000kVA para reguladores monofásicos e 3000kVA para reguladores trifásicos.",
                 "detalhamento":f"O valor da potência nominal do regulador é (POT_NOM):{convert_tpotaprt(reg.POT_NOM)}, tipo do regulador (TIP_REGU):{reg.TIP_REGU}. Alimentador: {reg.CTMT}"})
@@ -1508,7 +1511,7 @@ class ValidadorBDGD:
                 "detalhamento":f"O alimentador {ctmt['COD_ID']} não tem tensão nominal (TEN_NOM) declarada."})
             elif 2.3 > ValidadorBDGD.convert_ten(ctmt['TEN_NOM']) or ValidadorBDGD.convert_ten(ctmt['TEN_NOM']) > 48:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"CTMT","Código":ctmt['COD_ID'],"erro":f"A tensão nominal declarada possui valor não esperado. Valores esperados 2,3kV <= TenNom_kV <= 48,0kV.",
-                "detalhamento":f"A tensão nominal (TEN_NOM) declarada do alimentador está fora dos limites estabelecidos: {ctmt['TEN_NOM']} kV."})
+                "detalhamento":f"A tensão nominal (TEN_NOM) declarada do alimentador está fora dos limites estabelecidos: {ValidadorBDGD.convert_ten(ctmt['TEN_NOM'])} kV."})
             if ctmt['TEN_OPE'] is None:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"CTMT","Código":ctmt['COD_ID'],"erro":f"A tensão de operação não foi declarada.",
                 "detalhamento":f"O alimentador {ctmt['COD_ID']} não tem tensão operacional (TEN_OPE) declarada."})
