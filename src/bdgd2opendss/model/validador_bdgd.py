@@ -1842,7 +1842,10 @@ class ValidadorBDGD:
                 .reset_index(name="quantidade")
                 .sort_values(["COD_BASE","Erro máx","Tabela", "erro"])
             )
-
+            erropercentual = []
+            for line in resumo.itertuples():
+                erropercentual.append(f'{line.quantidade/len(self.df[line.Tabela])*100:.2f}%')
+            resumo['erro atual'] = erropercentual
             resumo.to_excel(writer, index=False, sheet_name="Resumo")
 
             worksheet2 = writer.sheets["Resumo"]
