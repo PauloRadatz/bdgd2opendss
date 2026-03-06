@@ -1012,7 +1012,7 @@ class ValidadorBDGD:
                         i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
                     except IndexError: #elemento que não está seguindo a mesma ordem dos outros
                         i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
-                        cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
+                    cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
                     if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
                         fase_ele = df_elements.at[i_ele,'FAS_CON']
                         voltage_dict[seq[1]] = float(df_elements.at[i_ele,'TEN_LIN_SE']) #tensão do elemento atual (se trafo)
@@ -1046,6 +1046,7 @@ class ValidadorBDGD:
                         erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
                         "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 else:
+                    find = False
                     for i in indices:
                         fase = df_elements.at[i,'FAS_CON']
                         if set(elem.FAS_CON) <= set(fase+'N'):
@@ -1054,7 +1055,7 @@ class ValidadorBDGD:
                     if find:
                         continue
                     erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem['FAS_CON']}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
             #faseamento das linhas de baixa tensão 
             for trafo in df_aux_trafo['COD_ID'].tolist():
                 if trafo == None:
@@ -1097,6 +1098,14 @@ class ValidadorBDGD:
             for elem in df_aux_ucbt_pip.itertuples(index=False):
                 if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
                         continue
+                #TODO ver a fase do trafo se tiver conectada diretamente no trafo
+                i_tr = df_aux_trafo.index[(df_aux_trafo['PAC_2'] == elem.PAC_1)].tolist()
+                if len(i_tr) > 0:
+                    if set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_S']+'N')) or set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_T']+'N')):
+                        continue #faseamento correto
+                    else:
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 indices = df_elements_bt.index[(df_elements_bt['PAC_2'] == elem.PAC_1)|(df_elements_bt['PAC_1'] == elem.PAC_1)].tolist()
                 if len(indices) == 1:
                     i = indices[0]
@@ -1107,6 +1116,7 @@ class ValidadorBDGD:
                         erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
                         "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 elif len(indices) > 1:
+                    find = False
                     for i in indices:
                         fase = df_elements_bt.at[i,'FAS_CON']
                         if set(elem.FAS_CON) <= set(fase+'N'):
