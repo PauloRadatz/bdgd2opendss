@@ -53,6 +53,30 @@ class Line:
     _x0: float = 0.0
     _x1: float = 0.0
 
+    dict_bus_nodes = {} # {bus_name: {nodes_set}}
+
+    @staticmethod
+    def _register_bus_nodes(bus_name, nodes_str):
+        if not bus_name or not nodes_str: return
+        try:
+            nodes = set(map(int, str(nodes_str).split('.')))
+            if bus_name not in Line.dict_bus_nodes:
+                Line.dict_bus_nodes[bus_name] = set()
+            Line.dict_bus_nodes[bus_name].update(nodes)
+        except Exception:
+            pass
+
+    @staticmethod
+    def get_bus_nodes(bus_name):
+        return Line.dict_bus_nodes.get(bus_name, set())
+
+    @staticmethod
+    def reset_state():
+        """Resets class-level state for a new feeder/circuit."""
+        Line.dict_bus_nodes.clear()
+        if hasattr(Line, "_session_files"):
+            Line._session_files.clear()
+
     @property
     def entity(self):
         return self._entity
@@ -286,8 +310,48 @@ class Line:
     def full_string(self) -> str:
         
         if f'{self.prefix_name}_{self.line}' in elem_isolados(): #remove as linhas isoladas
-        #if "BT" in self.prefix_name and (self.transformer in list_dsativ or self.transformer not in dicionario_kv.keys()):
             return("")
+
+        # 1. Phase Promotion for Load Balancing
+        if settings.blnBalancCargasBT:
+            # Re-identify BT lines (SSDBT, RAMLIG, UNSEBT usually mapped through prefix)
+            # We check if prefix matches BT types or if 'BT' is in the original entity name
+            is_bt_line = (self.prefix_name in ["SBT", "RBT", "SDBT", "RAMLIG", "CBT"]) or \
+                         (self.entity and "BT" in self.entity.upper())
+            
+            if is_bt_line and self.transformer:
+                trafo_id = Transformer.normalize_trafo_id(self.transformer)
+                available = Transformer.dict_available_phases_data().get(trafo_id)
+                
+                if available and 'all_nodes' in available:
+                    all_nodes = available['all_nodes']
+                    hot_nodes = [n for n in all_nodes if n in [1, 2, 3]]
+                    neutral_node = 4 if 4 in all_nodes else (0 if 0 in all_nodes else None)
+                    
+                    target_phases = len(hot_nodes)
+                    nodes_list = sorted(list(hot_nodes))
+                    if neutral_node is not None:
+                        target_phases += 1
+                        nodes_list.append(neutral_node)
+                    
+                    target_bus_nodes = ".".join(map(str, nodes_list))
+                    
+                    # Update if current setup is less capable than target
+                    # Or if it doesn't include the neutral!
+                    if target_phases > self.phases or self.bus_nodes != target_bus_nodes:
+                        self.phases = target_phases
+                        self.bus_nodes = target_bus_nodes
+                        
+                        # Synchronize LineCode suffix only for normal line elements (not CBT switches)
+                        if self.prefix_name not in ["CMT", "CBT"]:
+                            self.suffix_linecode = str(self.phases)
+                    elif self.phases == 4 and self.suffix_linecode != "4" and self.prefix_name not in ["CMT", "CBT"]:
+                        # Edge case: If somehow phases is 4 but suffix was not updated
+                        self.suffix_linecode = "4"
+
+        # Register nodes for validation by loads
+        Line._register_bus_nodes(self.bus1, self.bus_nodes)
+        Line._register_bus_nodes(self.bus2, self.bus_nodes)
 
         if self.prefix_name == "CMT" or self.prefix_name == "CBT":
             return self.pattern_switch()
@@ -417,16 +481,78 @@ class Line:
 
     @staticmethod
     def create_line_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, entity: str, pastadesaida:str=""):
+        from collections import defaultdict
+        import os
+        from bdgd2opendss.core.Utils import create_output_folder, get_cod_year_bdgd, get_configuration, create_output_file
 
-        lines = []
+        lines_no_trafo = []
+        lines_by_trafo = defaultdict(list)
+        
         line_config = json_data['elements']['Line'][entity]
+        feeder_name = ""
+
+        Line.dict_bus_nodes = {} # Reset for new feeder
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Line", unit=" lines", ncols=100)
         for _, row in progress_bar:
             line_ = Line._create_line_from_row(line_config, row)
+            if not feeder_name:
+                feeder_name = line_.feeder
+                
+            trafo = str(getattr(line_, "transformer", "")).strip()
+            if trafo.lower() in ["nan", "none", "<na>"]:
+                trafo = ""
+            
+            # Identify purely BT lines. The entity name maps to config keys like 'SSDBT', 'RAMLIG', 'UNSEBT'
+            is_bt_line = ("BT" in entity or entity == "RAMLIG")
+            
+            if trafo and is_bt_line and settings.blnSeparateLoadsByTransformer:
+                lines_by_trafo[trafo].append(line_)
+            else:
+                lines_no_trafo.append(line_)
 
-            lines.append(line_)
             progress_bar.set_description(f"Processing Line {entity} {_ + 1}")
 
-        file_name = create_output_file(lines, line_config["arquivo"], feeder=line_.feeder, output_folder=pastadesaida)
+        if feeder_name and lines_by_trafo:
+            base_output_dir = create_output_folder(feeder=feeder_name, output_folder=pastadesaida)
+            file_name_cfg = line_config.get("arquivo", "Line")
+            
+            if not hasattr(Line, "_session_files"):
+                Line._session_files = set()
+                
+            for trafo, trafo_lines in lines_by_trafo.items():
+                
+                trafo_folder = f"TR_{trafo}"
+                trafo_dir = os.path.join(base_output_dir, trafo_folder)
+                os.makedirs(trafo_dir, exist_ok=True)
+                
+                file_name = f'{file_name_cfg}_{trafo_folder}'
+                full_name = f'{file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder_name}_{get_configuration()}.dss'
+                file_path = os.path.join(trafo_dir, full_name)
+                
+                if file_path not in Line._session_files:
+                    mode = "w"
+                    Line._session_files.add(file_path)
+                    needs_redirect = True
+                else:
+                    mode = "a"
+                    needs_redirect = False
+                
+                with open(file_path, mode) as f_trafo:
+                    for ld in trafo_lines:
+                        # Full_string might return empty if the line is isolated (""), filter empty strings
+                        string_val = ld.full_string()
+                        if string_val:
+                            f_trafo.write(string_val + "\n")
+                
+                rel_path = f"{trafo_folder}/{full_name}"
+                if needs_redirect:
+                    lines_no_trafo.append(f'Redirect "{rel_path}"')
 
-        return lines, file_name
+        file_name = create_output_file(
+            object_list=lines_no_trafo, 
+            file_name=line_config["arquivo"], 
+            feeder=feeder_name, 
+            output_folder=pastadesaida
+        ) if feeder_name else ""
+
+        return lines_no_trafo, file_name

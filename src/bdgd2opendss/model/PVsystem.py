@@ -140,8 +140,18 @@ class PVsystem:
         self._transformer = value
     
     def adapting_string_variables_pvsystem(self): #TODO implementar as tensões de 254 
-        if self.kv < 1:
-            if self.phases == '1' and self.conn == 'Wye':
+        try:
+            kv_val = float(self.kv)
+        except (ValueError, TypeError):
+            kv_val = 0.0
+
+        try:
+            phases_val = str(self.phases)
+        except (ValueError, TypeError):
+            phases_val = '1'
+
+        if kv_val < 1:
+            if phases_val == '1' and self.conn == 'Wye':
                 kv = Transformer.sec_phase_kv(trload=self.transformer)      
             else:
                 kv = Transformer.sec_line_kv(trload=self.transformer)
@@ -152,7 +162,13 @@ class PVsystem:
     def full_string(self) -> str:
         if self.PVsys in elem_isolados():
             return("")
-        if self.kv < 1:
+            
+        try:
+            kv_val = float(self.kv)
+        except (ValueError, TypeError):
+            kv_val = 0.0
+
+        if kv_val < 1:
             daily = 'default_pv_daily_bt'
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
@@ -170,7 +186,12 @@ class PVsystem:
                 f'daily={daily} \n')
 
     def __repr__(self):
-        if self.kv < 1:
+        try:
+            kv_val = float(self.kv)
+        except (ValueError, TypeError):
+            kv_val = 0.0
+
+        if kv_val < 1:
             if self.transformer in Transformer.list_dsativ() or self.transformer not in Transformer.dict_kv().keys(): #remove as cargas desativadas
                 return("")
         kv = PVsystem.adapting_string_variables_pvsystem()

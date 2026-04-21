@@ -74,6 +74,9 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
     geodataframes = json_obj.create_geodataframes(bdgd_file_path)
     #TODO implementar aqui o ValidadorBDGD.run(geodataframes,output_file)
     # generates all feeders
+    if isinstance(lst_feeders, str):
+        lst_feeders = [lst_feeders]
+
     if all_feeders:
 
         for feeder in geodataframes["CTMT"]['gdf']['COD_ID'].tolist():
@@ -112,6 +115,9 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
     if not settings.TipoBDGD: #se for BDGD pública
         for key in bdgd_pub:
             geodataframe[key[0:4]] = geodataframe.pop(key)
+
+    if isinstance(lst_feeders, str):
+        lst_feeders = [lst_feeders]
 
     if all_feeders:
         validation = ValidadorBDGD(df=geodataframe,output_folder=output_folder,tables=tables)

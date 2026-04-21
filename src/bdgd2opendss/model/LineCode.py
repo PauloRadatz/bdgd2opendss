@@ -18,7 +18,7 @@ from tqdm import tqdm
 from pandas import isna
 
 from bdgd2opendss.model.Converter import convert_tten, convert_resist
-from bdgd2opendss.core.Utils import create_output_file
+from bdgd2opendss.core.Utils import create_output_file, log_linecode_warnings_csv
 
 from dataclasses import dataclass
 
@@ -186,8 +186,8 @@ class LineCode:
                         if isna(param_value):
                             param_value = '0'
                         try:
-                            if function_(param_value) < getattr(linecode_,"_r1"): #Atualização devido a alteração no script do geoperdas
-                                setattr(linecode_, f"_r1", function_(param_value))
+                            # Direct assignment fix: Removing conditional check that prevented updates
+                            setattr(linecode_, f"_{mapping_key}", function_(param_value))
                         except:
                             print(f"Código do tipo de condutor inexistente para linecode:{getattr(linecode_,'linecode')}")
                                   
@@ -200,12 +200,25 @@ class LineCode:
     @staticmethod
     def create_linecode_from_json(json_data: Any, dataframe: gpd.geodataframe.GeoDataFrame, feeder: str, pastadesaida:str = ""):
         linecodes = []
+        problematic_linecodes = []
         linecode_config = json_data['elements']['Linecode']['SEGCON']
         interactive = linecode_config.get('interactive')
 
         progress_bar = tqdm(dataframe.iterrows(), total=len(dataframe), desc="Linecode", unit=" linecodes", ncols=100)
         for _, row in progress_bar:
             linecode_ = LineCode._create_linecode_from_row(linecode_config, row)
+
+            # Impedance check: flag if R1 or X1 < 0.001
+            if linecode_.r1 < 0.001 or linecode_.x1 < 0.001:
+                problematic_linecodes.append({
+                    'Linecode': linecode_.linecode,
+                    'Original_R1': linecode_.r1,
+                    'Original_X1': linecode_.x1,
+                    'Fixed_R1': max(linecode_.r1, 0.001),
+                    'Fixed_X1': max(linecode_.x1, 0.001)
+                })
+                linecode_.r1 = max(linecode_.r1, 0.001)
+                linecode_.x1 = max(linecode_.x1, 0.001)
 
             if interactive is not None: #parametro_iteravel, objeto
                 for i in range(1, interactive['nphases'] + 1):
@@ -214,6 +227,9 @@ class LineCode:
             linecodes.append(linecode_)
 
             progress_bar.set_description(f"Processing Linecode {_ + 1}")
+
+        # Log warnings to CSV
+        log_linecode_warnings_csv(problematic_linecodes, feeder, pastadesaida)
 
         file_name = create_output_file(linecodes, linecode_config["arquivo"], feeder=feeder, output_folder=pastadesaida)
 

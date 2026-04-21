@@ -86,3 +86,10 @@ tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_EXP_SEQVOLTAGES.CSV
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLL.Txt
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLN.Txt
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLN_Node.Txt
+
+# Temporary files and logs
+tmp/
+*.log
+*.patch
+test_file.py
+

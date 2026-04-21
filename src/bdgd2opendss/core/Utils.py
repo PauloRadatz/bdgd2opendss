@@ -17,6 +17,15 @@ cod_year_bdgd = []
 tr_vazios = []
 sufixo_config = ""
 substation = ""
+lista_isolados = []
+
+def reset_state():
+    """Resets global state for a new feeder/circuit."""
+    global tr_vazios, sufixo_config, substation, lista_isolados
+    tr_vazios = []
+    sufixo_config = ""
+    substation = ""
+    lista_isolados = []
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
@@ -36,6 +45,24 @@ def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,
             logger.info(f'Elemento isolado - COD_ID:{row["COD_ID"]} - TIPO:{row["ELEM"]} - CTMT:{row["CTMT"]} - PAC1:{row["PAC_1"]} - PAC2:{row["PAC_2"]}')
     else:
         logger.info(f'O alimentador {feeder} não tem conexão com a barra incial {ctmt}')
+
+def log_linecode_warnings_csv(problematic_data: list, feeder: str, output_folder: str = ""):
+    """
+    Saves a CSV file with linecodes that have low impedance values.
+    """
+    if not problematic_data:
+        return
+        
+    output_directory = create_output_folder(feeder=feeder, output_folder=output_folder)
+    file_path = os.path.join(output_directory, 'linecode_impedance_warnings.csv')
+    
+    df = pd.DataFrame(problematic_data)
+    try:
+        df.to_csv(file_path, index=False)
+        print(f"Relatório de impedâncias baixas gerado em: {file_path}")
+    except Exception as e:
+        print(f"Erro ao criar CSV de avisos de linecode: {str(e)}")
+
 def load_json(json_file: str = "bdgd2dss.json"):
     """Carrega os dados de um arquivo JSON e retorna um objeto Python.
 
@@ -169,10 +196,14 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
             with open(path, k) as file:
                 for string in object_list:
                     try:
-                        file.write(string.full_string() + "\n")
+                        if type(string) == str:
+                            file.write(string + "\n")
+                        else:
+                            file.write(string.full_string() + "\n")
 
                     except Exception as e:
                         print(f"An error occurred: {str(e)}")
+                        file.write(f"! Elemento com erro de dados: {str(e)}\n")
                         continue
         return f'{file_names[0]}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()}.dss'
 
@@ -192,10 +223,7 @@ def create_output_file(object_list=[], file_name="", object_lists="", file_names
                         file.write(string.full_string() + "\n")
                 except Exception as e:
                     print(f"An error occurred: {str(e)}")
-                    if type(string) == str:
-                        file.write(f'{string} + "\n"!Elemento com erro de dados "\n"')
-                    else:
-                        file.write(f'{string.full_string()} + "\n"!Elemento com erro de dados "\n"')
+                    file.write(f"! Elemento com erro de dados: {str(e)}\n")
                     continue
         print(f'O arquivo {file_name}_{get_cod_year_bdgd(typ="yearcod")}_{feeder}_{get_configuration()} foi gerado\n')
 
@@ -333,8 +361,11 @@ def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de 
     # TODO evitar tomar decisoes
     if len(dicionario_kv) > 0:
         for value in dicionario_kv.values():
-            if value >= 0.22:
-                lista.append(value)
+            if value >= 0.1:
+                lista.append(round(value, 3))
+            elif value > 0 and value < 0.1:
+                # Still add it if it's a valid small voltage
+                lista.append(round(value, 3))
             else:
                 ...
         x=set(lista)
@@ -641,19 +672,19 @@ def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela 
     df_trafo = merge_df_aux_tr(dataframe['EQTRMT']['gdf'], dataframe['UNTRMT']['gdf'].query("CTMT==@alimentador"),
                             left_column='UNI_TR_MT', right_column='COD_ID')
     adapt_regulators_names(df_trafo,'transformer')
-    df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_ssdmt['ELEM'] = 'SEGMMT'
-    df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_ssdbt['ELEM'] = 'SEGMBT'
-    df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_ramalig['ELEM'] = 'RML'
-    df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_unsemt['ELEM'] = 'CHVMT'
-    df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_unsebt['ELEM'] = 'CHVBT'
-    df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_trafo['ELEM'] = 'TRAFO'
-    df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+    df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
     df_aux_regul['ELEM'] = 'REGUL'
     df_aux_tramo = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul], ignore_index=True)
 
@@ -707,47 +738,47 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         adapt_regulators_names(df_trafo,'transformer')
         adapt_regulators_names(df_reg,'regulator')
 
-        df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ssdmt = dataframe['SSDMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_ssdmt['ELEM'] = 'SEGMMT'
-        df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ssdbt = dataframe['SSDBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_ssdbt['ELEM'] = 'SEGMBT'
-        df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_ramalig = dataframe['RAMLIG']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_ramalig['ELEM'] = 'RML'
-        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsemt = dataframe['UNSEMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_unsemt['ELEM'] = 'CHVMT'
-        df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_unsebt = dataframe['UNSEBT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_unsebt['ELEM'] = 'CHVBT'
-        df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_trafo['ELEM'] = 'TRAFO'
-        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
+        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']].copy()
         df_aux_regul['ELEM'] = 'REGUL'
         if settings.TipoBDGD:
-            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']].copy()
             df_aux_ucmt['PAC_2'] = ''
             df_aux_ucmt['ELEM'] = 'LDMT'
             df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
-            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']].copy()
             df_aux_ucbt['PAC_2'] = ''
             df_aux_ucbt['ELEM'] = 'LDBT'
             df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
         else:
-            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']]
+            df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['PN_CON','CTMT','PAC']].copy()
             df_aux_ucmt['PAC_2'] = ''
             df_aux_ucmt['ELEM'] = 'LDMT'
             df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1','PN_CON':'COD_ID'})
-            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']]
+            df_aux_ucbt = dataframe[ucbt]['gdf'].query("CTMT == @alimentador")[['RAMAL','CTMT','PAC']].copy()
             df_aux_ucbt['PAC_2'] = ''
             df_aux_ucbt['ELEM'] = 'LDBT'
             df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1','RAMAL':'COD_ID'})
-        df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
+        df_aux_pip = dataframe['PIP']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']].copy()
         df_aux_pip['PAC_2'] = ''
         df_aux_pip['ELEM'] = 'PIP'
         df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
-        df_aux_ugbt = dataframe[ugbt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
+        df_aux_ugbt = dataframe[ugbt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']].copy()
         df_aux_ugbt['PAC_2'] = ''
         df_aux_ugbt = df_aux_ugbt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
         df_aux_ugbt['ELEM'] = 'GDBT'
-        df_aux_ugmt = dataframe[ugmt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
+        df_aux_ugmt = dataframe[ugmt]['gdf'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']].copy()
         df_aux_ugmt['PAC_2'] = ''
         df_aux_ugmt = df_aux_ugmt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
         df_aux_ugmt['ELEM'] = 'GDMT'
@@ -901,4 +932,213 @@ def list_subs(df,output_path):
         return
     df_sub = df[['COD_ID','SUB']]
     df_sub.to_csv(file_path, index=False, encoding='utf-8')
+
+def merge_series_lines(dataframe_dict: dict, feeder: str):
+    """
+    Merge lines in series that share a common bus with no other connections and same properties.
+    """
+    if not settings.blnMergeSeriesLines:
+        return
+
+    # Standard names for entities
+    if settings.TipoBDGD:
+        ucbt = "UCBT"
+        ucmt = "UCMT"
+        ugbt = "UGBT"
+        ugmt = "UGMT"
+    else:
+        ucbt = "UCBT_tab"
+        ucmt = "UCMT_tab"
+        ugbt = "UGBT_tab"
+        ugmt = "UGMT_tab"
+
+    # Entities that can be merged (lines)
+    mergeable_entities = {'SSDMT', 'SSDBT', 'RAMLIG'}
+    
+    # Obstacles (cannot be bypassed)
+    obstacle_entities = {'UNSEMT', 'UNSEBT', 'UNTRMT', 'UNREMT', 'PIP'}
+    obstacle_entities.update({ucbt, ucmt, ugbt, ugmt})
+
+    # Build a map of PAC -> list of (entity, index, linecode, phases)
+    pac_map = {}
+
+    def add_to_pac(pac, entity, index, linecode=None, phases=None):
+        if not pac or pd.isna(pac) or str(pac).strip() == "": return
+        if pac not in pac_map:
+            pac_map[pac] = []
+        pac_map[pac].append({'entity': entity, 'index': index, 'linecode': linecode, 'phases': phases})
+
+    for entity in mergeable_entities.union(obstacle_entities):
+        if entity in dataframe_dict:
+            gdf = dataframe_dict[entity]['gdf']
+            if 'CTMT' in gdf.columns:
+                df = gdf.query("CTMT == @feeder")
+                for idx, row in df.iterrows():
+                    linecode = row.get('TIP_CND')
+                    phases = row.get('FAS_CON')
+                    
+                    pacs = []
+                    if 'PAC_1' in row: pacs.append(row['PAC_1'])
+                    if 'PAC_2' in row: pacs.append(row['PAC_2'])
+                    if 'PAC' in row: pacs.append(row['PAC'])
+                    
+                    for p in pacs:
+                        add_to_pac(p, entity, idx, linecode, phases)
+
+    # Identify PACs that connect exactly two lines and nothing else
+    merge_points = [] # list of (pac, id1, id2)
+    
+    for pac, elements in pac_map.items():
+        if len(elements) == 2:
+            e1, e2 = elements[0], elements[1]
+            if e1['entity'] in mergeable_entities and e2['entity'] in mergeable_entities:
+                if e1['entity'] == e2['entity'] and e1['linecode'] == e2['linecode'] and e1['phases'] == e2['phases']:
+                    merge_points.append((pac, (e1['entity'], e1['index']), (e2['entity'], e2['index'])))
+
+    if not merge_points:
+        return
+
+    # Use a graph to find chains of lines to merge
+    merge_graph = nx.Graph()
+    for pac, id1, id2 in merge_points:
+        merge_graph.add_edge(id1, id2, pac=pac)
+
+    chains = list(nx.connected_components(merge_graph))
+    total_merged = 0
+    
+    for chain in chains:
+        # Each chain is a set of (entity, index)
+        chain_list = list(chain)
+        # Find end PACs of the chain
+        all_segment_pacs = []
+        for eid, idx in chain:
+            row = dataframe_dict[eid]['gdf'].loc[idx]
+            if 'PAC_1' in row: all_segment_pacs.append(row['PAC_1'])
+            if 'PAC_2' in row: all_segment_pacs.append(row['PAC_2'])
+        
+        # End PACs occur exactly once in the segments list
+        final_pacs = [p for p in set(all_segment_pacs) if all_segment_pacs.count(p) == 1]
+        
+        if len(final_pacs) == 2:
+            # We can merge this chain
+            keep_id = chain_list[0]
+            remove_ids = chain_list[1:]
+            
+            total_comp = 0
+            for eid, idx in chain:
+                total_comp += dataframe_dict[eid]['gdf'].loc[idx, 'COMP']
+            
+            # Update the 'keep' line
+            dataframe_dict[keep_id[0]]['gdf'].at[keep_id[1], 'COMP'] = total_comp
+            dataframe_dict[keep_id[0]]['gdf'].at[keep_id[1], 'PAC_1'] = final_pacs[0]
+            dataframe_dict[keep_id[0]]['gdf'].at[keep_id[1], 'PAC_2'] = final_pacs[1]
+            
+            # Remove others
+            for rid in remove_ids:
+                dataframe_dict[rid[0]]['gdf'].drop(rid[1], inplace=True)
+            
+            total_merged += len(remove_ids)
+
+    print(f"Merged {total_merged} series line segments in feeder {feeder}.")
+
+def prune_dangling_branches(dataframe_dict: dict, feeder: str, pac_ctmt: str):
+    """
+    Recursively remove branches that do not lead to any Power Conversion (PC) elements or the source.
+    PC elements include loads (UCBT, UCMT, PIP), generators (UGBT, UGMT), and capacitors (UNCRMT).
+    PD elements are pruned if they become "dead-ends" with no PC elements downstream.
+    """
+    if not settings.blnPruneDanglingBranches:
+        return
+
+    # Standard names for entities
+    if settings.TipoBDGD:
+        ucbt, ucmt, ugbt, ugmt = "UCBT", "UCMT", "UGBT", "UGMT"
+    else:
+        ucbt, ucmt, ugbt, ugmt = "UCBT_tab", "UCMT_tab", "UGBT_tab", "UGMT_tab"
+
+    # Power Delivery (PD) entities that form the network structure (Edges)
+    pd_entities = {'SSDMT', 'SSDBT', 'RAMLIG', 'UNSEMT', 'UNSEBT', 'UNTRMT', 'UNREMT'}
+    
+    # Power Conversion (PC) entities (Terminal nodes)
+    pc_entities = {ucbt, ucmt, 'PIP', ugbt, ugmt, 'UNCRMT'}
+
+    # Build the topological graph
+    G = nx.MultiGraph()
+    
+    # Track essential nodes (PACs)
+    essential_nodes = {pac_ctmt}  # Source is always essential
+    if "" in essential_nodes: essential_nodes.remove("")
+
+    # Map edges to their dataframe origin for later removal
+    # (node1, node2, key) -> (entity, index)
+    edge_map = {}
+
+    for entity in pd_entities:
+        if entity in dataframe_dict:
+            gdf = dataframe_dict[entity]['gdf']
+            if 'CTMT' in gdf.columns:
+                df = gdf.query("CTMT == @feeder")
+                for idx, row in df.iterrows():
+                    p1 = row.get('PAC_1')
+                    p2 = row.get('PAC_2')
+                    
+                    if pd.isna(p1) or str(p1).strip() == "": continue
+                    if pd.isna(p2) or str(p2).strip() == "": continue
+                    
+                    p1, p2 = str(p1).strip(), str(p2).strip()
+                    
+                    # Add edge with a unique key to handle parallel lines/switches
+                    key = f"{entity}_{idx}"
+                    G.add_edge(p1, p2, key=key)
+                    edge_map[key] = (entity, idx)
+
+    # Identify all Essential nodes from PC elements
+    for entity in pc_entities:
+        if entity in dataframe_dict:
+            gdf = dataframe_dict[entity]['gdf']
+            if 'CTMT' in gdf.columns:
+                df = gdf.query("CTMT == @feeder")
+                for _, row in df.iterrows():
+                    p = row.get('PAC')
+                    if pd.isna(p) or str(p).strip() == "": continue
+                    essential_nodes.add(str(p).strip())
+
+    # Recursive pruning
+    pruned_keys = set()
+    while True:
+        nodes_to_prune = []
+        for node in G.nodes():
+            # A node is a candidate for pruning if it has degree 1 and is NOT essential
+            if G.degree(node) == 1 and node not in essential_nodes:
+                nodes_to_prune.append(node)
+        
+        if not nodes_to_prune:
+            break
+            
+        for node in nodes_to_prune:
+            # Find the single edge connected to this leaf
+            # In a MultiGraph, edges(keys=True) returns (u, v, key, data)
+            edges = list(G.edges(node, data=True, keys=True))
+            if not edges: continue # Should not happen with degree 1
+            
+            u, v, key, data = edges[0]
+            
+            # Record for removal
+            pruned_keys.add(key)
+            # Remove from graph to potentially reveal new leaves
+            G.remove_edge(u, v, key=key)
+            
+            # If the node became isolated and is not essential, remove it
+            if G.degree(node) == 0:
+                G.remove_node(node)
+
+    if not pruned_keys:
+        return
+
+    # Drop pruned elements from the original DataFrames
+    for key in pruned_keys:
+        entity, idx = edge_map[key]
+        dataframe_dict[entity]['gdf'].drop(idx, inplace=True)
+
+    print(f"Pruned {len(pruned_keys)} dangling PD elements in feeder {feeder}.")
 

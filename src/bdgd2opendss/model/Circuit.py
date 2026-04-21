@@ -15,8 +15,16 @@ import os
 # TODO vide TO DO em case/output_master
 kv = ""
 pac_ctmt = ""
+
 @dataclass
 class Circuit:
+
+    @staticmethod
+    def reset_state():
+        """Resets global state for a new feeder/circuit."""
+        global kv, pac_ctmt
+        kv = ""
+        pac_ctmt = ""
     _arquivo: str = ""
     _circuit: str = ""
     _basekv: float = 0.0

@@ -7,9 +7,14 @@ from datetime import date
 import holidays
 import calendar
 from bdgd2opendss.core.Utils import get_cod_year_bdgd
-du = {}
-sa = {}
 do = {}
+
+def reset_state():
+    """Resets global state for a new feeder/circuit."""
+    global du, sa, do
+    du = {}
+    sa = {}
+    do = {}
     
 def calcula_carnaval(ano):
     """Calcula a data da Páscoa (domingo) para um determinado ano."""

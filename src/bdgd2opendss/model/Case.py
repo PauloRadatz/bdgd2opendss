@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 import pandas as pd
+import math
 
 from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd, create_df_trafos_vazios,get_configuration
@@ -10,7 +11,17 @@ from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
 from bdgd2opendss.model.EnergyMeters import create_energymeters
+from bdgd2opendss.model import Count_days
 #from bdgd2opendss.model.KVBase import KVBase
+
+def _reset_all_state():
+    """Centralized reset of all global/class-level states across modules."""
+    Utils.reset_state()
+    Circuit.reset_state()
+    Transformer.reset_state()
+    Line.reset_state()
+    Load.reset_state()
+    Count_days.reset_state()
 
 @dataclass
 class Case:
@@ -178,10 +189,21 @@ class Case:
     def output_master(self, file_names, tip_dia="", mes=""):
 
         master = "clear\n"
-        y = create_voltage_bases(Transformer.dict_kv()) #cria lista de tensões de base na baixa tensão
+        y = create_voltage_bases(Transformer.dict_kv()) # line-to-line voltages
+        
+        # Phase-to-neutral voltages
+        phase_kvs = create_voltage_bases(Transformer.dict_phase_kv())
+        y.extend(phase_kvs)
+
+        # Add 3-phase equivalent bases for all detected phase-to-neutral voltages
+        # to satisfy OpenDSS CalcVoltageBases for 1-phase Star connections.
+        for v in phase_kvs:
+             y.append(round(v * math.sqrt(3), 3))
+
+        y = list(set(y))
         y.sort()
         y.append(Circuit.kvbase())
-        voltagebases = " ".join(str(z) for z in set(y))
+        voltagebases = " ".join(str(z) for z in sorted(set(y)))
         for i in file_names:
             if i[:2] == "GD":
                 master = master + f'!Redirect "{i}"\n'
@@ -244,6 +266,7 @@ buscoords buscoords.csv'''
 
     # this method populates Case object with data from BDGD
     def PopulaCase(self):
+        _reset_all_state()
         self.Populates_BASE()
 
         get_cod_year_bdgd(cod=self.cod_bdgd,data=self.data_bdgd) #Extrai o código e o ano da BDGD para nomear os arquivos dss
@@ -255,9 +278,12 @@ buscoords buscoords.csv'''
 
         self.GenGeographicCoord()
 
+        Utils.prune_dangling_branches(self.dfs, self.feeder, Circuit.pac_ctmt()) #Prune dangling branches before topological analysis
+
         df_tramo, df_aux_trafo = Utils.create_aux_tramo(self.dfs,self.feeder)
         Utils.ordem_pacs(df_aux_tramo=df_tramo,pac_ctmt=Circuit.pac_ctmt()) #Define a ordem dos buses de acordo com o que a distribuidora usa
         Utils.elem_isolados(self.dfs,self.feeder,pac_ctmt=Circuit.pac_ctmt(),output_folder=self.output_folder) #Define quais são os elementos isolados e cria um log de elementos isolados
+        Utils.merge_series_lines(self.dfs, self.feeder) #Merge series lines to reduce complexity
         Utils.seq_eletrica(self.dfs,self.feeder,pac=Circuit.pac_ctmt(),kvbase=Circuit.kvbase()) #Define as tensões no circuito com base nos transformadores
 
         self.Populates_SEGCON()
