@@ -72,7 +72,6 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
         json_file_name = bdgd2dss_json
     json_obj = JsonData(json_file_name)
     geodataframes = json_obj.create_geodataframes(bdgd_file_path)
-    #TODO implementar aqui o ValidadorBDGD.run(geodataframes,output_file)
     # generates all feeders
     if all_feeders:
 

@@ -106,9 +106,15 @@ class JsonData:
             for _ in range(runs):
                 start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
-                gdf_ = gpd.read_file(file_name, layer=table.name,
+                try:
+                    gdf_ = gpd.read_file(file_name, layer=table.name,
                                      columns=table.columns,ignore_geometry=table.ignore_geometry, 
                                      engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
+                except KeyError:
+                    name = table.name.split('_')[0]
+                    gdf_ = gpd.read_file(file_name, layer=name,
+                                     columns=table.columns,ignore_geometry=table.ignore_geometry, 
+                                     engine='pyogrio', use_arrow=True)
                 start_conversion_time = time.time()
                 gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
@@ -146,18 +152,25 @@ class JsonData:
     def create_geodataframe_errors(self,file_name,runs=1):
 
         geodataframes = {}
-        
+
+        mapa = {'AX':'AN',
+            'BX':'BN',
+            'CX':'CN'}
+        entities = ['UCMT','UCBT','PIP','UGMT','UGBT','UNSEMT','EQTRMT','EQRE','SSDMT','SSDBT','RAMLIG']
+
         for table_name, table in self.tables.items():
-            load_times = []
-            conversion_times = []
             #TODO fazer um try/except aqui para, caso não exista a tabela, não quebrar o código
             for _ in range(runs):
-                start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                 columns=table.columns,ignore_geometry=table.ignore_geometry, 
                                      engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
-
+            
+            if table_name in entities:#corrigindo as fases de acordo com o geoperdas (AX - AN, BX - BN, CX - CN)
+                for column in gdf_.columns:
+                    if 'FAS_' in column:
+                        gdf_[column] = gdf_[column].replace(mapa)
+            
             geodataframes[table_name] = gdf_
             
         return geodataframes,self.tables
