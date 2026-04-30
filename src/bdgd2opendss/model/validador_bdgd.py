@@ -1908,3 +1908,218 @@ class ValidadorBDGD:
                 worksheet.write(0, col_num, value, header_format)
             
         print(f"✅ Arquivo Excel de Scan pré validação exportado com sucesso: {path}")
+
+    def check_faseamento2(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
+        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento 
+        dos elementos (exemplo de erro: fase do elemento anterior AB e fase do elemento atual ABC)
+        dataframe = geodataframe completo da BDGD"""
+        isolados = lista_isolados
+        #mandar tambem o iso_trafos de elementos que estão nos trafos errados para jogar aqui em caso de não estarem isolados e não serem englobados no voltage_dict
+        erros = []
+
+        for i,feeder in enumerate(dataframe['CTMT']['COD_ID'].tolist()):
+
+            if dataframe['CTMT'].at[i,'ATIP'] == 1:
+                erromax = ['0.5%',' em circuito atípico ']
+            else:
+                erromax = ['0%',' ']
+
+            alimentador = feeder
+            df_trafo = inner_entities_tables(dataframe['EQTRMT'], dataframe['UNTRMT'].query("CTMT==@alimentador"),
+                                    left_column='UNI_TR_MT', right_column='COD_ID')
+            df_regul = inner_entities_tables(dataframe['EQRE'], dataframe['UNREMT'].query("CTMT==@alimentador"),
+                                                left_column='UN_RE', right_column='COD_ID')
+            df_tr_mtmt = df_trafo[df_trafo['TEN_LIN_SE'] > 1][['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','TEN_LIN_SE']] #trafos MT-MT (se houver)
+            df_tr_mtmt['ELEM'] = 'EQTRMT'
+            df_tr_mtmt = df_tr_mtmt.rename(columns={'LIG_FAS_S':'FAS_CON'})
+            df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','LIG_FAS_T','TEN_LIN_SE']]
+            df_aux_trafo = df_aux_trafo.rename(columns={'LIG_FAS_P':'FAS_CON'})
+            df_aux_trafo['ELEM'] = 'EQTRMT'
+            df_aux_ssdmt = dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
+            df_aux_ssdmt['ELEM'] = 'SSDMT'
+            df_aux_ssdbt = dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
+            df_aux_ssdbt['ELEM'] = 'SSDBT'
+            df_aux_ramalig = dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
+            df_aux_ramalig['ELEM'] = 'RAMLIG'
+            df_aux_unsemt = dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
+            df_aux_unsemt['ELEM'] = 'UNSEMT'
+            df_aux_unsebt = dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
+            df_aux_unsebt['ELEM'] = 'UNSEBT'
+            df_aux_regul = df_regul[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
+            df_aux_regul['ELEM'] = 'EQRE'
+            df_ucmt = dataframe['UCMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+            df_aux_ucmt = pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+            df_aux_ucbt = pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucmt['PAC_2'] = ''
+            df_aux_ucmt['ELEM'] = 'UCMT'
+            df_aux_ucbt['PAC_2'] = ''
+            df_aux_ucbt['ELEM'] = 'UCBT'
+            df_aux_pip = dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+            df_aux_pip['PAC_2'] = ''
+            df_aux_pip['ELEM'] = 'PIP'
+            df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
+
+            df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_aux_regul,df_tr_mtmt], ignore_index=True)#para faseamento de linhas
+            df_aux_ucmt_tr = pd.concat([df_aux_ucmt,df_aux_trafo],ignore_index=True) #para faseamento de cargas e trafos
+            df_elements_bt = pd.concat([df_aux_ssdbt,df_aux_ramalig],ignore_index=True) #para faseamento de linhas de bt
+            df_aux_ucbt_pip = pd.concat([df_aux_ucbt,df_aux_pip],ignore_index=True) #para faseamento de cargas bt
+
+            df = dataframe['CTMT'][['COD_ID','PAC_INI']]
+            pac_ctmt = df.at[df[df['COD_ID'] == alimentador].index[0],'PAC_INI']
+
+            grafo = nx.Graph()
+
+            for row in df_elements.itertuples(index=False):
+                grafo.add_node(row.PAC_1)
+                grafo.add_node(row.PAC_2)
+                grafo.add_edge(row.PAC_1, row.PAC_2)
+            try:
+                grafo.remove_node('')
+            except:
+                pass
+            conectados = list(nx.connected_components(grafo))
+
+            if any(pac_ctmt in grf for grf in conectados):
+                sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) 
+            else:
+                print(f"Não é possível gerar a sequência elétrica, pois o alimentador {feeder} não tem conexão com a fonte")
+                continue
+            if sequencia[0][0] in df_elements['PAC_1'].tolist():
+                pac1 = 'PAC_1'
+                pac2 = 'PAC_2'
+            else: #sequencia inversa
+                pac1 = 'PAC_2'
+                pac2 = 'PAC_1'
+            #verificação de faseamento das linhas,chaves e reguladores de MT
+            for seq in sequencia:
+                if seq[0] == pac_ctmt:
+                    continue
+                else:
+                    try:
+                        i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
+                    except IndexError: #elemento que não está seguindo a mesma ordem dos outros
+                        i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
+                    cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
+                    if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
+                        fase_ele = df_elements.at[i_ele,'FAS_CON']
+                    else:
+                        fase_ele = df_elements.at[i_ele,'FAS_CON'] #fase do elemento atual
+                        seqx = ValidadorBDGD.find_seq(sequencia=sequencia, index=sequencia.index(seq))
+                        if not df_elements.index[(df_elements[pac1] == seqx[0]) & (df_elements[pac2] == seqx[1])].empty:
+                            i = df_elements.index[(df_elements[pac1] == seqx[0]) & (df_elements[pac2] == seqx[1])][0] #índice do elemento anterior
+                        else:
+                            i = df_elements.index[(df_elements[pac1] == seqx[1]) & (df_elements[pac2] == seqx[0])][0] #elemento com ordem de PAC trocada
+                        fase = df_elements.at[i,'FAS_CON'] #fase do elemento anterior
+                        if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
+                            continue #faseamento correto
+                        else:
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.", 
+                            "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Faseamento possível - combinação de:{fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
+                            df_elements.loc[i_ele,'FAS_CON'] = fase
+            #verificação do faseamento nos transformadores e nas cargas de média tensão
+            for elem in df_aux_ucmt_tr.itertuples(index=False):
+                if elem.COD_ID in isolados: #remove os elementos isolados da checagem de faseamento
+                    continue
+                indices = df_elements.index[(df_elements[pac2] == elem.PAC_1)|(df_elements[pac1] == elem.PAC_1)].tolist()
+                if len(indices) == 0: #elemento conectado no nível de tensão errado
+                    continue
+                if len(indices) == 1:
+                    fase = df_elements.at[indices[0],'FAS_CON']
+                    if set(elem.FAS_CON) <= set(fase+'N'):
+                        continue #faseamento correto
+                    else:
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+                else:
+                    find = False
+                    for i in indices:
+                        fase = df_elements.at[i,'FAS_CON']
+                        if set(elem.FAS_CON) <= set(fase+'N'):
+                            find = True
+                            break
+                    if find:
+                        continue
+                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
+            #faseamento das linhas de baixa tensão 
+            for trafo in df_aux_trafo['COD_ID'].tolist():
+                if trafo == None:
+                    print('trafo sem COD_ID')
+                    continue
+                sequencia = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
+                if sequencia:
+                    pac_trafo = sequencia[0][0]
+                    for seq in sequencia:
+                        if seq[0] == pac_trafo:
+                            i = df_aux_trafo.index[df_aux_trafo['COD_ID'] == trafo].tolist()[0]
+                            fase = df_aux_trafo.at[i,'LIG_FAS_S']+df_aux_trafo.at[i,'LIG_FAS_T'] #fase do elemento anterior
+                        else:
+                            try:
+                                i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[0]) & (df_elements_bt[pac2] == seq[1])].tolist()[0] #índice do elemento atual
+                            except IndexError:
+                                i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[1]) & (df_elements_bt[pac2] == seq[0])].tolist()[0]
+                            cod_ele = df_elements_bt.at[i_ele,'COD_ID'] #código do elemento atual
+                            fase_ele = df_elements_bt.at[i_ele,'FAS_CON'] #fase do elemento atual
+                            seqx = ValidadorBDGD.find_seq(sequencia=sequencia, index=sequencia.index(seq)) #acha o primeiro elemento anterior no grafo
+                            if not df_elements_bt.index[(df_elements_bt[pac1] == seqx[0]) & (df_elements_bt[pac2] == seqx[1])].empty:
+                                i = df_elements_bt.index[(df_elements_bt[pac1] == seqx[0]) & (df_elements_bt[pac2] == seqx[1])].tolist()[0]
+                            else:
+                                i = df_elements_bt.index[(df_elements_bt[pac1] == seqx[1]) & (df_elements_bt[pac2] == seqx[0])].tolist()[0]
+                            fase = df_elements_bt.at[i,'FAS_CON'] #fase do elemento anterior
+                            if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
+                                continue #faseamento correto
+                            else:
+                                erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements_bt.at[i_ele,'ELEM'], "Código":df_elements_bt.at[i_ele,'COD_ID'],"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                                "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
+                                df_elements_bt.loc[i_ele,'FAS_CON'] = fase
+                else:
+                    i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
+                    print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
+            #faseamento das cargas de baixa tensão 
+            for elem in df_aux_ucbt_pip.itertuples(index=False):
+                if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
+                        continue
+                #TODO ver a fase do trafo se tiver conectada diretamente no trafo
+                i_tr = df_aux_trafo.index[(df_aux_trafo['PAC_2'] == elem.PAC_1)].tolist()
+                if len(i_tr) > 0:
+                    if set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_S']+'N')) or set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_T']+'N')):
+                        continue #faseamento correto
+                    else:
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+                indices = df_elements_bt.index[(df_elements_bt['PAC_2'] == elem.PAC_1)|(df_elements_bt['PAC_1'] == elem.PAC_1)].tolist()
+                if len(indices) == 1:
+                    i = indices[0]
+                    fase = df_elements_bt.at[i,'FAS_CON']
+                    if set(elem.FAS_CON) <= set(fase+'N'):
+                        continue #faseamento correto
+                    else:
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+                elif len(indices) > 1:
+                    find = False
+                    for i in indices:
+                        fase = df_elements_bt.at[i,'FAS_CON']
+                        if set(elem.FAS_CON) <= set(fase+'N'):
+                            find = True
+                            break
+                    if find:
+                        continue
+                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+                else:#se não tiver num ramal ou linha de BT está em um trafo
+                    try:
+                        i = df_aux_trafo.index[df_aux_trafo['PAC_2'] == elem.PAC_1].tolist()[0]
+                    except:
+                        i = df_aux_trafo.index[df_aux_trafo['PAC_1'] == elem.PAC_1].tolist()[0]
+                        print(f'Carga BT {elem.COD_ID} conectada no primário do trafo {df_aux_trafo.at[i,'COD_ID']}!!')
+                    fase = df_elements_bt.at[i,'FAS_CON']
+                    if set(elem.FAS_CON) <= set(fase+'N'):
+                        continue #faseamento correto
+                    else:
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+        return(pd.DataFrame(erros))
