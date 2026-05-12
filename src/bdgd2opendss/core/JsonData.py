@@ -102,7 +102,7 @@ class JsonData:
                     if is_cat:
                         df[col] = df[col].astype('object')
                     
-                    df.loc[mask, col] = df.loc[mask, col].astype(str).str.replace(r'[\-\.\:\s]+', '_', regex=True)
+                    df.loc[mask, col] = df.loc[mask, col].astype(str).str.replace(r'[\-\.\:\s\#]+', '_', regex=True)
                     
                     # Garantir que nomes de nós não sejam puramente numéricos (apenas para colunas de PAC)
                     if col in ['PAC_1', 'PAC_2', 'PAC_3', 'PAC']:
