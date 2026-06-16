@@ -382,8 +382,8 @@ class ValidadorBDGD:
         dfe14, df_isolados = ValidadorBDGD.elem_isolados(self,self.df)
 
         dfe15,df_total,df_linhas = ValidadorBDGD.check_feeder(self,self.df,df_isolados,df_trafo,df_reg) #colocar outros dfs aqui também... 
-
         dfe16= ValidadorBDGD.check_faseamento(self,dataframe=self.df,lista_isolados=self.isolados)
+        dfe16a= ValidadorBDGD.check_propagacao(self,dataframe=self.df,lista_isolados=self.isolados)
         
         dfe17 = ValidadorBDGD.check_voltage(self,df_total)
 
@@ -410,8 +410,8 @@ class ValidadorBDGD:
         dfe28 = ValidadorBDGD.check_parallel(self,df_linhas,self.df['UNTRMT'])
 
         df_erros = pd.concat([dfene,dfe1,dfe2,dfe3,dfe4,dfe5,dfe6,dfe7,dfe8,dfe9,dfe10,dfe11,dfe12,dfe13,dfe14,dfe15,dfe16,dfe17,
-        dfe18,dfe19,dfe20,dfe21,dfe22,dfe23,dfe24,dfe25,dfe26,dfe27,dfe28], ignore_index=True)
-    
+        dfe18,dfe19,dfe20,dfe21,dfe22,dfe23,dfe24,dfe25,dfe26,dfe27,dfe28,dfe16a], ignore_index=True)
+
         ValidadorBDGD.exportar_erros_excel(self,df_erros,self.output_folder,feeder=self.feeders)
 
 
@@ -1909,7 +1909,7 @@ class ValidadorBDGD:
             
         print(f"✅ Arquivo Excel de Scan pré validação exportado com sucesso: {path}")
 
-    def check_faseamento2(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
+    def check_propagacao(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
         """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento 
         dos elementos (exemplo de erro: fase do elemento anterior AB e fase do elemento atual ABC)
         dataframe = geodataframe completo da BDGD"""
@@ -2015,8 +2015,8 @@ class ValidadorBDGD:
                         fase = df_elements.at[i,'FAS_CON'] #fase do elemento anterior
                         if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
                             continue #faseamento correto
-                        else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.", 
+                        else:#TODO mudar o nome de detalhamento para deixar claro que é propagação
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.", 
                             "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Faseamento possível - combinação de:{fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
                             df_elements.loc[i_ele,'FAS_CON'] = fase
             #verificação do faseamento nos transformadores e nas cargas de média tensão
@@ -2031,7 +2031,7 @@ class ValidadorBDGD:
                     if set(elem.FAS_CON) <= set(fase+'N'):
                         continue #faseamento correto
                     else:
-                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                        erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
                         "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
                 else:
                     find = False
@@ -2042,7 +2042,7 @@ class ValidadorBDGD:
                             break
                     if find:
                         continue
-                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                    erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
                     "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
             #faseamento das linhas de baixa tensão 
             for trafo in df_aux_trafo['COD_ID'].tolist():
