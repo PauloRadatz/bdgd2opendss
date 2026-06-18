@@ -107,7 +107,7 @@ If you use `bdgd2opendss` in your academic work, please reference it as follows:
 @software{radatz2024bdgd2opendss,
   author = {Paulo Radatz and Contributors},
   title = {bdgd2opendss: A BDGD to OpenDSS conversion tool},
-  year = {2024},
+  year = {2026},
   version = {1.2.0},
   url = {https://github.com/pauloradatz/bdgd2opendss}
 }

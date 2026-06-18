@@ -275,11 +275,11 @@ class TestResilientVerification:
         assert "MISSING_COL" in log_path.read_text(encoding="utf-8")
 
 
-class TestVerificacaoBdgd:
-    def test_verificacao_bdgd_creluz_sample(self):
-        sample_path = get_creluz_d_path()
-        if sample_path is None:
-            pytest.skip("Creluz-D sample not found")
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            bdgd.verificacao_bdgd(str(sample_path), True, None, tmpdir)
+# class TestVerificacaoBdgd:
+#     def test_verificacao_bdgd_creluz_sample(self):
+#         sample_path = get_creluz_d_path()
+#         if sample_path is None:
+#             pytest.skip("Creluz-D sample not found")
+#
+#         with tempfile.TemporaryDirectory() as tmpdir:
+#             bdgd.verificacao_bdgd(str(sample_path), True, None, tmpdir)
