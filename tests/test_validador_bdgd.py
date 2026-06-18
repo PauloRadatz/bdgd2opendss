@@ -150,6 +150,63 @@ class TestVerificationProgress:
         assert "[verificacao] teste: mensagem de teste" in captured.out
 
 
+class TestMissingFieldChecks:
+    def test_detects_missing_ctmt_and_trafo_with_pd_na(self):
+        df = {
+            "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
+            "CRVCRG": pd.DataFrame({"COD_ID": ["C1"]}),
+            "UCBT": pd.DataFrame({
+                "COD_ID": ["U1"], "FAS_CON": ["A"], "CTMT": [pd.NA],
+                "TIP_CC": ["C1"], "UNI_TR_MT": [pd.NA], "SEMRED": [0],
+            }),
+            "PIP": pd.DataFrame({
+                "COD_ID": ["P1"], "FAS_CON": ["A"], "CTMT": [pd.NA],
+                "TIP_CC": ["C1"], "UNI_TR_MT": [pd.NA],
+            }),
+            "SSDMT": pd.DataFrame({
+                "COD_ID": ["L1"], "FAS_CON": ["A"], "COMP": [10.0],
+                "TIP_CND": ["S1"], "CTMT": [pd.NA], "ARE_LOC": ["UB"],
+            }),
+            "SEGCON": pd.DataFrame({"COD_ID": ["S1"]}),
+        }
+        validator = ValidadorBDGD(df=df, tables={})
+        validator.cod_base = "TEST"
+
+        ucbt_erros = validator.check_loadbt("UCBT")["erro"].tolist()
+        pip_erros = validator.check_loadbt("PIP")["erro"].tolist()
+        ssdmt_erros = validator.check_lines("SSDMT")["erro"].tolist()
+
+        assert "O alimentador não foi declarado." in ucbt_erros
+        assert "O transformador não foi declarado." in ucbt_erros
+        assert "O alimentador não foi declarado." in pip_erros
+        assert "O transformador não foi declarado." in pip_erros
+        assert "O alimentador não foi declarado." in ssdmt_erros
+
+    def test_check_pacs_handles_pd_na(self):
+        df = {
+            "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
+            "SSDMT": pd.DataFrame({"COD_ID": ["L1"], "PAC_1": [pd.NA], "PAC_2": ["2"], "CTMT": ["F1"]}),
+        }
+        validator = ValidadorBDGD(df=df, tables={})
+        validator.cod_base = "TEST"
+        erros = validator.check_pacs()
+        assert any("Não foi declarado o ponto de acoplamento 1" in e for e in erros["erro"])
+
+    def test_check_loadbt_fas_con_pd_na_does_not_crash(self):
+        df = {
+            "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
+            "CRVCRG": pd.DataFrame({"COD_ID": ["C1"]}),
+            "UCBT": pd.DataFrame({
+                "COD_ID": ["U1"], "FAS_CON": [pd.NA], "CTMT": ["F1"],
+                "TIP_CC": ["C1"], "UNI_TR_MT": ["T1"], "SEMRED": [0],
+            }),
+        }
+        validator = ValidadorBDGD(df=df, tables={})
+        validator.cod_base = "TEST"
+        erros = validator.check_loadbt("UCBT")
+        assert any("valor não esperado" in e for e in erros["erro"])
+
+
 class TestResilientVerification:
     def test_run_validation_continues_after_step_failure(self, monkeypatch, tmp_path):
         _stub_heavy_validation_steps(monkeypatch)

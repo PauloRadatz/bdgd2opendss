@@ -30,6 +30,10 @@ class TestRunFunctionality:
         assert bdgd is not None
         assert hasattr(bdgd, 'run')
 
+    def test_version(self):
+        """Test that package version matches the release."""
+        assert bdgd.__version__ == "1.2.0"
+
     def test_public_api(self):
         """Test that the package exposes only the intended public API."""
         assert set(bdgd.__all__) == {
