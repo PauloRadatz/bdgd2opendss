@@ -1,13 +1,59 @@
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 from bdgd2opendss.core.JsonData import JsonData
-from bdgd2opendss.core.Settings import settings
-from bdgd2opendss.core.Utils import adapt_regulators_names, inner_entities_tables,create_output_folder
+from bdgd2opendss.core.Utils import (
+    adapt_regulators_names,
+    assign_elem,
+    assign_single_pac_network,
+    create_output_folder,
+    inner_entities_tables,
+    lookup_ctmt_by_pac,
+    normalize_pac_columns,
+)
 from bdgd2opendss.model.Converter import convert_tpotaprt,convert_tten
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import networkx as nx 
-import os.path 
+import networkx as nx
+import os
+import os.path
+import traceback
+from datetime import datetime
+from tqdm import tqdm
+
+
+def _report_verification(step: str, message: str) -> None:
+    print(f"[verificacao] {step}: {message}", flush=True)
+
+
+def _verification_log_path(output_folder: str, feeder: Optional[str], cod_base: str) -> str:
+    if feeder:
+        filename = f"{feeder}_verificacao_{cod_base}.log"
+    else:
+        filename = f"verificacao_{cod_base}.log"
+    return os.path.join(output_folder, filename)
+
+
+def _log_verification_failure(
+    log_path: str,
+    phase: str,
+    step: str,
+    desc: str,
+    exc: BaseException,
+) -> None:
+    os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
+    block = (
+        f"\n{'=' * 72}\n"
+        f"[{datetime.now().isoformat(timespec='seconds')}] FALHA\n"
+        f"Fase: {phase}\n"
+        f"Etapa: {step}\n"
+        f"Descricao: {desc}\n"
+        f"Excecao: {type(exc).__name__}: {exc}\n"
+        f"Traceback:\n{traceback.format_exc()}"
+        f"\n{'=' * 72}\n"
+    )
+    with open(log_path, "a", encoding="utf-8") as log_file:
+        log_file.write(block)
+
 
 class VerificadorFaseamentoTrafo:
 
@@ -15,7 +61,7 @@ class VerificadorFaseamentoTrafo:
         self.padroes_corretos_df = self._carregar_padroes_corretos_deltafechado()
         self.padroes_corretos_da = self._carregar_padroes_corretos_deltaaberto()
         self.tip_lig = tip_lig
-    
+
     def _carregar_padroes_corretos_deltafechado(self):
         """Carrega todos os padrões corretos baseados na sua lógica original"""
         return [
@@ -26,7 +72,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'AN', 'BN', ('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'CA', 'XX'),),
             ((('A', 'AN'), 'BN', 'CN', ('B', 'BN'), 'CA', 'XX', ('C', 'CN'), 'AB', 'XX'),),
             ((('A', 'AN'), 'BN', 'CN', ('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'CA', 'XX'),),
-            
+
             # Grupo 2: Padrões com Var01 = A/AN e Var04 = C/CN
             ((('A', 'AN'), 'CN', 'AN', ('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'BC', 'XX'),),
             ((('A', 'AN'), 'CN', 'AN', ('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'AB', 'XX'),),
@@ -34,7 +80,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'AN', 'BN', ('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'CA', 'XX'),),
             ((('A', 'AN'), 'BN', 'CN', ('C', 'CN'), 'CA', 'XX', ('B', 'BN'), 'AB', 'XX'),),
             ((('A', 'AN'), 'BN', 'CN', ('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'CA', 'XX'),),
-            
+
             # Grupo 3: Padrões com Var04 começando com A/AN
             ((('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'CN', 'AN', ('C', 'CN'), 'BC', 'XX'),),
             ((('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'CN', 'AN', ('C', 'CN'), 'AB', 'XX'),),
@@ -42,7 +88,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'AN', 'BN', ('C', 'CN'), 'CA', 'XX'),),
             ((('B', 'BN'), 'CA', 'XX', ('A', 'AN'), 'BN', 'CN', ('C', 'CN'), 'AB', 'XX'),),
             ((('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'BN', 'CN', ('C', 'CN'), 'CA', 'XX'),),
-            
+
             # Grupo 4: Padrões com Var04 = A/AN e Var01 = C/CN
             ((('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'CN', 'AN', ('B', 'BN'), 'BC', 'XX'),),
             ((('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'CN', 'AN', ('B', 'BN'), 'AB', 'XX'),),
@@ -50,7 +96,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'AN', 'BN', ('B', 'BN'), 'CA', 'XX'),),
             ((('C', 'CN'), 'CA', 'XX', ('A', 'AN'), 'BN', 'CN', ('B', 'BN'), 'AB', 'XX'),),
             ((('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'BN', 'CN', ('B', 'BN'), 'CA', 'XX'),),
-            
+
             # Grupo 5: Padrões com Var07 começando com A/AN
             ((('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'CN', 'AN'),),
             ((('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'CN', 'AN'),),
@@ -58,7 +104,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'CA', 'XX', ('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'AN', 'BN'),),
             ((('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'CA', 'XX', ('A', 'AN'), 'BN', 'CN'),),
             ((('C', 'CN'), 'CA', 'XX', ('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'BN', 'CN'),),
-            
+
             # Grupo 6: Padrões com Var07 = A/AN e Var04 = C/CN
             ((('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'CN', 'AN'),),
             ((('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'CN', 'AN'),),
@@ -66,7 +112,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'CA', 'XX', ('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'AN', 'BN'),),
             ((('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'CA', 'XX', ('A', 'AN'), 'BN', 'CN'),),
             ((('B', 'BN'), 'CA', 'XX', ('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'BN', 'CN'),),
-            
+
             # Grupo 7: Padrões com Var01 começando com B/BN
             ((('B', 'BN'), 'CN', 'AN', ('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'BC', 'XX'),),
             ((('B', 'BN'), 'CN', 'AN', ('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'AB', 'XX'),),
@@ -74,7 +120,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'AN', 'BN', ('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'CA', 'XX'),),
             ((('B', 'BN'), 'BN', 'CN', ('C', 'CN'), 'CA', 'XX', ('A', 'AN'), 'AB', 'XX'),),
             ((('B', 'BN'), 'BN', 'CN', ('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'CA', 'XX'),),
-            
+
             # Grupo 8: Padrões com Var01 = B/BN e Var04 = A/AN
             ((('B', 'BN'), 'CN', 'AN', ('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'BC', 'XX'),),
             ((('B', 'BN'), 'CN', 'AN', ('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'AB', 'XX'),),
@@ -82,7 +128,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'AN', 'BN', ('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'CA', 'XX'),),
             ((('B', 'BN'), 'BN', 'CN', ('A', 'AN'), 'CA', 'XX', ('C', 'CN'), 'AB', 'XX'),),
             ((('B', 'BN'), 'BN', 'CN', ('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'CA', 'XX'),),
-            
+
             # Grupo 9: Padrões com Var04 começando com B/BN
             ((('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'CN', 'AN', ('A', 'AN'), 'BC', 'XX'),),
             ((('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'CN', 'AN', ('A', 'AN'), 'AB', 'XX'),),
@@ -90,7 +136,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'AN', 'BN', ('A', 'AN'), 'CA', 'XX'),),
             ((('C', 'CN'), 'CA', 'XX', ('B', 'BN'), 'BN', 'CN', ('A', 'AN'), 'AB', 'XX'),),
             ((('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'BN', 'CN', ('A', 'AN'), 'CA', 'XX'),),
-            
+
             # Grupo 10: Padrões com Var04 = B/BN e Var01 = A/AN
             ((('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'CN', 'AN', ('C', 'CN'), 'BC', 'XX'),),
             ((('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'CN', 'AN', ('C', 'CN'), 'AB', 'XX'),),
@@ -98,7 +144,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'AN', 'BN', ('C', 'CN'), 'CA', 'XX'),),
             ((('A', 'AN'), 'CA', 'XX', ('B', 'BN'), 'BN', 'CN', ('C', 'CN'), 'AB', 'XX'),),
             ((('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'BN', 'CN', ('C', 'CN'), 'CA', 'XX'),),
-            
+
             # Grupo 11: Padrões com Var07 começando com B/BN
             ((('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'CN', 'AN'),),
             ((('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'CN', 'AN'),),
@@ -106,7 +152,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'CA', 'XX', ('C', 'CN'), 'BC', 'XX', ('B', 'BN'), 'AN', 'BN'),),
             ((('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'CA', 'XX', ('B', 'BN'), 'BN', 'CN'),),
             ((('A', 'AN'), 'CA', 'XX', ('C', 'CN'), 'AB', 'XX', ('B', 'BN'), 'BN', 'CN'),),
-            
+
             # Grupo 12: Padrões com Var07 = B/BN e Var04 = A/AN
             ((('C', 'CN'), 'BC', 'XX', ('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'CN', 'AN'),),
             ((('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'CN', 'AN'),),
@@ -114,7 +160,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'CA', 'XX', ('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'AN', 'BN'),),
             ((('C', 'CN'), 'AB', 'XX', ('A', 'AN'), 'CA', 'XX', ('B', 'BN'), 'BN', 'CN'),),
             ((('C', 'CN'), 'CA', 'XX', ('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'BN', 'CN'),),
-            
+
             # Grupo 13: Padrões com Var01 começando com C/CN
             ((('C', 'CN'), 'CN', 'AN', ('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'BC', 'XX'),),
             ((('C', 'CN'), 'CN', 'AN', ('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'AB', 'XX'),),
@@ -122,7 +168,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'AN', 'BN', ('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'CA', 'XX'),),
             ((('C', 'CN'), 'BN', 'CN', ('B', 'BN'), 'CA', 'XX', ('A', 'AN'), 'AB', 'XX'),),
             ((('C', 'CN'), 'BN', 'CN', ('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'CA', 'XX'),),
-            
+
             # Grupo 14: Padrões com Var01 = C/CN e Var04 = A/AN
             ((('C', 'CN'), 'CN', 'AN', ('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'BC', 'XX'),),
             ((('C', 'CN'), 'CN', 'AN', ('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'AB', 'XX'),),
@@ -130,7 +176,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN'), 'AN', 'BN', ('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'CA', 'XX'),),
             ((('C', 'CN'), 'BN', 'CN', ('A', 'AN'), 'CA', 'XX', ('B', 'BN'), 'AB', 'XX'),),
             ((('C', 'CN'), 'BN', 'CN', ('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'CA', 'XX'),),
-            
+
             # Grupo 15: Padrões com Var04 começando com C/CN
             ((('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'CN', 'AN', ('A', 'AN'), 'BC', 'XX'),),
             ((('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'CN', 'AN', ('A', 'AN'), 'AB', 'XX'),),
@@ -138,7 +184,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'AN', 'BN', ('A', 'AN'), 'CA', 'XX'),),
             ((('B', 'BN'), 'CA', 'XX', ('C', 'CN'), 'BN', 'CN', ('A', 'AN'), 'AB', 'XX'),),
             ((('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'BN', 'CN', ('A', 'AN'), 'CA', 'XX'),),
-            
+
             # Grupo 16: Padrões com Var04 = C/CN e Var01 = A/AN
             ((('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'CN', 'AN', ('B', 'BN'), 'BC', 'XX'),),
             ((('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'CN', 'AN', ('B', 'BN'), 'AB', 'XX'),),
@@ -146,7 +192,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'AN', 'BN', ('B', 'BN'), 'CA', 'XX'),),
             ((('A', 'AN'), 'CA', 'XX', ('C', 'CN'), 'BN', 'CN', ('B', 'BN'), 'AB', 'XX'),),
             ((('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'BN', 'CN', ('B', 'BN'), 'CA', 'XX'),),
-            
+
             # Grupo 17: Padrões com Var07 começando com C/CN
             ((('A', 'AN'), 'BC', 'XX', ('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'CN', 'AN'),),
             ((('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'CN', 'AN'),),
@@ -154,7 +200,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN'), 'CA', 'XX', ('B', 'BN'), 'BC', 'XX', ('C', 'CN'), 'AN', 'BN'),),
             ((('A', 'AN'), 'AB', 'XX', ('B', 'BN'), 'CA', 'XX', ('C', 'CN'), 'BN', 'CN'),),
             ((('A', 'AN'), 'CA', 'XX', ('B', 'BN'), 'AB', 'XX', ('C', 'CN'), 'BN', 'CN'),),
-            
+
             # Grupo 18: Padrões com Var07 = C/CN e Var04 = A/AN
             ((('B', 'BN'), 'BC', 'XX', ('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'CN', 'AN'),),
             ((('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'CN', 'AN'),),
@@ -162,7 +208,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN'), 'CA', 'XX', ('A', 'AN'), 'BC', 'XX', ('C', 'CN'), 'AN', 'BN'),),
             ((('B', 'BN'), 'AB', 'XX', ('A', 'AN'), 'CA', 'XX', ('C', 'CN'), 'BN', 'CN'),),
             ((('B', 'BN'), 'CA', 'XX', ('A', 'AN'), 'AB', 'XX', ('C', 'CN'), 'BN', 'CN'),),
-            
+
             # Grupo 19: Padrões com Var01 = AB, BC, CA (primeira parte)
             (('AB', ('A', 'AN'), 'XX', 'BC', ('B', 'BN'), 'XX', 'CA', ('C', 'CN'), 'XX'),),
             (('AB', ('A', 'AN'), 'XX', 'CA', ('B', 'BN'), 'XX', 'BC', ('C', 'CN'), 'XX'),),
@@ -170,7 +216,7 @@ class VerificadorFaseamentoTrafo:
             (('BC', ('A', 'AN'), 'XX', 'CA', ('B', 'BN'), 'XX', 'AB', ('C', 'CN'), 'XX'),),
             (('CA', ('A', 'AN'), 'XX', 'AB', ('B', 'BN'), 'XX', 'BC', ('C', 'CN'), 'XX'),),
             (('CA', ('A', 'AN'), 'XX', 'BC', ('B', 'BN'), 'XX', 'AB', ('C', 'CN'), 'XX'),),
-            
+
             # Grupo 20: Padrões com Var01 = AB, BC, CA e Var05 = C/CN
             (('AB', ('A', 'AN'), 'XX', 'BC', ('C', 'CN'), 'XX', 'CA', ('B', 'BN'), 'XX'),),
             (('AB', ('A', 'AN'), 'XX', 'CA', ('C', 'CN'), 'XX', 'BC', ('B', 'BN'), 'XX'),),
@@ -178,7 +224,7 @@ class VerificadorFaseamentoTrafo:
             (('BC', ('A', 'AN'), 'XX', 'CA', ('C', 'CN'), 'XX', 'AB', ('B', 'BN'), 'XX'),),
             (('CA', ('A', 'AN'), 'XX', 'AB', ('C', 'CN'), 'XX', 'BC', ('B', 'BN'), 'XX'),),
             (('CA', ('A', 'AN'), 'XX', 'BC', ('C', 'CN'), 'XX', 'AB', ('B', 'BN'), 'XX'),),
-            
+
             # Grupo 21: Padrões com Var01 = AB, BC, CA e Var02 = B/BN
             (('AB', ('B', 'BN'), 'XX', 'BC', ('A', 'AN'), 'XX', 'CA', ('C', 'CN'), 'XX'),),
             (('AB', ('B', 'BN'), 'XX', 'CA', ('A', 'AN'), 'XX', 'BC', ('C', 'CN'), 'XX'),),
@@ -186,7 +232,7 @@ class VerificadorFaseamentoTrafo:
             (('BC', ('B', 'BN'), 'XX', 'CA', ('A', 'AN'), 'XX', 'AB', ('C', 'CN'), 'XX'),),
             (('CA', ('B', 'BN'), 'XX', 'AB', ('A', 'AN'), 'XX', 'BC', ('C', 'CN'), 'XX'),),
             (('CA', ('B', 'BN'), 'XX', 'BC', ('A', 'AN'), 'XX', 'AB', ('C', 'CN'), 'XX'),),
-            
+
             # Grupo 22: Padrões com Var01 = AB, BC, CA, Var02 = B/BN, Var05 = C/CN
             (('AB', ('B', 'BN'), 'XX', 'BC', ('C', 'CN'), 'XX', 'CA', ('A', 'AN'), 'XX'),),
             (('AB', ('B', 'BN'), 'XX', 'CA', ('C', 'CN'), 'XX', 'BC', ('A', 'AN'), 'XX'),),
@@ -194,7 +240,7 @@ class VerificadorFaseamentoTrafo:
             (('BC', ('B', 'BN'), 'XX', 'CA', ('C', 'CN'), 'XX', 'AB', ('A', 'AN'), 'XX'),),
             (('CA', ('B', 'BN'), 'XX', 'AB', ('C', 'CN'), 'XX', 'BC', ('A', 'AN'), 'XX'),),
             (('CA', ('B', 'BN'), 'XX', 'BC', ('C', 'CN'), 'XX', 'AB', ('A', 'AN'), 'XX'),),
-            
+
             # Grupo 23: Padrões com Var01 = AB, BC, CA e Var02 = C/CN
             (('AB', ('C', 'CN'), 'XX', 'BC', ('B', 'BN'), 'XX', 'CA', ('A', 'AN'), 'XX'),),
             (('AB', ('C', 'CN'), 'XX', 'CA', ('B', 'BN'), 'XX', 'BC', ('A', 'AN'), 'XX'),),
@@ -202,7 +248,7 @@ class VerificadorFaseamentoTrafo:
             (('BC', ('C', 'CN'), 'XX', 'CA', ('B', 'BN'), 'XX', 'AB', ('A', 'AN'), 'XX'),),
             (('CA', ('C', 'CN'), 'XX', 'AB', ('B', 'BN'), 'XX', 'BC', ('A', 'AN'), 'XX'),),
             (('CA', ('C', 'CN'), 'XX', 'BC', ('B', 'BN'), 'XX', 'AB', ('A', 'AN'), 'XX'),),
-            
+
             # Grupo 24: Padrões com Var01 = AB, BC, CA, Var02 = C/CN, Var05 = A/AN
             (('AB', ('C', 'CN'), 'XX', 'BC', ('A', 'AN'), 'XX', 'CA', ('B', 'BN'), 'XX'),),
             (('AB', ('C', 'CN'), 'XX', 'CA', ('A', 'AN'), 'XX', 'BC', ('B', 'BN'), 'XX'),),
@@ -211,7 +257,7 @@ class VerificadorFaseamentoTrafo:
             (('CA', ('C', 'CN'), 'XX', 'AB', ('A', 'AN'), 'XX', 'BC', ('B', 'BN'), 'XX'),),
             (('CA', ('C', 'CN'), 'XX', 'BC', ('A', 'AN'), 'XX', 'AB', ('B', 'BN'), 'XX'),),
         ]
-    
+
     def _carregar_padroes_corretos_deltaaberto(self):
         """Carrega todos os padrões corretos baseados na sua lógica original"""
         return [
@@ -222,7 +268,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN', 'AB'), 'CN', 'AN', ('C', 'CN', 'CA'), ('BC', 'AB'), 'XX'),),
             ((('A', 'AN', 'AB'), 'BN', 'CN', ('B', 'BN', 'BC'), ('CA', 'AB'), 'XX'),),
             ((('A', 'AN', 'AB'), 'BN', 'CN', ('C', 'CN', 'CA'), ('CA', 'AB'), 'XX'),),
-            
+
             # Grupo 2: Padrões com Var01 começando com B/BN/BC
             ((('B', 'BN', 'BC'), 'BN', 'CN', ('C', 'CN', 'CA'), ('CA', 'AB'), 'XX'),),
             ((('B', 'BN', 'BC'), 'BN', 'CN', ('A', 'AN', 'AB'), ('CA', 'AB'), 'XX'),),
@@ -230,7 +276,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN', 'BC'), 'AN', 'BN', ('C', 'CN', 'CA'), ('BC', 'CA'), 'XX'),),
             ((('B', 'BN', 'BC'), 'CN', 'AN', ('A', 'AN', 'AB'), ('BC', 'AB'), 'XX'),),
             ((('B', 'BN', 'BC'), 'CN', 'AN', ('C', 'CN', 'CA'), ('BC', 'AB'), 'XX'),),
-            
+
             # Grupo 3: Padrões com Var01 começando com C/CN/CA
             ((('C', 'CN', 'CA'), 'CN', 'AN', ('A', 'AN', 'AB'), ('BC', 'AB'), 'XX'),),
             ((('C', 'CN', 'CA'), 'CN', 'AN', ('B', 'BN', 'BC'), ('BC', 'AB'), 'XX'),),
@@ -238,7 +284,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN', 'CA'), 'BN', 'CN', ('A', 'AN', 'AB'), ('CA', 'AB'), 'XX'),),
             ((('C', 'CN', 'CA'), 'AN', 'BN', ('B', 'BN', 'BC'), ('BC', 'CA'), 'XX'),),
             ((('C', 'CN', 'CA'), 'AN', 'BN', ('A', 'AN', 'AB'), ('BC', 'CA'), 'XX'),),
-            
+
             # Grupo 4: Padrões com Var04 começando com A/AN/AB
             ((('B', 'BN', 'BC'), ('BC', 'CA'), 'XX', ('A', 'AN', 'AB'), 'AN', 'BN'),),
             ((('C', 'CN', 'CA'), ('BC', 'CA'), 'XX', ('A', 'AN', 'AB'), 'AN', 'BN'),),
@@ -246,7 +292,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN', 'CA'), ('BC', 'AB'), 'XX', ('A', 'AN', 'AB'), 'CN', 'AN'),),
             ((('B', 'BN', 'BC'), ('CA', 'AB'), 'XX', ('A', 'AN', 'AB'), 'BN', 'CN'),),
             ((('C', 'CN', 'CA'), ('CA', 'AB'), 'XX', ('A', 'AN', 'AB'), 'BN', 'CN'),),
-            
+
             # Grupo 5: Padrões com Var04 começando com B/BN/BC
             ((('C', 'CN', 'CA'), ('CA', 'AB'), 'XX', ('B', 'BN', 'BC'), 'BN', 'CN'),),
             ((('A', 'AN', 'AB'), ('CA', 'AB'), 'XX', ('B', 'BN', 'BC'), 'BN', 'CN'),),
@@ -254,7 +300,7 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN', 'CA'), ('BC', 'AB'), 'XX', ('B', 'BN', 'BC'), 'CN', 'AN'),),
             ((('A', 'AN', 'AB'), ('BC', 'CA'), 'XX', ('B', 'BN', 'BC'), 'AN', 'BN'),),
             ((('C', 'CN', 'CA'), ('BC', 'CA'), 'XX', ('B', 'BN', 'BC'), 'AN', 'BN'),),
-            
+
             # Grupo 6: Padrões com Var04 começando com C/CN/CA
             ((('A', 'AN', 'AB'), ('BC', 'AB'), 'XX', ('C', 'CN', 'CA'), 'CN', 'AN'),),
             ((('B', 'BN', 'BC'), ('BC', 'AB'), 'XX', ('C', 'CN', 'CA'), 'CN', 'AN'),),
@@ -262,7 +308,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN', 'AB'), ('CA', 'AB'), 'XX', ('C', 'CN', 'CA'), 'BN', 'CN'),),
             ((('B', 'BN', 'BC'), ('BC', 'CA'), 'XX', ('C', 'CN', 'CA'), 'AN', 'BN'),),
             ((('A', 'AN', 'AB'), ('BC', 'CA'), 'XX', ('C', 'CN', 'CA'), 'AN', 'BN'),),
-            
+
             # Grupo 7: Padrões com fases simples (primeira parte)
             ((('A', 'AN', 'AB'), ('A', 'AN'), 'XX', ('B', 'BN', 'BC'), ('B', 'BN'), 'XX'),),
             ((('A', 'AN', 'AB'), ('A', 'AN'), 'XX', ('C', 'CN', 'CA'), ('B', 'BN'), 'XX'),),
@@ -276,7 +322,7 @@ class VerificadorFaseamentoTrafo:
             ((('A', 'AN', 'AB'), ('B', 'BN'), 'XX', ('C', 'CN', 'CA'), ('A', 'AN'), 'XX'),),
             ((('A', 'AN', 'AB'), ('B', 'BN'), 'XX', ('B', 'BN', 'BC'), ('C', 'CN'), 'XX'),),
             ((('A', 'AN', 'AB'), ('B', 'BN'), 'XX', ('C', 'CN', 'CA'), ('C', 'CN'), 'XX'),),
-            
+
             # Grupo 8: Padrões com Var01 começando com B/BN/BC (fases simples)
             ((('B', 'BN', 'BC'), ('A', 'AN'), 'XX', ('A', 'AN', 'AB'), ('B', 'BN'), 'XX'),),
             ((('B', 'BN', 'BC'), ('A', 'AN'), 'XX', ('C', 'CN', 'CA'), ('B', 'BN'), 'XX'),),
@@ -290,7 +336,7 @@ class VerificadorFaseamentoTrafo:
             ((('B', 'BN', 'BC'), ('B', 'BN'), 'XX', ('C', 'CN', 'CA'), ('A', 'AN'), 'XX'),),
             ((('B', 'BN', 'BC'), ('B', 'BN'), 'XX', ('A', 'AN', 'AB'), ('C', 'CN'), 'XX'),),
             ((('B', 'BN', 'BC'), ('B', 'BN'), 'XX', ('C', 'CN', 'CA'), ('C', 'CN'), 'XX'),),
-            
+
             # Grupo 9: Padrões com Var01 começando com C/CN/CA (fases simples)
             ((('C', 'CN', 'CA'), ('A', 'AN'), 'XX', ('A', 'AN', 'AB'), ('B', 'BN'), 'XX'),),
             ((('C', 'CN', 'CA'), ('A', 'AN'), 'XX', ('B', 'BN', 'BC'), ('B', 'BN'), 'XX'),),
@@ -305,13 +351,13 @@ class VerificadorFaseamentoTrafo:
             ((('C', 'CN', 'CA'), ('B', 'BN'), 'XX', ('A', 'AN', 'AB'), ('C', 'CN'), 'XX'),),
             ((('C', 'CN', 'CA'), ('B', 'BN'), 'XX', ('B', 'BN', 'BC'), ('C', 'CN'), 'XX'),),
         ]
-    
+
     def _verificar_padrao_individual(self, variaveis, padrao):
         """Verifica um padrão individual"""
         for i in range(len(variaveis)):
             var_atual = variaveis[i]
             padrao_atual = padrao[i]
-            
+
             if isinstance(padrao_atual, tuple):
                 if var_atual not in padrao_atual:
                     return False
@@ -319,11 +365,11 @@ class VerificadorFaseamentoTrafo:
                 if var_atual != padrao_atual:
                     return False
         return True
-    
+
     def eh_correto(self, lista_var):
         """Verifica se o faseamento está correto"""
         variaveis = lista_var
-        
+
         if self.tip_lig == 'DF':
             padroes = self.padroes_corretos_df
         else:
@@ -333,7 +379,7 @@ class VerificadorFaseamentoTrafo:
             if self._verificar_padrao_individual(variaveis, padrao[0]):
                 return True
         return False
-    
+
     def eh_incorreto(self, *args):
         """Verifica se o faseamento está incorreto"""
         return not self.eh_correto(*args)
@@ -353,78 +399,159 @@ class ValidadorBDGD:
             if not os.path.exists("dss_validation"):
                 os.mkdir("dss_validation")
             self.output_folder = os.path.join(os.getcwd(), f'dss_validation')
-    
+        self._verification_failures: list[dict] = []
+
+    def _cod_base_from_df(self) -> str:
+        return (
+            str(self.df["BASE"]["DIST"].tolist()[0])
+            + str(self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[2]
+                 + self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[1])
+        )
+
+    def _verification_log_path(self) -> str:
+        return _verification_log_path(self.output_folder, self.feeders, self.cod_base)
+
+    def _record_verification_failure(
+        self,
+        log_path: str,
+        phase: str,
+        step: str,
+        desc: str,
+        exc: BaseException,
+    ) -> None:
+        _log_verification_failure(log_path, phase, step, desc, exc)
+        self._verification_failures.append({
+            "phase": phase,
+            "step": step,
+            "desc": desc,
+            "exc": str(exc),
+        })
+
+    def _run_step_safe(
+        self,
+        log_path: str,
+        phase: str,
+        label: str,
+        desc: str,
+        fn: Callable[[], object],
+    ) -> Optional[pd.DataFrame]:
+        _report_verification(label, desc)
+        try:
+            result = fn()
+            if isinstance(result, pd.DataFrame):
+                return result
+            return None
+        except Exception as exc:
+            self._record_verification_failure(log_path, phase, label, desc, exc)
+            _report_verification(label, f"FALHA: {exc}")
+            return None
+
     def run_validation(self,feeder:Optional[str]=""):
         """Começa a rodar a validação da BDGD escolhida. Simula a Etapa 17 do proggeoperdas"""
-        # 
-        self.cod_base = str(self.df["BASE"]["DIST"].tolist()[0])+str(self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[2]+self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[1])
-      
-        # deve-se adicionar a exceção para caso de dataframe vazio
-        df_trafo = inner_entities_tables(self.df['EQTRMT'], self.df['UNTRMT'],
-                                left_column='UNI_TR_MT', right_column='COD_ID') #dataframe de todos os trafos
-        df_reg = inner_entities_tables(self.df['EQRE'], self.df['UNREMT'],
-                                left_column='UN_RE', right_column='COD_ID') #dataframe com todos os reguladores
+        self.cod_base = self._cod_base_from_df()
+        log_path = self._verification_log_path()
 
-        dfene = ValidadorBDGD.check_ctmt_energy(self)
-        dfe1 = ValidadorBDGD.check_pacs(self)
-        dfe2 = ValidadorBDGD.check_ctmt(self)
-        dfe3 = ValidadorBDGD.check_lines(self,line_type='SSDMT')
-        dfe4 = ValidadorBDGD.check_lines(self,line_type='SSDBT')
-        dfe5 = ValidadorBDGD.check_lines(self,line_type='RAMLIG')
-        dfe6 = ValidadorBDGD.check_unse(self,chave='UNSEMT')
-        dfe7 = ValidadorBDGD.check_transformer(self,df_trafo=df_trafo)
-        dfe8 = ValidadorBDGD.check_regulator(self,df_reg=df_reg)
-        dfe9 = ValidadorBDGD.check_ucmt(self)
-        dfe10 = ValidadorBDGD.check_energy(self,'UCMT')
-        dfe11 = ValidadorBDGD.check_loadbt(self,load_type='UCBT')
-        dfe12 = ValidadorBDGD.check_energy(self,'UCBT')
-        dfe13 = ValidadorBDGD.check_loadbt(self,load_type='PIP')
-        dfe14, df_isolados = ValidadorBDGD.elem_isolados(self,self.df)
+        df_trafo = None
+        df_reg = None
+        try:
+            df_trafo = inner_entities_tables(self.df['EQTRMT'], self.df['UNTRMT'],
+                                    left_column='UNI_TR_MT', right_column='COD_ID')
+            df_reg = inner_entities_tables(self.df['EQRE'], self.df['UNREMT'],
+                                    left_column='UN_RE', right_column='COD_ID')
+        except Exception as exc:
+            self._record_verification_failure(
+                log_path, "etapa17", "prep",
+                "Preparacao de transformadores e reguladores", exc,
+            )
+            _report_verification("prep", f"FALHA: {exc}")
 
-        dfe15,df_total,df_linhas = ValidadorBDGD.check_feeder(self,self.df,df_isolados,df_trafo,df_reg) #colocar outros dfs aqui também... 
-        dfe16= ValidadorBDGD.check_faseamento(self,dataframe=self.df,lista_isolados=self.isolados)
-        dfe16a= ValidadorBDGD.check_propagacao(self,dataframe=self.df,lista_isolados=self.isolados)
-        
-        dfe17 = ValidadorBDGD.check_voltage(self,df_total)
+        df_isolados = None
+        df_total = None
+        df_linhas = None
+        results: list[pd.DataFrame] = []
 
-        dfe18 = ValidadorBDGD.iso_trafo(self,self.df,self.isolados)
+        if df_trafo is not None and df_reg is not None:
+            def run_step(label: str, desc: str, fn: Callable[[], object]) -> None:
+                result = self._run_step_safe(log_path, "etapa17", label, desc, fn)
+                if isinstance(result, pd.DataFrame):
+                    results.append(result)
 
-        dfe19 = ValidadorBDGD.check_mrt(self,df_trafo)
+            run_step("1/31", "Energia dos alimentadores (CTMT)", lambda: ValidadorBDGD.check_ctmt_energy(self))
+            run_step("2/31", "Pontos de acoplamento nulos", lambda: ValidadorBDGD.check_pacs(self))
+            run_step("3/31", "Alimentadores (CTMT)", lambda: ValidadorBDGD.check_ctmt(self))
+            run_step("4/31", "Linhas de media tensao (SSDMT)", lambda: ValidadorBDGD.check_lines(self, line_type='SSDMT'))
+            run_step("5/31", "Linhas de baixa tensao (SSDBT)", lambda: ValidadorBDGD.check_lines(self, line_type='SSDBT'))
+            run_step("6/31", "Ramos de ligacao (RAMLIG)", lambda: ValidadorBDGD.check_lines(self, line_type='RAMLIG'))
+            run_step("7/31", "Chaves de seccionamento (UNSEMT)", lambda: ValidadorBDGD.check_unse(self, chave='UNSEMT'))
+            run_step("8/31", "Transformadores", lambda: ValidadorBDGD.check_transformer(self, df_trafo=df_trafo))
+            run_step("9/31", "Reguladores de tensao", lambda: ValidadorBDGD.check_regulator(self, df_reg=df_reg))
+            run_step("10/31", "Unidades consumidoras MT (UCMT)", lambda: ValidadorBDGD.check_ucmt(self))
+            run_step("11/31", "Energia UCMT", lambda: ValidadorBDGD.check_energy(self, 'UCMT'))
+            run_step("12/31", "Cargas BT (UCBT)", lambda: ValidadorBDGD.check_loadbt(self, load_type='UCBT'))
+            run_step("13/31", "Energia UCBT", lambda: ValidadorBDGD.check_energy(self, 'UCBT'))
+            run_step("14/31", "Pontos de iluminacao publica (PIP)", lambda: ValidadorBDGD.check_loadbt(self, load_type='PIP'))
 
-        dfe20 = ValidadorBDGD.phase_error(self,df_trafo,'transformer')
+            def step_elem_isolados():
+                nonlocal df_isolados
+                dfe14, df_isolados = ValidadorBDGD.elem_isolados(self, self.df)
+                return dfe14
+            run_step("15/31", "Elementos isolados", step_elem_isolados)
 
-        dfe21 = ValidadorBDGD.bancos_trafos(self,df_trafo)
+            def step_check_feeder():
+                nonlocal df_total, df_linhas
+                dfe15, df_total, df_linhas = ValidadorBDGD.check_feeder(self, self.df, df_isolados, df_trafo, df_reg)
+                return dfe15
+            run_step("16/31", "Elemento isolado conectado em outro alimentador", step_check_feeder)
 
-        dfe22 = ValidadorBDGD.fase_df_da_problematico(self,df_trafo)
+            run_step("17/31", "Faseamento", lambda: ValidadorBDGD.check_faseamento(self, dataframe=self.df, lista_isolados=self.isolados))
+            run_step("18/31", "Propagacao de faseamento", lambda: ValidadorBDGD.check_propagacao(self, dataframe=self.df, lista_isolados=self.isolados))
+            run_step("19/31", "Tensao nos nos", lambda: ValidadorBDGD.check_voltage(self, df_total))
+            run_step("20/31", "Transformadores isolados", lambda: ValidadorBDGD.iso_trafo(self, self.df, self.isolados))
+            run_step("21/31", "MRT dos transformadores", lambda: ValidadorBDGD.check_mrt(self, df_trafo))
+            run_step("22/31", "Faseamento dos transformadores", lambda: ValidadorBDGD.phase_error(self, df_trafo, 'transformer'))
+            run_step("23/31", "Bancos de transformadores", lambda: ValidadorBDGD.bancos_trafos(self, df_trafo))
+            run_step("24/31", "Faseamento DA problematico (trafo)", lambda: ValidadorBDGD.fase_df_da_problematico(self, df_trafo))
+            run_step("25/31", "Tensao nos transformadores", lambda: ValidadorBDGD.check_voltage_trafo(self, df_trafo=df_trafo))
+            run_step("26/31", "Faseamento dos reguladores", lambda: ValidadorBDGD.phase_error(self, df_reg, 'regcontrol'))
+            run_step("27/31", "Bancos de reguladores", lambda: ValidadorBDGD.bancos_regul(self, df_reg))
+            run_step("28/31", "Faseamento DA problematico (regulador)", lambda: ValidadorBDGD.fase_df_da_problematico_regul(self, df_reg))
+            run_step("29/31", "PACs iguais em linhas", lambda: ValidadorBDGD.pac_iguais(self, df_linhas))
+            run_step("30/31", "Elementos em paralelo", lambda: ValidadorBDGD.check_parallel(self, df_linhas, self.df['UNTRMT']))
 
-        dfe23 = ValidadorBDGD.check_voltage_trafo(self,df_trafo=df_trafo)
+        df_erros = pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
-        dfe24 = ValidadorBDGD.phase_error(self,df_reg,'regcontrol')
+        _report_verification("31/31", "Exportando relatorio Excel")
+        try:
+            ValidadorBDGD.exportar_erros_excel(self, df_erros, self.output_folder, feeder=self.feeders)
+        except Exception as exc:
+            self._record_verification_failure(
+                log_path, "etapa17", "31/31", "Exportando relatorio Excel", exc,
+            )
+            _report_verification("31/31", f"FALHA na exportacao: {exc}")
 
-        dfe25 = ValidadorBDGD.bancos_regul(self,df_reg)
-
-        dfe26 = ValidadorBDGD.fase_df_da_problematico_regul(self,df_reg)
-        
-        dfe27 = ValidadorBDGD.pac_iguais(self,df_linhas)
-
-        dfe28 = ValidadorBDGD.check_parallel(self,df_linhas,self.df['UNTRMT'])
-
-        df_erros = pd.concat([dfene,dfe1,dfe2,dfe3,dfe4,dfe5,dfe6,dfe7,dfe8,dfe9,dfe10,dfe11,dfe12,dfe13,dfe14,dfe15,dfe16,dfe17,
-        dfe18,dfe19,dfe20,dfe21,dfe22,dfe23,dfe24,dfe25,dfe26,dfe27,dfe28,dfe16a], ignore_index=True)
-
-        ValidadorBDGD.exportar_erros_excel(self,df_erros,self.output_folder,feeder=self.feeders)
+        if self._verification_failures:
+            _report_verification(
+                "concluido",
+                f"Relatorio salvo em {self.output_folder} "
+                f"({len(self._verification_failures)} etapa(s) com falha - ver {log_path})",
+            )
+        else:
+            _report_verification("concluido", f"Relatorio salvo em {self.output_folder}")
 
 
     def elem_isolados(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None): #cria uma lista de elementos isolados
         """Encontra todos os elementos isolados na BDGD por alimentador (CTMT).
         dataframe = dataframe total da BDGD"""
-        
+
         erros = []
         df = dataframe['CTMT'][['COD_ID','PAC_INI']]
 
         df_isolados = pd.DataFrame()
 
-        for feeder in df['COD_ID'].tolist():
+        feeders = df['COD_ID'].tolist()
+        feeder_iterator = tqdm(feeders, desc="Isolados por alimentador", unit=" alimentador", ncols=100)
+        for feeder in feeder_iterator:
+            feeder_iterator.set_description(f"Isolados: {feeder}")
             alimentador = feeder
             df_trafo = inner_entities_tables(dataframe['EQTRMT'], dataframe['UNTRMT'].query("CTMT==@alimentador"),
                                     left_column='UNI_TR_MT', right_column='COD_ID')
@@ -433,42 +560,26 @@ class ValidadorBDGD:
 
             adapt_regulators_names(df_trafo,'transformer')
             adapt_regulators_names(df_reg,'regulator')
-            df_aux_ssdmt = dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_ssdmt['ELEM'] = 'SSDMT'
-            df_aux_ssdbt = dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_ssdbt['ELEM'] = 'SSDBT'
-            df_aux_ramalig = dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_ramalig['ELEM'] = 'RAMLIG'
-            df_aux_unsemt = dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_unsemt['ELEM'] = 'UNSEMT'
-            df_aux_unsebt = dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_unsebt['ELEM'] = 'UNSEBT'
-            df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_trafo['ELEM'] = 'UNTRMT'
-            df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_aux_regul['ELEM'] = 'UNREMT'
+            df_aux_ssdmt = assign_elem(dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']], 'SSDMT')
+            df_aux_ssdbt = assign_elem(dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']], 'SSDBT')
+            df_aux_ramalig = assign_elem(dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']], 'RAMLIG')
+            df_aux_unsemt = assign_elem(dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNSEMT')
+            df_aux_unsebt = assign_elem(dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNSEBT')
+            df_aux_trafo = assign_elem(df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNTRMT')
+            df_aux_regul = assign_elem(df_reg[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNREMT')
             df_ucmt = dataframe['UCMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
-            df_aux_ucmt = pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'})
-            df_aux_ucmt['PAC_2'] = ''
-            df_aux_ucmt['ELEM'] = 'UCMT'
-            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucmt = assign_single_pac_network(
+                pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'}),
+                'UCMT',
+            )
             df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
-            df_aux_ucbt = pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'})
-            df_aux_ucbt['PAC_2'] = ''
-            df_aux_ucbt['ELEM'] = 'UCBT'
-            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
-            df_aux_pip = dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
-            df_aux_pip['PAC_2'] = ''
-            df_aux_pip['ELEM'] = 'PIP'
-            df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
-            df_aux_ugbt = dataframe['UGBT'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
-            df_aux_ugbt['PAC_2'] = ''
-            df_aux_ugbt = df_aux_ugbt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
-            df_aux_ugbt['ELEM'] = 'UGBT'
-            df_aux_ugmt = dataframe['UGMT'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']]
-            df_aux_ugmt['PAC_2'] = ''
-            df_aux_ugmt = df_aux_ugmt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
-            df_aux_ugmt['ELEM'] = 'UGMT'
+            df_aux_ucbt = assign_single_pac_network(
+                pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'}),
+                'UCBT',
+            )
+            df_aux_pip = assign_single_pac_network(dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']], 'PIP')
+            df_aux_ugbt = assign_single_pac_network(dataframe['UGBT'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']], 'UGBT', cod_col='CEG_GD')
+            df_aux_ugmt = assign_single_pac_network(dataframe['UGMT'].query("CTMT == @alimentador")[['CEG_GD','CTMT','PAC']], 'UGMT', cod_col='CEG_GD')
             df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,
                                 df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
             grafo = nx.Graph()
@@ -478,7 +589,8 @@ class ValidadorBDGD:
                     grafo.add_node(row.PAC_2)
                     grafo.add_edge(row.PAC_1, row.PAC_2)
                 except ValueError:
-                    print("valor do tipo none")
+                    continue
+                    print("valor do tipo none")  # TODO add in log
             try:
                 grafo.remove_node('')
             except:
@@ -493,45 +605,45 @@ class ValidadorBDGD:
                     else:
                         continue
                 if df_not_connected.empty:
-                    print('Não existem elementos isolados!')
+                    # print('Não existem elementos isolados!')
                     continue
                 else:
                     df_isolados = pd.concat([df_isolados,df_not_connected], ignore_index=True)
                     if df_not_connected.isnull().values.any():
-                        df_not_connected.fillna('Nulo', inplace=True)
+                        df_not_connected = df_not_connected.fillna('Nulo')
 
                     for elem in df_not_connected.itertuples(index=False):
-                        if elem.ELEM == 'SSDMT': 
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Segmento de média tensão isolado.", 
+                        if elem.ELEM == 'SSDMT':
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Segmento de média tensão isolado.",
                             "detalhamento":f"Elemento SSDMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'SSDBT': 
+                        elif elem.ELEM == 'SSDBT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Segmento de baixa tensão isolado.",
                             "detalhamento": f"Elemento SSDBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'RAMLIG': 
+                        elif elem.ELEM == 'RAMLIG':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Ramal de baixa tensão isolado.",
                             "detalhamento": f"Elemento RAMLIG:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UNTRMT': 
+                        elif elem.ELEM == 'UNTRMT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Transformador isolado.",
                             "detalhamento": f"Elemento UNTRMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UNREMT': 
+                        elif elem.ELEM == 'UNREMT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Regulador de tensão isolado.",
                             "detalhamento": f"Elemento UNREMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UCBT': 
+                        elif elem.ELEM == 'UCBT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Carga BT isolada.",
                             "detalhamento":f"Elemento UCBT:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'PIP': 
+                        elif elem.ELEM == 'PIP':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Carga BT de iluminação pública isolada.",
                             "detalhamento":f"Elemento PIP:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UCMT': 
+                        elif elem.ELEM == 'UCMT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID,"erro":f"Carga MT isolada",
                             "detalhamento":f"Elemento UCMT:{elem.COD_ID} - PAC={elem.PAC_1}, Alimentador (CTMT) = {feeder}."})
-                        elif elem.ELEM == 'UNSEMT': 
+                        elif elem.ELEM == 'UNSEMT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Chave MT isolada.",
                             "detalhamento": f"Elemento UNSEMT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UNSEBT': 
+                        elif elem.ELEM == 'UNSEBT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Chave BT isolada.",
                             "detalhamento":f"Elemento UNSEBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, PAC_2={elem.PAC_2}, Alimentador (CTMT)={feeder}."})
-                        elif elem.ELEM == 'UGBT': 
+                        elif elem.ELEM == 'UGBT':
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"2%", "Tabela":elem.ELEM, "Código":elem.COD_ID,"erro":f"Geração Distribuída BT isolada.",
                             "detalhamento":f"Elemento UGBT:{elem.COD_ID} - PAC_1={elem.PAC_1}, Alimentador (CTMT)={feeder}."})
                         else:
@@ -540,12 +652,12 @@ class ValidadorBDGD:
             else:
                 erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":"CTMT", "Código":feeder, "erro":"CTMT isolado",
                 "detalhamento":f"O alimentador ({feeder}) não tem conexão com a fonte."})
-        
+
         df_erros = pd.DataFrame(erros)
         if not df_isolados.empty:
             self.isolados = df_isolados['COD_ID'].tolist()
-        
-        return(df_erros,df_isolados)        
+
+        return(df_erros,df_isolados)
 
     def iso_trafo(self,dataframe,lista_isolados):
         """Verifica se há elementos associados a transformadores errados.
@@ -559,23 +671,19 @@ class ValidadorBDGD:
                 continue
             df = dataframe['UNTRMT'].query("COD_ID == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
             pac_trafo = df['PAC_2'].values[0]
-            df_ssdbt_teste = dataframe['SSDBT'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_ssdbt_teste['ELEM'] = 'SSDBT'
-            df_ramalig_teste = dataframe['RAMLIG'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']]
-            df_ramalig_teste['ELEM'] = 'RAMLIG'
+            df_ssdbt_teste = assign_elem(dataframe['SSDBT'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']], 'SSDBT')
+            df_ramalig_teste = assign_elem(dataframe['RAMLIG'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC_1','PAC_2']], 'RAMLIG')
             df_ucbt = dataframe['UCBT'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
-            df_ucbt_teste = pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'})
-            df_ucbt_teste['PAC_2'] = ''
-            df_ucbt_teste['ELEM'] = 'UCBT'
-            df_ucbt_teste = df_ucbt_teste.rename(columns={'PAC':'PAC_1'})
-            df_pip_teste = dataframe['PIP'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']]
-            df_pip_teste['PAC_2'] = ''
-            df_pip_teste['ELEM'] = 'PIP'
-            df_pip_teste = df_pip_teste.rename(columns={'PAC':'PAC_1'})
-            df_gd_teste = dataframe['UGBT'].query("UNI_TR_MT == @trafo")[['CEG_GD','CTMT','PAC']]
-            df_gd_teste['PAC_2'] = ''
-            df_gd_teste['ELEM'] = 'UGBT'
-            df_gd_teste = df_gd_teste.rename(columns={'PAC':'PAC_1','CEG_GD':'COD_ID'})
+            df_ucbt_teste = assign_single_pac_network(
+                pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last'}),
+                'UCBT',
+            )
+            df_pip_teste = assign_single_pac_network(dataframe['PIP'].query("UNI_TR_MT == @trafo")[['COD_ID','CTMT','PAC']], 'PIP')
+            df_gd_teste = assign_single_pac_network(
+                dataframe['UGBT'].query("UNI_TR_MT == @trafo")[['CEG_GD','CTMT','PAC']],
+                'UGBT',
+                cod_col='CEG_GD',
+            )
             df_total = pd.concat([df_ssdbt_teste,df_ramalig_teste,df_ucbt_teste,df_pip_teste,df_gd_teste])
             if df_total.empty:
                 print(f'trafo {trafo} sem elementos conectados')
@@ -604,7 +712,7 @@ class ValidadorBDGD:
                     else:
                         continue
                 if not df_not_connected.empty:
-                    df_tr_errado = df_not_connected[~df_not_connected['COD_ID'].isin(lista_isolados)] #A lista de isolados em TODOS OS CTMTs deve ser criada antes dessa função aqui. 
+                    df_tr_errado = df_not_connected[~df_not_connected['COD_ID'].isin(lista_isolados)] #A lista de isolados em TODOS OS CTMTs deve ser criada antes dessa função aqui.
                     if not df_tr_errado.empty:
                         for elem in df_tr_errado.itertuples(index=False):
                             if elem.ELEM == 'SSDBT' or elem.ELEM == 'RAMLIG':
@@ -613,17 +721,17 @@ class ValidadorBDGD:
                             else:
                                 erros.append({"COD_BASE": self.cod_base, "Erro máx":"0.5%", "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro": f"O código do transformador declarado não guarda correspondência com o do transformador obtido após o sequenciamento elétrico",
                                 "detalhamento":f"O código do transformador declarado ({trafo}) não guarda correspondência com o do transformador obtido após o sequenciamento elétrico. PAC={elem.PAC_1}. Alimentador - {elem.CTMT}"})
-                continue        
+                continue
             else:
                 print(f'Transformador {trafo} isolado no secundário.')
                 continue
-        
+
         return(pd.DataFrame(erros))
 
     def scan_bdgd(self):
         """
         Cria geodataframes a partir da BDGD carregada e faz a verificação dos tipos de dados de acordo com
-        o arquivo JSON (bdgd2dss_error.json/bdgd2dss_private_error.json). 
+        o arquivo JSON (bdgd2dss_error.json/bdgd2dss_private_error.json).
         file_name = caminho da pasta da BDGD"""
         erros = [] #registro de erros
         lista_ctmt = []
@@ -632,32 +740,67 @@ class ValidadorBDGD:
         lista_crvcrg = []
 
         gdf_ = self.df
-        self.cod_base = str(self.df["BASE"]["DIST"].tolist()[0])+str(self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[2]+self.df["BASE"]['DAT_EXT'].tolist()[0].split("/")[1])
-        
-        for table_name, table in self.tables.items():
-            try:
-                gdf = gdf_[table_name].reset_index(drop=True)
-            except KeyError:
-                gdf = gdf_[f'{table_name[:-4]}']
-            if gdf.empty:
-                continue
-            elif table_name == 'CTMT':
-                lista_ctmt = gdf["COD_ID"].tolist()
-            elif table_name == 'SEGCON':
-                lista_segcon = gdf["COD_ID"].tolist()
-            elif table_name == 'CRVCRG':
-                lista_crvcrg = gdf["COD_ID"].tolist()
-            elif table_name == 'UNTRMT':
-                lista_untrmt = gdf["COD_ID"].tolist()
+        self.cod_base = self._cod_base_from_df()
+        log_path = self._verification_log_path()
 
-            for column in table.data_types.keys():
-                if isinstance(table.data_types[column],list): 
+        for table_name, table in self.tables.items():
+            step_label = f"scan/{table_name}"
+            _report_verification("scan", f"Verificando tabela {table_name}")
+            try:
+                try:
+                    gdf = gdf_[table_name].reset_index(drop=True)
+                except KeyError:
+                    gdf = gdf_[f'{table_name[:-4]}']
+                if gdf.empty:
+                    continue
+                elif table_name == 'CTMT':
+                    lista_ctmt = gdf["COD_ID"].tolist()
+                elif table_name == 'SEGCON':
+                    lista_segcon = gdf["COD_ID"].tolist()
+                elif table_name == 'CRVCRG':
+                    lista_crvcrg = gdf["COD_ID"].tolist()
+                elif table_name == 'UNTRMT':
+                    lista_untrmt = gdf["COD_ID"].tolist()
+
+                erros.extend(self._scan_table_columns(
+                    table_name, table, gdf, lista_ctmt, lista_segcon, lista_untrmt, lista_crvcrg,
+                ))
+            except Exception as exc:
+                self._record_verification_failure(
+                    log_path, "scan", step_label, f"Verificando tabela {table_name}", exc,
+                )
+                _report_verification(step_label, f"FALHA: {exc}")
+
+        df_erros = pd.DataFrame(erros)
+        try:
+            ValidadorBDGD.exportar_scan_excel(self, df=df_erros, output_folder=self.output_folder, feeder=self.feeders)
+        except Exception as exc:
+            self._record_verification_failure(
+                log_path, "scan", "scan/export", "Exportando relatorio Excel de scan", exc,
+            )
+            _report_verification("scan/export", f"FALHA na exportacao: {exc}")
+        _report_verification("scan", "Pre-validacao concluida")
+        return(df_erros)
+
+    def _scan_table_columns(
+        self,
+        table_name: str,
+        table,
+        gdf: pd.DataFrame,
+        lista_ctmt: list,
+        lista_segcon: list,
+        lista_untrmt: list,
+        lista_crvcrg: list,
+    ) -> list:
+        erros = []
+        for column in table.data_types.keys():
+                if isinstance(table.data_types[column],list):
                     for index,value in enumerate(gdf[column]):
                         if value not in table.data_types[column] or pd.isnull(value) or value == "" or value == None:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. Tipo de valores esperados: {table.data_types[column]}"})
-                        else: 
-                            continue    
+                        else:
+                            continue
 
                 elif table.data_types[column] == 'int':
                     for index,value in enumerate(gdf[column]):
@@ -666,7 +809,7 @@ class ValidadorBDGD:
                         else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número inteiro"})
-                
+
                 elif table.data_types[column] == 'float':
                     for index,value in enumerate(gdf[column]):
                         if isinstance(value,float):
@@ -674,7 +817,7 @@ class ValidadorBDGD:
                         else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":table_name, "Código":gdf.loc[index,table.columns[0]], "Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser um número."})
-                
+
                 elif table.data_types[column] == 'string':
                     for index,value in enumerate(gdf[column]):
                         if isinstance(value,str) and value != "":
@@ -682,7 +825,7 @@ class ValidadorBDGD:
                         else:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}","Índice": index,
                                     "erro":f"O atributo {column} possui valor não esperado:{gdf.loc[index,column]}. O valor esperado deve ser uma string"})
-                
+
                 elif table.data_types[column] == "category":
                     if column == 'CTMT':
                         for index,value in enumerate(gdf[column]):
@@ -715,14 +858,11 @@ class ValidadorBDGD:
                             erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"{table_name}", "Código":f"{gdf.loc[index,table.columns[0]]}", "Índice": index,
                                     "erro":f"O atributo {column} possui valor fora dos limites:{gdf.loc[index,column]}. Os valores esperados devem estar dentro do intervalo: {table.data_types[column]}"})
                             continue
-        df_erros = pd.DataFrame(erros)
-        ValidadorBDGD.exportar_scan_excel(self,df=df_erros,output_folder=self.output_folder,feeder=self.feeders)
-        print('passou pelo scan_bdgd')
-        return(df_erros)  
-    
-    def check_model(self): #TODO fazer isso só futuramente      
+        return erros
+
+    def check_model(self): #TODO fazer isso só futuramente
         ...
-    def phase_error(self,merged_dfs,tipo): 
+    def phase_error(self,merged_dfs,tipo):
         """Verifica se há uma inconsistência entre o faseamento dos enrolamentos do transformador/regulador e
         o seu tipo de ligação;
         No caso do transformador: (Monofásico, Monofásico a três fios, Bifásico, Trifásico, Delta Fechado ou Delta Aberto)
@@ -733,7 +873,7 @@ class ValidadorBDGD:
         # 1 - M, 2 - MT, 3 - B, 4 - T, 5 - DF, 6 - DA
         dfs_divergentes = pd.DataFrame()
         erros = []
-        
+
         if tipo == 'transformer':
             #CORRIGIR PARA AVALIAR O SECUNDÁRIO E PRIMÁRIO
             regras = {
@@ -754,21 +894,21 @@ class ValidadorBDGD:
                 if tip_eq == 'DA' or tip_eq == 'DF':
                     df_filtrado = merged_dfs[
                         (merged_dfs[tip] == tip_eq) &
-                        ((~merged_dfs[fas_p].isin(lig_fas_validos)) | 
+                        ((~merged_dfs[fas_p].isin(lig_fas_validos)) |
                         (~merged_dfs[fas_s].isin(lig_fas_validos[:6])))
                     ]
                 elif tip_eq == 'MT':
                     df_filtrado = merged_dfs[
                         (merged_dfs[tip] == tip_eq) &
                         ((~merged_dfs[fas_p].isin(lig_fas_validos[:6])) |
-                        (~merged_dfs[fas_s].isin(lig_fas_validos[6:])) | 
+                        (~merged_dfs[fas_s].isin(lig_fas_validos[6:])) |
                         (~merged_dfs[fas_t].isin(lig_fas_validos[6:])))
                     ]
                 else:
                     df_filtrado = merged_dfs[
                         (merged_dfs[tip] == tip_eq) &
-                        ((~merged_dfs[fas_p].isin(lig_fas_validos)) | 
-                        (~merged_dfs[fas_s].isin(lig_fas_validos[:3])) | 
+                        ((~merged_dfs[fas_p].isin(lig_fas_validos)) |
+                        (~merged_dfs[fas_s].isin(lig_fas_validos[:3])) |
                         (~merged_dfs[fas_t].isin(['XX','0','NULL'])))
                     ]
                 dfs_divergentes = pd.concat([dfs_divergentes,df_filtrado],ignore_index=True)
@@ -789,7 +929,7 @@ class ValidadorBDGD:
             for tip_eq, lig_fas_validos in regras.items():
                 df_filtrado = merged_dfs[
                     (merged_dfs[tip] == tip_eq) &
-                    ((~merged_dfs[fas_p].isin(lig_fas_validos)) | 
+                    ((~merged_dfs[fas_p].isin(lig_fas_validos)) |
                     (~merged_dfs[fas_s].isin(lig_fas_validos)))
                 ]
                 dfs_divergentes = pd.concat([dfs_divergentes,df_filtrado],ignore_index=True)
@@ -802,7 +942,7 @@ class ValidadorBDGD:
             for i,elem in dfs_divergentes.iterrows():
                 erros.append({"COD_BASE": self.cod_base, "Erro máx":"0%", "Tabela":f"EQRE", "Código":f"{elem['COD_ID']}","erro":"O código de faseamento do primário ou secundário do Regulador possui valor não esperado.",
                 "detalhamento":f"O faseamento do Regulador(LIG_FAS_P: {elem['LIG_FAS_P']}, LIG_FAS_S: {elem['LIG_FAS_S']}), não condiz com o tipo de regulador declarado: {elem[tip]}."})
-        
+
         return(pd.DataFrame(erros))
 
     def bancos_trafos(self,dfs):
@@ -810,7 +950,7 @@ class ValidadorBDGD:
         em delta aberto formado por um banco de transformadores não pode ter 3 transformadores.
         dfs = df da união das tabelas EQTRMT e UNTRMT."""
         # 1 - M, 2 - MT, 3 - B, 4 - T, 5 - DF, 6 - DA
-        
+
         erros = []
         contagem_valores = dfs['UNI_TR_MT'].value_counts().to_dict()
         for value, quantidade in contagem_valores.items():
@@ -838,16 +978,16 @@ class ValidadorBDGD:
                     "detalhamento":f"Quantidade de módulos do transformador [EQTRMTs] = {quantidade}. Tipo do transformador [TIP_TRAFO] = DA. Alimentador - {dfs.loc[i,'CTMT']}"})
         return(pd.DataFrame(erros))
 
-    def fase_df_da_problematico(self,merged_dfs): 
+    def fase_df_da_problematico(self,merged_dfs):
         """Verifica se as fases (primário e secundário) de um transformador do tipo Delta Fechado ou Delta Aberto, formado por um banco
-        de transformadores estão declaradas corretamente. 
+        de transformadores estão declaradas corretamente.
         merged_dfs: df da união de EQTRMT e UNTRMT."""
         erros = []
-        
-        df_filtrado = merged_dfs[((merged_dfs['TIP_TRAFO'] == 'DF') | (merged_dfs['TIP_TRAFO'] == 'DA')) & merged_dfs['BANC'] == 1] #fasedeltafechado ou aberto problematico
+
+        df_filtrado = merged_dfs[((merged_dfs['TIP_TRAFO'] == 'DF') | (merged_dfs['TIP_TRAFO'] == 'DA')) & merged_dfs['BANC'] == 1].copy()
         cols = ['LIG_FAS_P','LIG_FAS_S','LIG_FAS_T'] #TODO fzr nas outras verificações de faseamento
         mapa = {'AX':'AN','BX':'BN','CX':'CN'}
-        df_filtrado[cols] = df_filtrado[cols].replace(mapa)
+        df_filtrado = df_filtrado.assign(**{col: df_filtrado[col].replace(mapa) for col in cols})
         for row in df_filtrado.itertuples(index=False):
             df = df_filtrado[df_filtrado['COD_ID'] == row.COD_ID]
             lista = []
@@ -860,23 +1000,23 @@ class ValidadorBDGD:
             if resultado:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQTRMT","Código":row.UNI_TR_MT,"erro":f"Faseamento interno do transformador inconsistente.",
                 "detalhamento":f"Tipo do trafo - {row.TIP_TRAFO}. FAS_CON_P:{row.LIG_FAS_P},FAS_CON_S:{row.LIG_FAS_S},FAS_CON_T:{row.LIG_FAS_T}. Alimentador - {row.CTMT}"})
-        
+
         return(pd.DataFrame(erros))
 
-    def fase_df_da_problematico_regul(self,merged_dfs): 
+    def fase_df_da_problematico_regul(self,merged_dfs):
         """Verifica se as fases (primário e secundário) dos reguladores de tensão do tipo Delta Fechado ou Delta Aberto, formado por um banco
-        de transformadores estão declaradas corretamente. 
+        de transformadores estão declaradas corretamente.
         merged_dfs = df da união de EQRE e UNREMT"""
         df_filtrado = merged_dfs[(merged_dfs['TIP_REGU'] == 'DF') | (merged_dfs['TIP_REGU'] == 'DA') & merged_dfs['BANC'] == 1]
         df_erro = df_filtrado[(df_filtrado['LIG_FAS_P'] != df_filtrado['LIG_FAS_S'])]
         erros = []
-        
+
         for index,row in df_filtrado.iterrows():
             df = df_filtrado[df_filtrado['COD_ID'] == row['COD_ID']]
             valor_atual = [row['LIG_FAS_P']]
             df_x = df[df.index != index]
             df_y = df_x[(df_x['LIG_FAS_P'].isin(valor_atual))|(df_x['LIG_FAS_S'].isin(valor_atual))]
-            if not df_y.empty: 
+            if not df_y.empty:
                 df_erro = pd.concat([df_erro,df_y],ignore_index=True)
         df_erro = df_erro.drop_duplicates(keep='first')#remove linhas duplicadas
         for index,elem in df_erro.iterrows():
@@ -890,7 +1030,7 @@ class ValidadorBDGD:
         dfs = df da união das tabelas EQRE e UNREMT."""
         # 1 - M, 2 - DA, 3 - T, 4 - DF
         erros = []
-        
+
         contagem_valores = dfs['COD_ID'].value_counts().to_dict()
         for value, quantidade in contagem_valores.items():
             i = dfs[dfs['COD_ID'] == value].index[0]
@@ -907,7 +1047,7 @@ class ValidadorBDGD:
             elif quantidade <= 3:
                 if (dfs.loc[i,'TIP_REGU'] == 'M' or dfs.loc[i,'TIP_REGU'] == 'T') and quantidade != 1:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":value,"erro":f"Quantidade de módulos inconsistente para o tipo de regulador.",
-                    "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = {dfs.loc[i,'TIP_REGU']}."}) 
+                    "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = {dfs.loc[i,'TIP_REGU']}."})
                 elif dfs.loc[i,'TIP_REGU'] == 'DF' and quantidade != 3:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":value,"erro":f"Quantidade de módulos inconsistente para o tipo de regulador.",
                     "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = DF."})
@@ -916,7 +1056,7 @@ class ValidadorBDGD:
                     "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = DA."})
 
     def check_faseamento(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
-        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento 
+        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento
         dos elementos (exemplo de erro: fase do elemento anterior AB e fase do elemento atual ABC)
         dataframe = geodataframe completo da BDGD"""
         voltage_dict = {}
@@ -924,7 +1064,10 @@ class ValidadorBDGD:
         #mandar tambem o iso_trafos de elementos que estão nos trafos errados para jogar aqui em caso de não estarem isolados e não serem englobados no voltage_dict
         erros = []
 
-        for i,feeder in enumerate(dataframe['CTMT']['COD_ID'].tolist()):
+        ctmt_feeders = list(enumerate(dataframe['CTMT']['COD_ID'].tolist()))
+        feeder_iterator = tqdm(ctmt_feeders, desc="Faseamento", unit=" alimentador", ncols=100)
+        for i, feeder in feeder_iterator:
+            feeder_iterator.set_description(f"Faseamento: {feeder}")
 
             if dataframe['CTMT'].at[i,'ATIP'] == 1:
                 erromax = ['0.5%',' em circuito atípico ']
@@ -936,38 +1079,40 @@ class ValidadorBDGD:
                                     left_column='UNI_TR_MT', right_column='COD_ID')
             df_regul = inner_entities_tables(dataframe['EQRE'], dataframe['UNREMT'].query("CTMT==@alimentador"),
                                                 left_column='UN_RE', right_column='COD_ID')
-            df_tr_mtmt = df_trafo[df_trafo['TEN_LIN_SE'] > 1][['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','TEN_LIN_SE']] #trafos MT-MT (se houver)
-            df_tr_mtmt['ELEM'] = 'EQTRMT'
-            df_tr_mtmt = df_tr_mtmt.rename(columns={'LIG_FAS_S':'FAS_CON'})
-            df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','LIG_FAS_T','TEN_LIN_SE']]
-            df_aux_trafo = df_aux_trafo.rename(columns={'LIG_FAS_P':'FAS_CON'})
-            df_aux_trafo['ELEM'] = 'EQTRMT'
-            df_aux_ssdmt = dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_ssdmt['ELEM'] = 'SSDMT'
-            df_aux_ssdbt = dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
-            df_aux_ssdbt['ELEM'] = 'SSDBT'
-            df_aux_ramalig = dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
-            df_aux_ramalig['ELEM'] = 'RAMLIG'
-            df_aux_unsemt = dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_unsemt['ELEM'] = 'UNSEMT'
-            df_aux_unsebt = dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_unsebt['ELEM'] = 'UNSEBT'
-            df_aux_regul = df_regul[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_regul['ELEM'] = 'EQRE'
+            df_tr_mtmt = assign_elem(
+                df_trafo[df_trafo['TEN_LIN_SE'] > 1][['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','TEN_LIN_SE']],
+                'EQTRMT',
+            ).rename(columns={'LIG_FAS_S':'FAS_CON'})
+            df_aux_trafo = (
+                df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','LIG_FAS_T','TEN_LIN_SE']]
+                .rename(columns={'LIG_FAS_P':'FAS_CON'})
+                .assign(ELEM='EQTRMT')
+            )
+            df_aux_ssdmt = assign_elem(dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'SSDMT')
+            df_aux_ssdbt = assign_elem(dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']], 'SSDBT')
+            df_aux_ramalig = assign_elem(dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']], 'RAMLIG')
+            df_aux_unsemt = assign_elem(dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'UNSEMT')
+            df_aux_unsebt = assign_elem(dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'UNSEBT')
+            df_aux_regul = assign_elem(df_regul[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'EQRE')
             df_ucmt = dataframe['UCMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_ucmt = pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
-            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucmt = (
+                pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False)
+                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='UCMT')
+            )
             df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_ucbt = pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
-            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
-            df_aux_ucmt['PAC_2'] = ''
-            df_aux_ucmt['ELEM'] = 'UCMT'
-            df_aux_ucbt['PAC_2'] = ''
-            df_aux_ucbt['ELEM'] = 'UCBT'
-            df_aux_pip = dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_pip['PAC_2'] = ''
-            df_aux_pip['ELEM'] = 'PIP'
-            df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucbt = (
+                pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False)
+                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='UCBT')
+            )
+            df_aux_pip = (
+                dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='PIP')
+            )
 
             df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_aux_regul,df_tr_mtmt], ignore_index=True)#para faseamento de linhas
             df_aux_ucmt_tr = pd.concat([df_aux_ucmt,df_aux_trafo],ignore_index=True) #para faseamento de cargas e trafos
@@ -991,7 +1136,7 @@ class ValidadorBDGD:
             conectados = list(nx.connected_components(grafo))
 
             if any(pac_ctmt in grf for grf in conectados):
-                sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) 
+                sequencia = list(nx.bfs_edges(grafo,pac_ctmt))
             else:
                 print(f"Não é possível gerar a sequência elétrica, pois o alimentador {feeder} não tem conexão com a fonte")
                 continue
@@ -1005,7 +1150,7 @@ class ValidadorBDGD:
             for seq in sequencia:
                 if seq[0] == pac_ctmt:
                     voltage_dict[seq[0]] = ValidadorBDGD.convert_ten(base_kv) #dicionário de tensão, primeiros nós
-                    voltage_dict[seq[1]] = ValidadorBDGD.convert_ten(base_kv) 
+                    voltage_dict[seq[1]] = ValidadorBDGD.convert_ten(base_kv)
                     continue
                 else:
                     try:
@@ -1029,7 +1174,7 @@ class ValidadorBDGD:
                         if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
                             continue #faseamento correto
                         else:
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.", 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
                             "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
             #verificação do faseamento nos transformadores e nas cargas de média tensão
             for elem in df_aux_ucmt_tr.itertuples(index=False):
@@ -1055,8 +1200,8 @@ class ValidadorBDGD:
                     if find:
                         continue
                     erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
-            #faseamento das linhas de baixa tensão 
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+            #faseamento das linhas de baixa tensão
             for trafo in df_aux_trafo['COD_ID'].tolist():
                 if trafo == None:
                     print('trafo sem COD_ID')
@@ -1094,7 +1239,7 @@ class ValidadorBDGD:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
                     voltage_dict[df_aux_trafo.at[i,'PAC_2']] = df_aux_trafo.at[i,'TEN_LIN_SE']
                     print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
-            #faseamento das cargas de baixa tensão 
+            #faseamento das cargas de baixa tensão
             for elem in df_aux_ucbt_pip.itertuples(index=False):
                 if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
                         continue
@@ -1139,7 +1284,7 @@ class ValidadorBDGD:
                         erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
                         "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
             #df_total = pd.concat([df_elements,df_aux_ucmt_tr,df_elements_bt,df_aux_ucbt_pip],ignore_index=True)
-        self.voltage_dict = voltage_dict 
+        self.voltage_dict = voltage_dict
         return(pd.DataFrame(erros))
 
     def check_voltage(self,df):
@@ -1170,7 +1315,7 @@ class ValidadorBDGD:
             except KeyError:
                 continue
         return(pd.DataFrame(erros))
-    
+
     def check_voltage_trafo(self,df_trafo):
         """Verifica se a tensão no primário e secundário do trafo são iguais, pois isso representa um erro
         df_trafo = dataframe com todos os trafos da BDGD"""
@@ -1191,12 +1336,12 @@ class ValidadorBDGD:
                 else:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trf.COD_ID,"erro":"Tensão no Primário igual ao Secundário no Trafo após sequenciamento elétrico.",
                     "detalhamento":f"Tensão no primário do trafo (barra:{trf.PAC_1}) igual a do secundário (barra:{trf.PAC_2}). Tensão:{v1} kV. Alimentador - {trf.CTMT}"})
-                
+
     def pac_iguais(self,df):
         """ Verifica se os pontos de acoplamento elétrico são iguais para as linhas de média e baixa tensão, incluindo ramais.
         df = dataframe de todas as linhas de média e baixa tensão (incluindo ramais).
         tabela = indica qual tabela está sendo verificada."""
-        
+
         erros = []
         indices = df[(df['PAC_1'] == df['PAC_2'])].index.tolist()
         if len(indices) > 0:
@@ -1206,11 +1351,11 @@ class ValidadorBDGD:
         else:
             return(None)
         return(pd.DataFrame(erros))
-        
+
     def check_mrt(self,df):
         """Verifica se há inconsistência entre o tipo de transformador e seu faseamento e o que foi declarado no campo MRT da entidade
         df = dataframe da união das tabelas EQTRMT e UNTRMT"""
-        
+
         erros = []
         fas_p = ['A','B','C']
         fas_s = ['AN','BN','CN']
@@ -1233,16 +1378,16 @@ class ValidadorBDGD:
                 else:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":elem.COD_ID,"erro":"Código da fase terciária não é compatível com o valor declarado no campo MRT.",
                     "detalhamento":f"Código da fase terciária ({elem.LIG_FAS_T}) inconsistente com o valor do campo MRT (1). Códigos válidos: AN,BN,CN,XX,NULL. Alimentador - {elem.CTMT}"})
-        
+
         return(pd.DataFrame(erros))
-    
+
     def check_feeder(self,df,df_isolados,df_tr,df_re):
-        """verifica se alguma elemento da lista de isolados tem conexão com algum PAC do df geral com todos os alimentadores 
+        """verifica se alguma elemento da lista de isolados tem conexão com algum PAC do df geral com todos os alimentadores
         pois isso é sinal de que o elemento está atribuído ao alimentador errado
         df = dataframe completo da BDGD
         df_isolados = dataframe dos elementos isolados da BDGD"""
 
-        
+
         erros = []
 
         df_trafo = df_tr
@@ -1251,71 +1396,48 @@ class ValidadorBDGD:
         adapt_regulators_names(df_trafo,'transformer')
         adapt_regulators_names(df_reg,'regulator')
 
-        df_aux_ssdmt = df['SSDMT'][['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_ssdmt['ELEM'] = 'SSDMT'
-        df_aux_ssdbt = df['SSDBT'][['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_ssdbt['ELEM'] = 'SSDBT'
-        df_aux_ramalig = df['RAMLIG'][['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_ramalig['ELEM'] = 'RAMLIG'
-        df_aux_unsemt = df['UNSEMT'].query("P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_unsemt['ELEM'] = 'UNSEMT'
-        df_aux_unsebt = df['UNSEBT'][['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_unsebt['ELEM'] = 'UNSEBT'
-        df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_trafo['ELEM'] = 'UNTRMT'
-        df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
-        df_aux_regul['ELEM'] = 'UNREMT'
-        df_aux_ucmt = df['UCMT'][['COD_ID','CTMT','PAC']]
-        df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
-        df_aux_ucbt = df['UCBT'][['COD_ID','CTMT','PAC']]
-        df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
-        df_aux_ucmt['PAC_2'] = ''
-        df_aux_ucmt['ELEM'] = 'UCMT'
-        df_aux_ucbt['PAC_2'] = ''
-        df_aux_ucbt['ELEM'] = 'UCBT'
-        df_aux_pip = df['PIP'][['COD_ID','CTMT','PAC']]
-        df_aux_pip['PAC_2'] = ''
-        df_aux_pip['ELEM'] = 'PIP'
-        df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
-        df_aux_ugbt = df['UGBT'][['CEG_GD','CTMT','PAC']]
-        df_aux_ugbt['PAC_2'] = ''
-        df_aux_ugbt = df_aux_ugbt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
-        df_aux_ugbt['ELEM'] = 'UGBT'
-        df_aux_ugmt = df['UGMT'][['CEG_GD','CTMT','PAC']]
-        df_aux_ugmt['PAC_2'] = ''
-        df_aux_ugmt = df_aux_ugmt.rename(columns={'CEG_GD':'COD_ID','PAC':'PAC_1'})
-        df_aux_ugmt['ELEM'] = 'UGMT'
+        df_aux_ssdmt = assign_elem(df['SSDMT'][['COD_ID','CTMT','PAC_1','PAC_2']], 'SSDMT')
+        df_aux_ssdbt = assign_elem(df['SSDBT'][['COD_ID','CTMT','PAC_1','PAC_2']], 'SSDBT')
+        df_aux_ramalig = assign_elem(df['RAMLIG'][['COD_ID','CTMT','PAC_1','PAC_2']], 'RAMLIG')
+        df_aux_unsemt = assign_elem(df['UNSEMT'].query("P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNSEMT')
+        df_aux_unsebt = assign_elem(df['UNSEBT'][['COD_ID','CTMT','PAC_1','PAC_2']], 'UNSEBT')
+        df_aux_trafo = assign_elem(df_trafo[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNTRMT')
+        df_aux_regul = assign_elem(df_reg[['COD_ID','CTMT','PAC_1','PAC_2']], 'UNREMT')
+        df_aux_ucmt = assign_single_pac_network(df['UCMT'][['COD_ID','CTMT','PAC']], 'UCMT')
+        df_aux_ucbt = assign_single_pac_network(df['UCBT'][['COD_ID','CTMT','PAC']], 'UCBT')
+        df_aux_pip = assign_single_pac_network(df['PIP'][['COD_ID','CTMT','PAC']], 'PIP')
+        df_aux_ugbt = assign_single_pac_network(df['UGBT'][['CEG_GD','CTMT','PAC']], 'UGBT', cod_col='CEG_GD')
+        df_aux_ugmt = assign_single_pac_network(df['UGMT'][['CEG_GD','CTMT','PAC']], 'UGMT', cod_col='CEG_GD')
 
         df_total = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig,df_aux_unsemt,df_aux_unsebt,df_aux_trafo,df_aux_regul,
                                 df_aux_pip,df_aux_ucbt,df_aux_ucmt,df_aux_ugbt,df_aux_ugmt], ignore_index=True)
-        
+        df_total = normalize_pac_columns(df_total)
+
         df_linhas = pd.concat([df_aux_ssdmt,df_aux_ssdbt,df_aux_ramalig], ignore_index=True)
 
         if df_isolados.empty:
             return(pd.DataFrame(erros),df_total,df_linhas)
-        
+
+        df_isolados = normalize_pac_columns(df_isolados.copy())
         df_1 = df_total.merge(df_isolados, how='left', indicator=True)
         df_1 = df_1[df_1['_merge'] == 'left_only']
         df_1 = df_1.drop(columns=['_merge'])
-        df_filtrado = df_1[df_1['CTMT'].isin(df['CTMT']['COD_ID'].tolist())]
-        df_filtrado['PAC_2'] = df_filtrado['PAC_2'].replace('',np.nan) #transforma as colunas '' criadas no df_total em NaN.
+        df_filtrado = df_1[df_1['CTMT'].isin(df['CTMT']['COD_ID'].tolist())].copy()
 
-        lista_pacs = df_filtrado['PAC_1'].tolist() + df_filtrado['PAC_2'].tolist()
         for elem in df_isolados.itertuples(index=False):
             if elem.ELEM == 'UNREMT':
                 erromax = '2%'
             else:
                 erromax = '0.5%'
-            if elem.PAC_1 in lista_pacs:
-                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem.PAC_1)|(df_filtrado['PAC_2'] == elem.PAC_1)].index[0],'CTMT']
+            ctmt_correto = lookup_ctmt_by_pac(df_filtrado, elem.PAC_1)
+            if ctmt_correto is not None:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
                 "detalhamento":f"Código do alimentador declarado (CTMT) = {elem.CTMT}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
-            elif elem.PAC_2 in lista_pacs:
-                ctmt_correto = df_filtrado.at[df_filtrado[(df_filtrado['PAC_1'] == elem.PAC_2)|(df_filtrado['PAC_2'] == elem.PAC_2)].index[0],'CTMT']
-                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
-                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem.CTMT}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
-            else:
                 continue
+            ctmt_correto = lookup_ctmt_by_pac(df_filtrado, elem.PAC_2)
+            if ctmt_correto is not None:
+                erros.append({"COD_BASE":self.cod_base,"Erro máx":erromax,"Tabela":elem.ELEM,"Código":elem.COD_ID,"erro":"O código do alimentador declarado não guarda correspondência com o alimentador obtido após o sequenciamento elétrico",
+                "detalhamento":f"Código do alimentador declarado (CTMT) = {elem.CTMT}, Código do alimentador obtido após sequenciamento elétrico = {ctmt_correto}."})
         return(pd.DataFrame(erros),df_total,df_linhas)
 
     def check_parallel(self,df1,df2):
@@ -1323,9 +1445,9 @@ class ValidadorBDGD:
         df1 = dataframe da união das tabelas SSDMT, SSDBT e RAMLIG
         df2 = dataframe da tabela UNTRMT"""
         erros = []
-        
-        df1['pares'] = df1.apply(lambda x: frozenset([x['PAC_1'], x['PAC_2']]), axis=1)
-        df2['pares'] = df2.apply(lambda x: frozenset([x['PAC_1'], x['PAC_2']]), axis=1)
+
+        df1 = df1.copy().assign(pares=df1.apply(lambda x: frozenset([x['PAC_1'], x['PAC_2']]), axis=1))
+        df2 = df2.copy().assign(pares=df2.apply(lambda x: frozenset([x['PAC_1'], x['PAC_2']]), axis=1))
         df_filtrado = df1[df1['pares'].isin(df2['pares'])].drop(columns='pares')
         if not df_filtrado.empty:
             for i,line in df_filtrado.iterrows():
@@ -1335,10 +1457,10 @@ class ValidadorBDGD:
             return(pd.DataFrame(erros))
         else:
             return(None)
-    
+
     def check_pacs(self):
         """Checa se há algum ponto de acoplamento elétrico com valor nulo"""
-        erros = [] 
+        erros = []
         keys = [x for x in self.df.keys() if x not in ['BASE','SEGCON','CRVCRG','UNTRAT','EQTRMT','EQRE']]
         for key in keys:
             if key == 'CTMT':
@@ -1356,7 +1478,7 @@ class ValidadorBDGD:
                    if len(elem.PAC_1) == 0 or not isinstance(elem.PAC_1,str):
                         erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento 1.","detalhamento":
                                       f"Ponto de acoplamento declarado = {elem.PAC_1}.  Alimentador - {elem.CTMT}."})
-                   elif len(elem.PAC_2) == 0 or not isinstance(elem.PAC_2,str): 
+                   elif len(elem.PAC_2) == 0 or not isinstance(elem.PAC_2,str):
                         erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":key,"Código":elem.COD_ID,"erro":f"Não foi declarado o ponto de acoplamento 2.","detalhamento":
                                       f"Ponto de acoplamento declarado = {elem.PAC_2}.  Alimentador - {elem.CTMT}."})
         return(pd.DataFrame(erros))
@@ -1403,7 +1525,7 @@ class ValidadorBDGD:
             except ValueError:
                 print(f'Valor de potência ou perdas declarado errado: {convert_tpotaprt(trafo.POT_NOM)}kVA, {trafo.PER_TOT}W')
         return(pd.DataFrame(erros))
-    
+
     def check_regulator(self,df_reg):
         """Faz a verificação dos parâmetros dos reguladores MT
         df_reg = dataframe da união do UNREMT e EQRE"""
@@ -1427,7 +1549,7 @@ class ValidadorBDGD:
                 "detalhamento":f"Perda total (PER_TOT):{reg.PER_TOT} W. Alimentador: {reg.CTMT}"})
 
         return(pd.DataFrame(erros))
-    
+
     def check_ucmt(self):
         """Faz a verificação dos parâmetros das cargas MT"""
         erros = []
@@ -1451,18 +1573,18 @@ class ValidadorBDGD:
                 "detalhamento":f"O atributo TIP_CC da carga MT declarada não tem correspondência na entidade CRVCRG da BDGD analisada. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
-    
+
     def check_loadbt(self,load_type):
         """Faz a verificação dos parâmetros das cargas BT.
         load_type = UCBT(consumidores de BT) ou PIP(pontos de iluminação pública)"""
         erros = []
         lista_crvcrg = self.df['CRVCRG']['COD_ID'].tolist()
-        
+
         if load_type == 'UCBT':
             ucbt = 'UCBT'
         else:
             ucbt = 'PIP'
-        
+
         for load in self.df[ucbt].itertuples(index=False):
             if load.FAS_CON in ['AC','ACN','CB','CBN','BA','BAN']:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":load_type,"Código":load.COD_ID,"erro":f"O código do faseamento foi declarado na sequência inversa. O programa espera ordem direta.",
@@ -1484,14 +1606,14 @@ class ValidadorBDGD:
                 "detalhamento":f"O atributo SEMRED da carga BT foi declarado como:{load.SEMRED}. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
-    
+
     def check_energy(self,load_type):
         """verifica se existe alguma carga com energia zerada anualmente.
         load_type = UCBT para cargas de BT e UCMT para cargas de MT."""
         erros = []
         colunas = [f"ENE_{str(i).zfill(2)}" for i in range(1, 13)]
-        df = self.df[load_type]
-        df['SUM_ENE'] = df[colunas].sum(axis=1)
+        df = self.df[load_type].copy()
+        df = df.assign(SUM_ENE=df[colunas].sum(axis=1))
         dfx = df[(df['SUM_ENE'] == 0)]
         if load_type == 'UCMT':
             k = 100
@@ -1500,7 +1622,7 @@ class ValidadorBDGD:
         dfy = df[(df[colunas] > k*1000).any(axis=1)]
 
         if not dfy.empty:
-            dfy["colunas_acima_100"] = (dfy[colunas] > k*1000).apply(lambda row: list(row[row].index), axis=1)
+            dfy = dfy.assign(colunas_acima_100=(dfy[colunas] > k*1000).apply(lambda row: list(row[row].index), axis=1))
 
         for load in dfx.itertuples():
             erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":load_type,"Código":load.COD_ID,"erro":f"Não houve consumo da carga em nenhum mês?",
@@ -1510,11 +1632,11 @@ class ValidadorBDGD:
             "detalhamento":f"Coluna(s): {load.colunas_acima_100} com valor acima de {k} MWh. Alimentador: {load.CTMT}"})
 
         return(pd.DataFrame(erros))
-    
+
     def check_ctmt(self):
         """Faz a verificação dos parâmetros dos circuitos de média tensão (alimentadores) - entidade CTMT"""
         erros = []
-        
+
         for index,ctmt in self.df['CTMT'].iterrows():
             if ctmt['TEN_NOM'] is None:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"CTMT","Código":ctmt['COD_ID'],"erro":f"A tensão nominal não foi declarada.",
@@ -1529,14 +1651,16 @@ class ValidadorBDGD:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"CTMT","Código":ctmt['COD_ID'],"erro":f"Não foi declarado o código da subestação.",
                 "detalhamento":f"O alimentador {ctmt['COD_ID']} não tem o campo SUB declarado."})
         return(pd.DataFrame(erros))
-    
+
     def check_ctmt_energy(self):
         """Faz a verificação das energias dos alimentadores de média tensão da BDGD."""
         erros = []
         colunas = [f"ENE_{str(i).zfill(2)}" for i in range(1, 13)]
-        df = self.df['CTMT']
-        df['SUM_ENE'] = df[colunas].sum(axis=1)
-        df['PERD_total'] = df.loc[:, df.columns.str.startswith("PERD")].sum(axis=1)/12000
+        df = self.df['CTMT'].copy()
+        df = df.assign(
+            SUM_ENE=df[colunas].sum(axis=1),
+            PERD_total=df.loc[:, df.columns.str.startswith("PERD")].sum(axis=1) / 12000,
+        )
         for i,ctmt in df.iterrows():
             if ctmt['SUM_ENE'] == 0 and ctmt['ATIP'] == 0:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"AVISO","Tabela":"CTMT","Código":ctmt['COD_ID'],"erro":f"Não houve consumo em nenhum mês? O alimentador não é atípico?",
@@ -1557,11 +1681,11 @@ class ValidadorBDGD:
                 except ZeroDivisionError:
                     continue
         return(pd.DataFrame(erros))
-    
+
     def check_lines(self,line_type):
         """Faz a verificação dos parâmetros das linhas de média/baixa tensão e ramais de ligação.
         line_type = SSDMT(linhas de média tensão), SSDBT(linhas de baixa tensão) ou RAMLIG(ramais de ligação)"""
-        
+
         if line_type == 'SSDMT':
             comp_max = 1000
         elif line_type == 'SSDBT':
@@ -1593,10 +1717,10 @@ class ValidadorBDGD:
                 "detalhamento":f"O atributo CTMT do {line_type} não foi declarado."})
             if line.ARE_LOC not in ['UB','NU']:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":line_type,"Código":line.COD_ID,"erro":f"A classificação do segmento possui um valor não esperado. Valores esperados são UB e NU.",
-                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {line.ARE_LOC}. Alimentador: {line.CTMT}"}) 
-        
+                "detalhamento":f"O campo 'ARE_LOC' foi declarado como: {line.ARE_LOC}. Alimentador: {line.CTMT}"})
+
         return(pd.DataFrame(erros))
-    
+
     def check_unse(self,chave):
         """Faz a verificação dos parâmetros elétricos das chaves de MT e BT da BDGD.
         chave = deve ser UNSEMT(chaves de média tensão) ou UNSEBT (chaves de baixa tensão)"""
@@ -1610,10 +1734,10 @@ class ValidadorBDGD:
                 "detalhamento":f"As fases da chave de média/baixa tensão (FAS_CON) declaradas foram:{unse.FAS_CON}. Alimentador: {unse.CTMT}"})
             if unse.CTMT is None:
                 erros.append({"COD_BASE":self.cod_base,"Erro máx":"2%","Tabela":chave,"Código":unse.COD_ID,"erro":f"O alimentador não foi declarado.",
-                "detalhamento":f"O atributo CTMT da chave não foi declarado."}) 
-        
+                "detalhamento":f"O atributo CTMT da chave não foi declarado."})
+
         return(pd.DataFrame(erros))
-    
+
     def return_graph_trafo(df,df_bt,trafo):
         """Retorna o grafo em sequencia do transformador BT escolhido"""
         transformador = trafo
@@ -1631,11 +1755,11 @@ class ValidadorBDGD:
         conectados = list(nx.connected_components(grafo))
 
         if any(pac_trafo in grf for grf in conectados):
-            sequencia = list(nx.bfs_edges(grafo,pac_trafo)) 
+            sequencia = list(nx.bfs_edges(grafo,pac_trafo))
             return(sequencia)
         else:
             return(None)
-        
+
     def store_load_energy(self,feeder):
         """Armazena as energias das cargas de BT e MT para cada alimentador.
         feeder = CTMT analisado"""
@@ -1658,9 +1782,9 @@ class ValidadorBDGD:
             data[f"EnerMedidMT{n:02d}_MWh"] = float(df_mt[f"ENE_{n:02d}"].sum())/1000
             data[f"EnerMedidGenBT{n:02d}_MWh"] = float(df_gdbt[f"ENE_{n:02d}"].sum())/1000
             data[f"EnerMedidGenMT{n:02d}_MWh"] = float(df_gdmt[f"ENE_{n:02d}"].sum())/1000
-        
+
         return(data)
-    
+
     def convert_month(key):
         switch_dict = {
             "01": "janeiro",
@@ -1677,7 +1801,7 @@ class ValidadorBDGD:
             "12": "dezembro"
         }
         return(switch_dict[key])
-    
+
     def convert_ten(key):
         switch_dict = {
             "0": 0.0,
@@ -1792,7 +1916,7 @@ class ValidadorBDGD:
             "102": 550
         }
         return(switch_dict[key])
-    
+
     def find_seq(sequencia,index):
         atual = sequencia[index]
         anterior = sequencia[index-1]
@@ -1810,7 +1934,7 @@ class ValidadorBDGD:
                 print("→ Nenhuma tupla anterior satisfaz a condição.")
         else:
             return(anterior)
-        
+
 
     def exportar_erros_excel(self, df: pd.DataFrame, output_folder: str, feeder: Optional[str] = ""):
         """Criação do arquivo de erros em formato xlsx
@@ -1818,7 +1942,7 @@ class ValidadorBDGD:
         output_folder = pasta de saída
         """
         path = os.path.join(output_folder, f'{feeder}_etapa17_{self.cod_base}.xlsx')
-        
+
         with pd.ExcelWriter(path, engine="xlsxwriter") as writer:
 
             # === ABA 1: LISTA COMPLETA DE ERROS ===
@@ -1855,7 +1979,7 @@ class ValidadorBDGD:
             erropercentual = []
             for line in resumo.itertuples():
                 erropercentual.append(f'{line.quantidade/len(self.df[line.Tabela])*100:.2f}%')
-            resumo['erro atual'] = erropercentual
+            resumo = resumo.assign(**{'erro atual': erropercentual})
             resumo.to_excel(writer, index=False, sheet_name="Resumo")
 
             worksheet2 = writer.sheets["Resumo"]
@@ -1871,7 +1995,7 @@ class ValidadorBDGD:
             for col_num, value in enumerate(resumo.columns.values):
                 worksheet2.write(0, col_num, value, header_format)
 
-        print(f"✅ Arquivo Excel exportado com sucesso: {path}")
+        _report_verification("export", f"Arquivo Excel exportado: {path}")
 
     def exportar_scan_excel(self, df: pd.DataFrame, output_folder: str, feeder: Optional[str] = ""):
         """Criação do arquivo de erros em formato xlsx para a pré-validação da BDGD
@@ -1879,7 +2003,7 @@ class ValidadorBDGD:
         output_folder = pasta de saída
         """
         path = os.path.join(output_folder, f'{feeder}_scan_{self.cod_base}.xlsx')
-        
+
         with pd.ExcelWriter(path, engine="xlsxwriter") as writer:
 
             # === ABA 1: LISTA COMPLETA DE ERROS ===
@@ -1906,18 +2030,21 @@ class ValidadorBDGD:
 
             for col_num, value in enumerate(df.columns.values):
                 worksheet.write(0, col_num, value, header_format)
-            
-        print(f"✅ Arquivo Excel de Scan pré validação exportado com sucesso: {path}")
+
+        _report_verification("export", f"Arquivo Excel de scan exportado: {path}")
 
     def check_propagacao(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
-        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento 
+        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento
         dos elementos (exemplo de erro: fase do elemento anterior AB e fase do elemento atual ABC)
         dataframe = geodataframe completo da BDGD"""
         isolados = lista_isolados
         #mandar tambem o iso_trafos de elementos que estão nos trafos errados para jogar aqui em caso de não estarem isolados e não serem englobados no voltage_dict
         erros = []
 
-        for i,feeder in enumerate(dataframe['CTMT']['COD_ID'].tolist()):
+        ctmt_feeders = list(enumerate(dataframe['CTMT']['COD_ID'].tolist()))
+        feeder_iterator = tqdm(ctmt_feeders, desc="Propagacao de faseamento", unit=" alimentador", ncols=100)
+        for i, feeder in feeder_iterator:
+            feeder_iterator.set_description(f"Propagacao de faseamento: {feeder}")
 
             if dataframe['CTMT'].at[i,'ATIP'] == 1:
                 erromax = ['0.5%',' em circuito atípico ']
@@ -1929,38 +2056,40 @@ class ValidadorBDGD:
                                     left_column='UNI_TR_MT', right_column='COD_ID')
             df_regul = inner_entities_tables(dataframe['EQRE'], dataframe['UNREMT'].query("CTMT==@alimentador"),
                                                 left_column='UN_RE', right_column='COD_ID')
-            df_tr_mtmt = df_trafo[df_trafo['TEN_LIN_SE'] > 1][['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','TEN_LIN_SE']] #trafos MT-MT (se houver)
-            df_tr_mtmt['ELEM'] = 'EQTRMT'
-            df_tr_mtmt = df_tr_mtmt.rename(columns={'LIG_FAS_S':'FAS_CON'})
-            df_aux_trafo = df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','LIG_FAS_T','TEN_LIN_SE']]
-            df_aux_trafo = df_aux_trafo.rename(columns={'LIG_FAS_P':'FAS_CON'})
-            df_aux_trafo['ELEM'] = 'EQTRMT'
-            df_aux_ssdmt = dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_ssdmt['ELEM'] = 'SSDMT'
-            df_aux_ssdbt = dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
-            df_aux_ssdbt['ELEM'] = 'SSDBT'
-            df_aux_ramalig = dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']]
-            df_aux_ramalig['ELEM'] = 'RAMLIG'
-            df_aux_unsemt = dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_unsemt['ELEM'] = 'UNSEMT'
-            df_aux_unsebt = dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_unsebt['ELEM'] = 'UNSEBT'
-            df_aux_regul = df_regul[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']]
-            df_aux_regul['ELEM'] = 'EQRE'
+            df_tr_mtmt = assign_elem(
+                df_trafo[df_trafo['TEN_LIN_SE'] > 1][['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','TEN_LIN_SE']],
+                'EQTRMT',
+            ).rename(columns={'LIG_FAS_S':'FAS_CON'})
+            df_aux_trafo = (
+                df_trafo[['COD_ID','CTMT','PAC_1','PAC_2','LIG_FAS_P','LIG_FAS_S','LIG_FAS_T','TEN_LIN_SE']]
+                .rename(columns={'LIG_FAS_P':'FAS_CON'})
+                .assign(ELEM='EQTRMT')
+            )
+            df_aux_ssdmt = assign_elem(dataframe['SSDMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'SSDMT')
+            df_aux_ssdbt = assign_elem(dataframe['SSDBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']], 'SSDBT')
+            df_aux_ramalig = assign_elem(dataframe['RAMLIG'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON','UNI_TR_MT']], 'RAMLIG')
+            df_aux_unsemt = assign_elem(dataframe['UNSEMT'].query("CTMT == @alimentador & P_N_OPE == 'F'")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'UNSEMT')
+            df_aux_unsebt = assign_elem(dataframe['UNSEBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'UNSEBT')
+            df_aux_regul = assign_elem(df_regul[['COD_ID','CTMT','PAC_1','PAC_2','FAS_CON']], 'EQRE')
             df_ucmt = dataframe['UCMT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_ucmt = pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
-            df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucmt = (
+                pd.DataFrame(df_ucmt).groupby('COD_ID', as_index=False)
+                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='UCMT')
+            )
             df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_ucbt = pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False).agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
-            df_aux_ucbt = df_aux_ucbt.rename(columns={'PAC':'PAC_1'})
-            df_aux_ucmt['PAC_2'] = ''
-            df_aux_ucmt['ELEM'] = 'UCMT'
-            df_aux_ucbt['PAC_2'] = ''
-            df_aux_ucbt['ELEM'] = 'UCBT'
-            df_aux_pip = dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
-            df_aux_pip['PAC_2'] = ''
-            df_aux_pip['ELEM'] = 'PIP'
-            df_aux_pip = df_aux_pip.rename(columns={'PAC':'PAC_1'})
+            df_aux_ucbt = (
+                pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False)
+                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='UCBT')
+            )
+            df_aux_pip = (
+                dataframe['PIP'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+                .rename(columns={'PAC':'PAC_1'})
+                .assign(PAC_2='', ELEM='PIP')
+            )
 
             df_elements = pd.concat([df_aux_ssdmt,df_aux_unsemt,df_aux_regul,df_tr_mtmt], ignore_index=True)#para faseamento de linhas
             df_aux_ucmt_tr = pd.concat([df_aux_ucmt,df_aux_trafo],ignore_index=True) #para faseamento de cargas e trafos
@@ -1983,7 +2112,7 @@ class ValidadorBDGD:
             conectados = list(nx.connected_components(grafo))
 
             if any(pac_ctmt in grf for grf in conectados):
-                sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) 
+                sequencia = list(nx.bfs_edges(grafo,pac_ctmt))
             else:
                 print(f"Não é possível gerar a sequência elétrica, pois o alimentador {feeder} não tem conexão com a fonte")
                 continue
@@ -2016,7 +2145,7 @@ class ValidadorBDGD:
                         if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
                             continue #faseamento correto
                         else:#TODO mudar o nome de detalhamento para deixar claro que é propagação
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.", 
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
                             "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Faseamento possível - combinação de:{fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
                             df_elements.loc[i_ele,'FAS_CON'] = fase
             #verificação do faseamento nos transformadores e nas cargas de média tensão
@@ -2043,8 +2172,8 @@ class ValidadorBDGD:
                     if find:
                         continue
                     erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
-                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})         
-            #faseamento das linhas de baixa tensão 
+                    "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+            #faseamento das linhas de baixa tensão
             for trafo in df_aux_trafo['COD_ID'].tolist():
                 if trafo == None:
                     print('trafo sem COD_ID')
@@ -2078,7 +2207,7 @@ class ValidadorBDGD:
                 else:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
                     print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
-            #faseamento das cargas de baixa tensão 
+            #faseamento das cargas de baixa tensão
             for elem in df_aux_ucbt_pip.itertuples(index=False):
                 if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
                         continue

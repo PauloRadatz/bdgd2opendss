@@ -30,6 +30,7 @@ six==1.16.0
 tomli==2.0.1
 tqdm==4.65.0
 urllib3==1.26.15
+xlsxwriter==3.2.9
 yarg==0.1.9
 zipp==3.15.0
 pyogrio==0.9.0

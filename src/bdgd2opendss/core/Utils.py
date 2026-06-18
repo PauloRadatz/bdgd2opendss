@@ -8,6 +8,7 @@ import re
 import sys
 import networkx as nx
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from bdgd2opendss.core.Settings import settings
 import bdgd2opendss.config
@@ -17,6 +18,39 @@ cod_year_bdgd = []
 tr_vazios = []
 sufixo_config = ""
 substation = ""
+
+def normalize_pac_value(value):
+    if value is None or pd.isna(value):
+        return pd.NA
+    text = str(value).strip()
+    if text == '' or text.lower() == 'nulo':
+        return pd.NA
+    return text
+
+def normalize_pac_columns(df, columns=("PAC_1", "PAC_2")):
+    out = df.copy()
+    for col in columns:
+        if col in out.columns:
+            out[col] = out[col].map(normalize_pac_value).astype("string")
+    return out
+
+def lookup_ctmt_by_pac(df, pac):
+    pac = normalize_pac_value(pac)
+    if pd.isna(pac):
+        return None
+    matches = df.loc[(df["PAC_1"] == pac) | (df["PAC_2"] == pac)]
+    if matches.empty:
+        return None
+    return matches.iloc[0]["CTMT"]
+
+def assign_elem(df, elem_name):
+    return df.copy().assign(ELEM=elem_name)
+
+def assign_single_pac_network(df, elem_name, pac_col="PAC", cod_col=None):
+    renamed = df.copy()
+    if cod_col is not None:
+        renamed = renamed.rename(columns={cod_col: "COD_ID"})
+    return renamed.rename(columns={pac_col: "PAC_1"}).assign(PAC_2="", ELEM=elem_name)
 
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
@@ -761,7 +795,8 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 grafo.add_node(row.PAC_2)
                 grafo.add_edge(row.PAC_1, row.PAC_2)
             except ValueError:
-                print("valor do tipo none")
+                continue
+                print("valor do tipo none") # TODO add in log
         try:
             grafo.remove_node('')
         except:
@@ -775,9 +810,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                 else:
                     #df_x = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     continue
-            if df_not_connected.empty:
-                return(print('Não existem elementos isolados!'))
-            else:
+            if not df_not_connected.empty:
                 log_erros(df_not_connected,alimentador,output_folder)
 
                 if df_not_connected.isnull().values.any():

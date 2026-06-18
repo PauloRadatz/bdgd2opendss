@@ -161,7 +161,7 @@ class JsonData:
         for table_name, table in self.tables.items():
             #TODO fazer um try/except aqui para, caso não exista a tabela, não quebrar o código
             for _ in range(runs):
-                print(f'Creating geodataframe {table.name}')
+                print(f"[verificacao] Carregando tabela {table.name}...", flush=True)
                 gdf_ = gpd.read_file(file_name, layer=table.name,
                                 columns=table.columns,ignore_geometry=table.ignore_geometry, 
                                      engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str

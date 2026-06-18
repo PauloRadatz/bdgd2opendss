@@ -30,6 +30,17 @@ class TestRunFunctionality:
         assert bdgd is not None
         assert hasattr(bdgd, 'run')
 
+    def test_public_api(self):
+        """Test that the package exposes only the intended public API."""
+        assert set(bdgd.__all__) == {
+            "__version__",
+            "bdgd_type",
+            "get_feeder_list",
+            "run",
+            "settings",
+            "verificacao_bdgd",
+        }
+
     def test_settings_import(self):
         """Test that settings can be imported and configured."""
         assert settings is not None

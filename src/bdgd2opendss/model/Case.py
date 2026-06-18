@@ -3,7 +3,14 @@
 from dataclasses import dataclass, field
 import pandas as pd
 
-from bdgd2opendss import Circuit, LineCode, Line, LoadShape, Transformer, RegControl, Load, PVsystem
+from bdgd2opendss.model.Circuit import Circuit
+from bdgd2opendss.model.Line import Line
+from bdgd2opendss.model.LineCode import LineCode
+from bdgd2opendss.model.Load import Load
+from bdgd2opendss.model.LoadShape import LoadShape
+from bdgd2opendss.model.PVsystem import PVsystem
+from bdgd2opendss.model.RegControl import RegControl
+from bdgd2opendss.model.Transformer import Transformer
 from bdgd2opendss.core.Utils import create_master_file, create_voltage_bases, get_cod_year_bdgd, create_df_trafos_vazios,get_configuration
 from bdgd2opendss.model.Count_days import count_day_type
 from bdgd2opendss.model import BusCoords
