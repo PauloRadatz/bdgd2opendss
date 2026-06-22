@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bdgd2opendss"
-version = "1.2.0"
+version = "1.2.1"
 description = "BDGD2OpenDSS converts BDGD data into OpenDSS models."
 readme = "README.md"
 license = {text = "MIT"}

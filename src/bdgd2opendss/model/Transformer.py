@@ -331,7 +331,7 @@ class Transformer:
             elif '4' in self.bus3_nodes or self.bus2_nodes == '1.2.4':#verificar essa condição aqui no geoperdas
                 kvs = f'{self.kv1} {self.kv2/2} {self.kv2/2}'
                 kvas = f'{self.kvas} {self.kvas} {self.kvas}'
-                if self.bus3_nodes != "1.4" and self.bus3_nodes != "2.4" and self.bus3_nodes != "3.4":
+                if self.bus3_nodes != "4.1" and self.bus3_nodes != "4.2" and self.bus3_nodes != "4.3":
                     buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}" '
                 else:
                     buses = f'"{self.bus1}.{self.bus1_nodes}" "{self.bus2}.{self.bus2_nodes}" "{self.bus2}.{self.bus3_nodes}" '

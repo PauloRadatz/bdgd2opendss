@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2026-06-22)
+
+- **Transformer**: Fixed 3-winding center-tapped transformers so the 3rd winding bus keeps the correct node suffix (e.g. `.4.2`) instead of dropping to the base bus name, which had left secondary legs isolated and prevented OpenDSS from solving the model.
+
 ## 1.2.0 (2026-06-18)
 
 - **xlsxwriter**: Added as a runtime dependency for BDGD validation Excel export.
