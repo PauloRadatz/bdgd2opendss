@@ -35,6 +35,15 @@ def extract_shx(geo_df):
             columns={0: 'COD_ID', 1: 'pac1', 2: 'pac2', 3: 'lat', 4: 'long'}).dropna().reset_index(drop=True)
     return df
 
+def extract_shx_point(geo_df):
+
+    df = pd.DataFrame({
+        "PAC":geo_df['PAC'],
+        "long": geo_df.geometry.x,
+        "lat": geo_df.geometry.y
+    })
+
+    return df
 
 def buses_coords(coords_shx, df_ssd):
     coords_shx['COD_ID'] = coords_shx['COD_ID'].astype(object)
@@ -56,8 +65,7 @@ def buses_coords(coords_shx, df_ssd):
 
     return coords_shx
 
-
-def get_buscoords(ssdmt, ssdbt):
+def get_buscoords(ssdmt, ssdbt, ucbt, ucmt):
     if ssdbt.empty and ssdmt.empty:
         return(None)
     if not ssdmt.empty:
@@ -74,6 +82,7 @@ def get_buscoords(ssdmt, ssdbt):
     else: #caso não exista o sistema de baixa tensão, retorna apenas o sistema de média tensão.
         print("There's no SSDBT in this feeder.")        
         return(buscoords_mt[['PAC', 'long', 'lat']])
-    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']]], axis=0).reset_index(drop=True)
-    # return buscoords[['PAC', 'long', 'lat']].to_csv(path, index=False, header=False)
+    buscoords_ucbt = extract_shx_point(ucbt)
+    buscoords_ucmt = extract_shx_point(ucmt)
+    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']], buscoords_ucbt, buscoords_ucmt], axis=0).reset_index(drop=True)
     return buscoords[['PAC', 'long', 'lat']]

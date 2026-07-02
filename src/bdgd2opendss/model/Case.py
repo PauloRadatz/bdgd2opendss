@@ -301,9 +301,9 @@ buscoords buscoords.csv'''
 
         if settings.gerCoord:
             #
-            gdf_SSDMT, gdf_SSDBT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
-            #
-            df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT)
+            gdf_SSDMT, gdf_SSDBT, gdf_UCBT, gdf_UCMT = Utils.create_dfs_coords(self.folder_bdgd, self.feeder)
+            #TODO colocar a UCMT também
+            df_coords = BusCoords.get_buscoords(gdf_SSDMT, gdf_SSDBT, gdf_UCBT, gdf_UCMT)
             if df_coords is None:
                 return("There's no coordinates for this feeder")
             #

@@ -347,6 +347,12 @@ def create_dfs_coords(filename="", feeder=""):
         "CTMT"
     ]
 
+    cols_ucs = [
+        "COD_ID",
+        "PAC",
+        "CTMT"
+    ]
+
     path_object = pathlib.Path(filename)
 
     gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
@@ -360,7 +366,17 @@ def create_dfs_coords(filename="", feeder=""):
                               ignore_geometry=False, engine='pyogrio', use_arrow=True)
     gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
 
-    return gdf_SSDMT, gdf_SSDBT
+    gdf_UCBT = gpd.read_file(path_object, layer='UCBT',
+                              columns=cols_ucs,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+    gdf_UCBT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
+
+    gdf_UCMT = gpd.read_file(path_object, layer='UCMT',
+                              columns=cols_ucs,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+    gdf_UCMT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
+
+    return gdf_SSDMT, gdf_SSDBT, gdf_UCBT, gdf_UCMT
 
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
