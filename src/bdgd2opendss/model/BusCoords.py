@@ -37,6 +37,9 @@ def extract_shx(geo_df):
 
 def extract_shx_point(geo_df):
 
+    if not hasattr(geo_df, "geometry"):
+        return pd.DataFrame(columns=["PAC", "long", "lat"])
+
     df = pd.DataFrame({
         "PAC":geo_df['PAC'],
         "long": geo_df.geometry.x,

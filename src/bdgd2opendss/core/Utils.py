@@ -354,6 +354,8 @@ def create_dfs_coords(filename="", feeder=""):
     ]
 
     path_object = pathlib.Path(filename)
+    layer_ucbt = 'UCBT' if settings.TipoBDGD else 'UCBT_tab'
+    layer_ucmt = 'UCMT' if settings.TipoBDGD else 'UCMT_tab'
 
     gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
                               columns=cols,
@@ -366,15 +368,15 @@ def create_dfs_coords(filename="", feeder=""):
                               ignore_geometry=False, engine='pyogrio', use_arrow=True)
     gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
 
-    gdf_UCBT = gpd.read_file(path_object, layer='UCBT',
+    gdf_UCBT = gpd.read_file(path_object, layer=layer_ucbt,
                               columns=cols_ucs,
                               ignore_geometry=False, engine='pyogrio', use_arrow=True)
     gdf_UCBT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
 
-    gdf_UCMT = gpd.read_file(path_object, layer='UCMT',
+    gdf_UCMT = gpd.read_file(path_object, layer=layer_ucmt,
                               columns=cols_ucs,
                               ignore_geometry=False, engine='pyogrio', use_arrow=True)
-    gdf_UCMT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
+    gdf_UCMT = gdf_UCMT.loc[gdf_UCMT['CTMT'] == feeder]
 
     return gdf_SSDMT, gdf_SSDBT, gdf_UCBT, gdf_UCMT
 
