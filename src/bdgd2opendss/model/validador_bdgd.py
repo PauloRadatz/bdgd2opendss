@@ -19,7 +19,7 @@ import os.path
 import traceback
 from datetime import datetime
 from tqdm import tqdm
-
+import plotly.graph_objects as go
 
 def _report_verification(step: str, message: str) -> None:
     print(f"[verificacao] {step}: {message}", flush=True)
@@ -630,6 +630,8 @@ class ValidadorBDGD:
                     continue
                 else:
                     df_isolados = pd.concat([df_isolados,df_not_connected], ignore_index=True)
+                    if self.path_coords:
+                        self.plot_isolated_circuits(df_total=df_total,pac_ctmt=pac_ctmt,df_isolated=df_not_connected,feeder=feeder,output_path=self.output_folder)
                     if df_not_connected.isnull().values.any():
                         df_not_connected = df_not_connected.fillna('Nulo')
 
@@ -1232,7 +1234,7 @@ class ValidadorBDGD:
                 if _is_missing(trafo):
                     # print('trafo sem COD_ID')
                     continue
-                sequencia = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
+                sequencia,grafo = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
                 if sequencia:
                     pac_trafo = sequencia[0][0]
                     for seq in sequencia:
@@ -1782,17 +1784,20 @@ class ValidadorBDGD:
         grafo = nx.Graph()
 
         for row in df_line_bt.itertuples(index=False):
-            grafo.add_node(row.PAC_1)
+            if row.ELEM == 'UCBT':
+                grafo.add_node(row.PAC_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+            else:
+                grafo.add_node(row.PAC_1, tipo='bus')
             grafo.add_node(row.PAC_2)
-            grafo.add_edge(row.PAC_1, row.PAC_2)
+            grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
 
         conectados = list(nx.connected_components(grafo))
 
         if any(pac_trafo in grf for grf in conectados):
-            sequencia = list(nx.bfs_edges(grafo,pac_trafo))
-            return(sequencia)
+            sequencia = list(nx.bfs_edges(grafo,pac_trafo)) 
+            return(sequencia,grafo)
         else:
-            return(None)
+            return(None, None)
 
     def store_load_energy(self,feeder):
         """Armazena as energias das cargas de BT e MT para cada alimentador.
@@ -2069,7 +2074,7 @@ class ValidadorBDGD:
         _report_verification("export", f"Arquivo Excel de scan exportado: {path}")
 
     def check_propagacao(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
-        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento
+        """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento 
         dos elementos (exemplo de erro: fase do elemento anterior AB e fase do elemento atual ABC)
         dataframe = geodataframe completo da BDGD"""
         isolados = lista_isolados
@@ -2079,6 +2084,10 @@ class ValidadorBDGD:
         ctmt_feeders = list(enumerate(dataframe['CTMT']['COD_ID'].tolist()))
         feeder_iterator = tqdm(ctmt_feeders, desc="Propagacao de faseamento", unit=" alimentador", ncols=100)
         for i, feeder in feeder_iterator:
+            fase_error = {}
+            fase_error_bt = {}
+            grafos = []
+            pacs_trf = []
             feeder_iterator.set_description(f"Propagacao de faseamento: {feeder}")
 
             if dataframe['CTMT'].at[i,'ATIP'] == 1:
@@ -2113,10 +2122,10 @@ class ValidadorBDGD:
                 .rename(columns={'PAC':'PAC_1'})
                 .assign(PAC_2='', ELEM='UCMT')
             )
-            df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON']]
+            df_ucbt = dataframe['UCBT'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC','FAS_CON','UNI_TR_MT']]
             df_aux_ucbt = (
                 pd.DataFrame(df_ucbt).groupby('COD_ID', as_index=False)
-                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last'})
+                .agg({'COD_ID':'last','CTMT':'last','PAC':'last','FAS_CON':'last','UNI_TR_MT':'last'})
                 .rename(columns={'PAC':'PAC_1'})
                 .assign(PAC_2='', ELEM='UCBT')
             )
@@ -2139,7 +2148,8 @@ class ValidadorBDGD:
             for row in df_elements.itertuples(index=False):
                 grafo.add_node(row.PAC_1)
                 grafo.add_node(row.PAC_2)
-                grafo.add_edge(row.PAC_1, row.PAC_2)
+                #TODO 
+                grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID,fas_con=row.FAS_CON, tipo=row.ELEM)
             try:
                 grafo.remove_node('')
             except:
@@ -2147,7 +2157,7 @@ class ValidadorBDGD:
             conectados = list(nx.connected_components(grafo))
 
             if any(pac_ctmt in grf for grf in conectados):
-                sequencia = list(nx.bfs_edges(grafo,pac_ctmt))
+                sequencia = list(nx.bfs_edges(grafo,pac_ctmt)) 
             else:
                 # print(f"Não é possível gerar a sequência elétrica, pois o alimentador {feeder} não tem conexão com a fonte")
                 continue
@@ -2179,10 +2189,11 @@ class ValidadorBDGD:
                         fase = df_elements.at[i,'FAS_CON'] #fase do elemento anterior
                         if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
                             continue #faseamento correto
-                        else:#TODO mudar o nome de detalhamento para deixar claro que é propagação
-                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
+                        else:
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements.at[i_ele,'ELEM'], "Código":cod_ele,"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.", 
                             "detalhamento": f"Elemento analisado = {df_elements.at[i_ele,'ELEM']}:{cod_ele} - fase:{fase_ele}, Elemento de conexão - {df_elements.at[i,'ELEM']}:{df_elements.at[i,'COD_ID']}. Faseamento possível - combinação de:{fase}. Alimentador:{df_elements.at[i_ele,'CTMT']}."})
                             df_elements.loc[i_ele,'FAS_CON'] = fase
+                            fase_error[cod_ele] = fase_ele
             #verificação do faseamento nos transformadores e nas cargas de média tensão
             for elem in df_aux_ucmt_tr.itertuples(index=False):
                 if elem.COD_ID in isolados: #remove os elementos isolados da checagem de faseamento
@@ -2213,32 +2224,35 @@ class ValidadorBDGD:
                 if _is_missing(trafo):
                     # print('trafo sem COD_ID')
                     continue
-                sequencia = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
+                sequencia,grafo_bt = ValidadorBDGD.return_graph_trafo(df_aux_trafo,df_elements_bt,trafo)
+                grafos.append(grafo_bt)
                 if sequencia:
                     pac_trafo = sequencia[0][0]
+                    pacs_trf.append(pac_trafo)
                     for seq in sequencia:
-                        if seq[0] == pac_trafo:
+                        try:
+                            i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[0]) & (df_elements_bt[pac2] == seq[1])].tolist()[0] #índice do elemento atual
+                        except IndexError:
+                            i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[1]) & (df_elements_bt[pac2] == seq[0])].tolist()[0]
+                        cod_ele = df_elements_bt.at[i_ele,'COD_ID'] #código do elemento atual
+                        fase_ele = df_elements_bt.at[i_ele,'FAS_CON'] #fase do elemento atual
+                        if seq[0] == pac_trafo: #linha que está conectada ao transformador
                             i = df_aux_trafo.index[df_aux_trafo['COD_ID'] == trafo].tolist()[0]
                             fase = df_aux_trafo.at[i,'LIG_FAS_S']+df_aux_trafo.at[i,'LIG_FAS_T'] #fase do elemento anterior
                         else:
-                            try:
-                                i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[0]) & (df_elements_bt[pac2] == seq[1])].tolist()[0] #índice do elemento atual
-                            except IndexError:
-                                i_ele = df_elements_bt.index[(df_elements_bt[pac1] == seq[1]) & (df_elements_bt[pac2] == seq[0])].tolist()[0]
-                            cod_ele = df_elements_bt.at[i_ele,'COD_ID'] #código do elemento atual
-                            fase_ele = df_elements_bt.at[i_ele,'FAS_CON'] #fase do elemento atual
                             seqx = ValidadorBDGD.find_seq(sequencia=sequencia, index=sequencia.index(seq)) #acha o primeiro elemento anterior no grafo
                             if not df_elements_bt.index[(df_elements_bt[pac1] == seqx[0]) & (df_elements_bt[pac2] == seqx[1])].empty:
                                 i = df_elements_bt.index[(df_elements_bt[pac1] == seqx[0]) & (df_elements_bt[pac2] == seqx[1])].tolist()[0]
                             else:
                                 i = df_elements_bt.index[(df_elements_bt[pac1] == seqx[1]) & (df_elements_bt[pac2] == seqx[0])].tolist()[0]
                             fase = df_elements_bt.at[i,'FAS_CON'] #fase do elemento anterior
-                            if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
-                                continue #faseamento correto
-                            else:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements_bt.at[i_ele,'ELEM'], "Código":df_elements_bt.at[i_ele,'COD_ID'],"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
-                                "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
-                                df_elements_bt.loc[i_ele,'FAS_CON'] = fase
+                        if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
+                            continue #faseamento correto
+                        else:
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements_bt.at[i_ele,'ELEM'], "Código":df_elements_bt.at[i_ele,'COD_ID'],"erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
+                            "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
+                            df_elements_bt.loc[i_ele,'FAS_CON'] = fase
+                            fase_error_bt[df_elements_bt.at[i_ele,'COD_ID']] = fase_ele
                 else:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
                     # print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
@@ -2286,4 +2300,681 @@ class ValidadorBDGD:
                     else:
                         erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":elem.ELEM, "Código":elem.COD_ID, "erro":f"Elemento com propagação de fase inadequada{erromax[1]}após sequenciamento elétrico.",
                         "detalhamento":f"Elemento analisado = {elem.ELEM}:{elem.COD_ID} - fase:{elem.FAS_CON}, Elemento de conexão - {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {elem.CTMT}."})
+            if self.path_coords:
+                df_mt = pd.concat([df_elements,df_aux_ucmt_tr],ignore_index=True)
+                df_bt = pd.concat([df_elements_bt,df_aux_ucbt],ignore_index=True)
+                self.plot_fase_error(df_mt=df_mt,df_bt=df_bt,fase_error=fase_error,fase_error_bt=fase_error_bt,pac_ctmt=pac_ctmt,
+                                    feeder=feeder,path_coords=self.path_coords, output_path=self.output_folder)
         return(pd.DataFrame(erros))
+    
+    def plot_isolated_circuits(self, df_total,pac_ctmt,df_isolated,feeder,output_path): #cria um plot dos elementos isolados
+        #cria um arquivo HTML com os elementos isolados em destaque, caso exista. 
+        df = pd.read_csv(self.path_coords)
+        pos = {
+            str(row["PAC"]).lower(): (row["long"], row["lat"])
+            for _, row in df.iterrows()
+        }
+        edge_trace_iso,edge_hover_trace_iso,node_trace_iso = self.iso_points(df_isolated=df_isolated,pos=pos) #desenho dos elementos isolados
+        edge_trace, edge_hover_trace, node_trace = self.graph_points(df_total=df_total,pos=pos)
+        highlight_trace = None
+        if pac_ctmt.lower() in pos:
+            x, y = pos[pac_ctmt.lower()]
+            highlight_trace = go.Scatter(
+                x=[x],
+                y=[y],
+                mode='markers',
+                marker=dict(
+                    size=15,
+                    color='black',
+                    symbol='triangle-up'),
+                text=[pac_ctmt.lower()],
+                hoverinfo='text',
+                name='SE')
+        if highlight_trace is not None:
+            fig = go.Figure(data=[edge_trace, edge_hover_trace, node_trace, edge_trace_iso, edge_hover_trace_iso, node_trace_iso, highlight_trace])
+        else:
+            fig = go.Figure(data=[edge_trace, edge_hover_trace, node_trace, edge_trace_iso, edge_hover_trace_iso, node_trace_iso])
+        fig.update_layout(
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=20, l=20, r=20, t=20),
+            xaxis=dict(showgrid=False, zeroline=False, visible=False),
+            yaxis=dict(showgrid=False, zeroline=False, visible=False, scaleanchor="x"))
+        
+        fig_path = os.path.join(output_path, f"figuras_{feeder}")
+
+        if not os.path.exists(fig_path):
+            os.makedirs(fig_path)
+        path = os.path.join(fig_path,f"isolated_{feeder}.html")
+
+        fig.write_html(path)
+    
+    def graph_points(self,df_total,pos):
+        grafo = nx.Graph()
+        for row in df_total.itertuples(index=False):
+            try:
+                if row.ELEM == 'UCBT' or row.ELEM == 'UCMT':
+                    grafo.add_node(row.PAC_1.lower(),cod_id=row.COD_ID,tipo=row.ELEM)
+                else:
+                    grafo.add_node(row.PAC_1.lower())
+                if row.ELEM == 'EQTRMT':
+                    grafo.add_node(row.PAC_2.lower(),cod_id=row.COD_ID,tipo=row.ELEM)
+                else:
+                    grafo.add_node(row.PAC_2.lower())
+                grafo.add_edge(row.PAC_1.lower(), row.PAC_2.lower(), cod_id=row.COD_ID,tipo=row.ELEM)
+            except ValueError:
+                print("valor do tipo none")
+        try:
+            grafo.remove_node('')
+        except:
+            pass
+        valid_nodes = [n.lower() for n in grafo.nodes if n.lower() in pos]
+        subgrafo = grafo.subgraph(valid_nodes)
+        # Coordenadas das linhas
+        edge_x = []
+        edge_y = []
+        for u, v in subgrafo.edges():
+            x0, y0 = pos[u]
+            x1, y1 = pos[v]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+
+        edge_trace = go.Scatter(
+            x=edge_x,
+            y=edge_y,
+            mode='lines',
+            line=dict(width=0.5, color='gray'),
+            hoverinfo='none')
+        mid_x = []
+        mid_y = []
+        edge_text = []
+
+        for u, v, data in grafo.edges(data=True):
+            if u in pos and v in pos:
+                x0, y0 = pos[u]
+                x1, y1 = pos[v]
+                mid_x.append((x0 + x1) / 2)
+                mid_y.append((y0 + y1) / 2)
+                edge_text.append(
+                    f"COD_ID: {data['cod_id']}<br>"
+                    f"Elem: {data['tipo']}<br>"
+                    f"PAC1:{u}<br>"
+                    f"PAC2:{v}")
+                
+        edge_hover_trace = go.Scatter(
+        x=mid_x,
+        y=mid_y,
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0 #invisível
+        ),
+        text=edge_text,
+        hoverinfo='text',
+        hoverlabel=dict(
+        bgcolor="lightblue",
+        bordercolor="black",
+        font_color="black"),
+        showlegend=False)
+
+        # Coordenadas dos nós
+        node_x = []
+        node_y = []
+        node_text = []
+        for node,data in subgrafo.nodes(data=True):
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+            #if data['tipo'] == 'UCBT' or data['tipo'] == 'UCMT' or data['tipo'] == 'EQTRMT':
+            if len(data):
+                node_text.append(f"COD_ID:{data['cod_id']}<br>"
+                    f"Elem:{data['tipo']}<br>"
+                    f"PAC:{node}<br>")
+            else:
+                node_text.append(node)
+
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text,
+            marker=dict(
+                size=2,
+                color='blue'
+            ))
+        return edge_trace, edge_hover_trace, node_trace
+
+    def iso_points(self,df_isolated,pos):
+        grafo_iso = nx.Graph()
+        for row in df_isolated.itertuples():
+            p1 = str(row.PAC_1).lower()
+            p2 = str(row.PAC_2).lower()
+            if row.ELEM == 'UCBT' or row.ELEM == 'UCBT' or row.ELEM == 'EQTRMT':
+                grafo_iso.add_node(p1,cod_id=row.COD_ID.lower(), tipo=row.ELEM.lower())
+            else:
+                grafo_iso.add_node(p1)
+            grafo_iso.add_node(p2)
+            grafo_iso.add_edge(p1, p2, cod_id=row.COD_ID.lower(), tipo=row.ELEM.lower())
+        edge_x_iso = []
+        edge_y_iso = []
+        for u, v in grafo_iso.edges():
+            if u in pos and v in pos:
+                x0, y0 = pos[u]
+                x1, y1 = pos[v]
+                edge_x_iso.extend([x0, x1, None])
+                edge_y_iso.extend([y0, y1, None])
+
+        edge_trace_iso = go.Scatter(
+            x=edge_x_iso,
+            y=edge_y_iso,
+            mode='lines',
+            line=dict(width=1.5, color='red'),
+            hoverinfo='none',
+            name='Trechos isolados')
+        ##criação do nome das edges
+        mid_x = []
+        mid_y = []
+        edge_text_iso = []
+
+        for u, v, data in grafo_iso.edges(data=True):
+
+            if u in pos and v in pos:
+
+                x0, y0 = pos[u]
+                x1, y1 = pos[v]
+
+                mid_x.append((x0 + x1) / 2)
+                mid_y.append((y0 + y1) / 2)
+
+                edge_text_iso.append(
+                    f"Entidade: {data['tipo']}<br>"
+                    f"COD_ID: {data['cod_id']}<br>"
+                    f"PAC1:{u}<br>"
+                    f"PAC2:{v}")
+                
+        edge_hover_trace_iso = go.Scatter(
+        x=mid_x,
+        y=mid_y,
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0  # invisível
+        ),
+        text=edge_text_iso,
+        hoverinfo='text',
+        showlegend=False)
+
+        node_x_iso = []
+        node_y_iso = []
+        node_text_iso = []
+
+        for node in grafo_iso.nodes():
+            if node in pos:
+                x, y = pos[node]
+
+                node_x_iso.append(x)
+                node_y_iso.append(y)
+                node_text_iso.append(node)
+
+        node_trace_iso = go.Scatter(
+            x=node_x_iso,
+            y=node_y_iso,
+            mode='markers',
+            text=node_text_iso,
+            hoverinfo='text',
+            marker=dict(
+                size=6,
+                color='red',
+                symbol='diamond'
+            ),
+            name='PACs isolados'
+        )
+        return edge_trace_iso,edge_hover_trace_iso,node_trace_iso
+    
+    def plot_fase_error(self,df_mt,df_bt,fase_error,fase_error_bt,pac_ctmt,feeder,path_coords,output_path):
+        """
+        df_mt -> dataframe dos elementos de média tensão
+        df_bt -> dataframe dos elementos de baixa tensão
+        fase_error -> erros de faseamento em média tensão
+        fase_error_bt -> erros de faseamento em baixa tensão
+        pac_ctmt -> ponto de acoplamento inicial do alimentaodr
+        feeder -> nome do alimentador
+        path_coords -> caminho do arquivo de coordenadas em csv
+        output_path -> caminho de salvamento da figura de saída"""
+        df = pd.read_csv(path_coords)
+        pos = {str(row["PAC"]).lower(): (row["long"], row["lat"])
+            for _, row in df.iterrows()}
+        df_trafo = df_mt[df_mt['ELEM'] == 'EQTRMT']
+        traces_mt = self.graph_points_fase_mt(df_mt=df_mt,fase_error=fase_error,pac_ctmt=pac_ctmt,feeder=feeder,pos=pos)
+        traces_bt = self.graph_points_fase_bt(df_bt=df_bt,df_trafo=df_trafo,fase_error=fase_error_bt,pos=pos)
+        fig = go.Figure(
+        data = traces_mt + traces_bt)
+
+        fig_path = os.path.join(output_path, f"figuras_{feeder}")
+        
+        if not os.path.exists(fig_path):
+            os.makedirs(fig_path)
+
+        path = os.path.join(fig_path,f"fase_error_{feeder}.html")
+
+        fig.write_html(path)
+
+    def graph_points_fase_mt(self,df_mt,fase_error,pac_ctmt,feeder,pos):
+        grafo = nx.Graph()
+        for row in df_mt.itertuples(index=False):
+            if row.ELEM == 'UCMT':
+                grafo.add_node(row.PAC_1.lower(),cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
+            else:
+                grafo.add_node(row.PAC_1.lower(), tipo='bus')
+                grafo.add_node(row.PAC_2.lower(), tipo='bus')
+                grafo.add_edge(row.PAC_1.lower(), row.PAC_2.lower(), cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
+        try:
+            grafo.remove_node('')
+        except:
+            pass
+        ##TODO agora plotar e mostrar 
+        valid_nodes = [n for n in grafo.nodes if n.lower() in pos]
+        subgrafo = grafo.subgraph(valid_nodes)
+        # Coordenadas das linhas
+        edge_x_normal = []
+        edge_y_normal = []
+        edge_x_error = []
+        edge_y_error = []
+        for u, v, data in subgrafo.edges(data=True):
+
+            x0, y0 = pos[u.lower()]
+            x1, y1 = pos[v.lower()]
+
+            if str(data['cod_id']).lower() in fase_error:
+                edge_x_error.extend([x0, x1, None])
+                edge_y_error.extend([y0, y1, None])
+            else:
+                edge_x_normal.extend([x0, x1, None])
+                edge_y_normal.extend([y0, y1, None])
+
+        edge_trace = go.Scatter(
+            x=edge_x_normal,
+            y=edge_y_normal,
+            mode='lines',
+            line=dict(width=1, color='steelblue'),
+            hoverinfo='none',
+            name='SSDMT')
+        
+        edge_error_trace = go.Scatter(
+            x=edge_x_error,
+            y=edge_y_error,
+            mode='lines',
+            line=dict(width=4, color='red'),
+            hoverinfo='none',
+            name='Faseamento incorreto MT')
+
+        mid_x = []
+        mid_y = []
+        edge_text = []
+
+        mid_x_error = []
+        mid_y_error = []
+        edge_text_error = []
+
+        for u, v, data in grafo.edges(data=True):
+            if u in pos and v in pos:
+                x0, y0 = pos[u.lower()]
+                x1, y1 = pos[v.lower()]
+                x_mid = (x0 + x1)/2
+                y_mid = (y0 + y1)/2
+
+            if str(data['cod_id']).lower() in fase_error.keys():
+                mid_x_error.append(x_mid)
+                mid_y_error.append(y_mid)
+                edge_text_error.append(
+                    f"Entidade: {data['tipo']}<br>"
+                    f"COD_ID: {data['cod_id']}<br>"
+                    f"FAS_CON: {fase_error[data['cod_id']]}<br>"
+                    f"PAC1:{u}<br>"
+                    f"PAC2:{v}")
+            else:
+                mid_x.append(x_mid)
+                mid_y.append(y_mid)
+                edge_text.append(
+                    f"Entidade: {data['tipo']}<br>"
+                    f"COD_ID: {data['cod_id']}<br>"
+                    f"FAS_CON: {data['fas_con']}<br>"
+                    f"PAC1:{u}<br>"
+                    f"PAC2:{v}")
+
+        edge_hover_trace = go.Scatter(
+        x=mid_x,
+        y=mid_y,
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0  # invisível
+        ),
+        text=edge_text,
+        hoverinfo='text',
+        hoverlabel=dict(
+        bgcolor="lightblue",
+        bordercolor="black",
+        font_color="black"),
+        showlegend=False)
+
+        edge_hover_trace_error = go.Scatter(
+        x=mid_x_error,
+        y=mid_y_error,
+        mode='markers',
+        marker=dict(size=10, opacity=0),
+        text=edge_text_error,
+        hoverinfo='text',
+        hoverlabel=dict(
+            bgcolor='salmon',      # ou 'lightcoral'
+            bordercolor='red',
+            font_color='black'
+        ),
+        showlegend=False)
+        # Coordenadas dos nós e UCMTs
+        node_x = []
+        node_y = []
+        node_text = []
+        node_x_ucmt = []
+        node_y_ucmt = []
+        node_text_ucmt = []
+        node_color_ucmt = []
+        for node,data in subgrafo.nodes(data=True):
+            x, y = pos[node.lower()]
+            if data['tipo'] == 'UCMT':
+                if str(data['cod_id']).lower() in fase_error:
+                    node_color_ucmt.append('red')
+                else:
+                    node_color_ucmt.append('royalblue')
+                node_x_ucmt.append(x)
+                node_y_ucmt.append(y)
+                node_text_ucmt.append(
+                    f"Entidade: {data['tipo']}<br>"
+                    f"COD_ID: {data['cod_id']}<br>"
+                    f"FAS_CON: {data['fas_con']}<br>"
+                    f"PAC:{node}")
+            else:
+                node_x.append(x)
+                node_y.append(y)
+                node_text.append(node)
+        #TODO criar dois node_trace -> node_trace_ucmt/node_trace
+        node_trace = go.Scatter(
+            x=node_x,
+            y=node_y,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text,
+            name='Barras MT',
+            marker=dict(size=3.5,color='blue'))
+        
+        node_trace_ucmt = go.Scatter(
+            x=node_x_ucmt,
+            y=node_y_ucmt,
+            mode='markers',
+            text=node_text_ucmt,
+            hoverinfo='text',
+            name='UCMT',
+            marker=dict(
+                size=8,
+                color=node_color_ucmt,
+                symbol='square'))
+        
+        highlight_trace = None
+        if pac_ctmt.lower() in pos:
+            x, y = pos[pac_ctmt.lower()]
+            highlight_trace = go.Scatter(
+                x=[x],
+                y=[y],
+                mode='markers',
+                marker=dict(
+                    size=15,
+                    color='black',
+                    symbol='triangle-up'),
+                text=[f'PAC:{pac_ctmt}<br>'
+                      f'Alimentador:{feeder}'],
+                hoverinfo='text',
+                name=f'SE')
+            
+        fig = go.Figure(
+        data=[
+            edge_trace,
+            edge_error_trace,
+            edge_hover_trace,
+            edge_hover_trace_error,
+            node_trace,
+            node_trace_ucmt,
+            highlight_trace
+        ])
+        return [edge_trace,edge_error_trace,edge_hover_trace,edge_hover_trace_error, node_trace, node_trace_ucmt, highlight_trace]
+    
+    def graph_points_fase_bt(self,df_bt,df_trafo,fase_error,pos): #TODO fazer funcionar essa rotina
+        grafos, pacs_trf = self.return_graph_trafo_plot(df_bt=df_bt,df_trafo=df_trafo)
+        traces = []
+        show_legend = True
+        show_legend_error = True
+        show_legend_node = True
+        ##TODO agora plotar e mostrar 
+        for grafo,pac_trf in zip(grafos,pacs_trf):
+            valid_nodes = [n for n in grafo.nodes if n.lower() in pos]
+            subgrafo = grafo.subgraph(valid_nodes)
+            if len(subgrafo.nodes) == 0:
+                continue
+            # Coordenadas das linhas
+            edge_x_normal = []
+            edge_y_normal = []
+            edge_x_error = []
+            edge_y_error = []
+            for u, v, data in subgrafo.edges(data=True):
+
+                x0, y0 = pos[u.lower()]
+                x1, y1 = pos[v.lower()]
+
+                if str(data['cod_id']).lower() in fase_error:
+                    edge_x_error.extend([x0, x1, None])
+                    edge_y_error.extend([y0, y1, None])
+                else:
+                    edge_x_normal.extend([x0, x1, None])
+                    edge_y_normal.extend([y0, y1, None])
+
+            edge_trace = go.Scatter(
+                x=edge_x_normal,
+                y=edge_y_normal,
+                mode='lines',
+                line=dict(width=0.5, color='forestgreen'),
+                hoverinfo='none',
+                legendgroup = 'SSDBT',
+                showlegend=show_legend,
+                name='SSDBT')
+
+            edge_error_trace = go.Scatter(
+                x=edge_x_error,
+                y=edge_y_error,
+                mode='lines',
+                line=dict(width=4, color='lightcoral'),
+                hoverinfo='none',
+                legendgroup= 'Faseamento incorreto BT',
+                showlegend=show_legend_error,
+                name='Faseamento incorreto BT')
+            if len(edge_x_error) > 1: #para aparecer apenas na primeira vez a legenda
+                show_legend_error = False
+            mid_x = []
+            mid_y = []
+            edge_text = []
+
+            mid_x_error = []
+            mid_y_error = []
+            edge_text_error = []
+
+            for u, v, data in grafo.edges(data=True):
+                if u.lower() in pos and v.lower() in pos:
+                    x0, y0 = pos[u.lower()]
+                    x1, y1 = pos[v.lower()]
+                    x_mid = (x0 + x1)/2
+                    y_mid = (y0 + y1)/2
+                    if str(data['cod_id']).lower() in fase_error.keys():
+                        mid_x_error.append(x_mid)
+                        mid_y_error.append(y_mid)
+                        edge_text_error.append(
+                        f"Entidade: {data['tipo']}<br>"
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"FAS_CON: {fase_error[data['cod_id']]}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")
+                    else:
+                        mid_x.append(x_mid)
+                        mid_y.append(y_mid)
+                        edge_text.append(
+                        f"Entidade: {data['tipo']}<br>"
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"FAS_CON: {data['fas_con']}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")
+
+            edge_hover_trace = go.Scatter(
+            x=mid_x,
+            y=mid_y,
+            mode='markers',
+            marker=dict(
+                size=10,
+                opacity=0  # invisível
+            ),
+            text=edge_text,
+            hoverinfo='text',
+            hoverlabel=dict(
+            bgcolor="lightblue",
+            bordercolor="black",
+            font_color="black"),
+            showlegend=False)
+
+            edge_hover_trace_error = go.Scatter(
+            x=mid_x_error,
+            y=mid_y_error,
+            mode='markers',
+            marker=dict(size=10, opacity=0),
+            text=edge_text_error,
+            hoverinfo='text',
+            hoverlabel=dict(
+                bgcolor='salmon',      # ou 'lightcoral'
+                bordercolor='red',
+                font_color='black'
+            ),
+            showlegend=False)
+            # Coordenadas dos nós
+            node_x = []
+            node_y = []
+            node_text = []
+            node_x_ucbt = []
+            node_y_ucbt = []
+            node_text_ucbt = []
+            node_color_ucbt = []
+
+            for node,data in subgrafo.nodes(data=True):
+                x, y = pos[node.lower()]
+                if len(data) > 0 and data['tipo'] == 'UCBT':
+                    if str(data['cod_id']).lower() in fase_error:
+                        node_color_ucbt.append('darkorange')
+                    else:
+                        node_color_ucbt.append('limegreen')
+                    node_x_ucbt.append(x)
+                    node_y_ucbt.append(y)
+                    node_text_ucbt.append(
+                        f"Entidade: {data['tipo']}<br>"
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"FAS_CON: {data['fas_con']}<br>"
+                        f"PAC:{node}")
+                else:
+                    node_x.append(x)
+                    node_y.append(y)
+                    node_text.append(node)
+            ##TODO criar dois node_trace -> node_trace_ucbt/node_trace
+            node_trace = go.Scatter(
+                x=node_x,
+                y=node_y,
+                mode='markers',
+                hoverinfo='text',
+                text=node_text,
+                legendgroup='Barras BT',
+                name='Barras BT',
+                showlegend=show_legend,
+                marker=dict(size=3.5,color='blue'))
+            
+            node_trace_ucbt = go.Scatter(
+                x=node_x_ucbt,
+                y=node_y_ucbt,
+                mode='markers',
+                text=node_text_ucbt,
+                hoverinfo='text',
+                legendgroup='UCBT',
+                name='UCBT',
+                showlegend=show_legend_node,
+                marker=dict(
+                    size=4.5,
+                    color=node_color_ucbt,
+                    symbol='square'))
+            
+            if len(node_text_ucbt) > 1:
+                show_legend_node = False
+                
+            traces.extend([edge_trace,edge_error_trace,edge_hover_trace,edge_hover_trace_error,node_trace,node_trace_ucbt])
+            text_trf = []
+            if pac_trf.lower() in pos:
+                x, y = pos[pac_trf.lower()]
+                i = df_trafo[df_trafo['PAC_2'] == pac_trf].index[0]
+                text_trf.append(
+                        f"Entidade:UNTRMT/EQTRMT<br>"
+                        f"COD_ID: {df_trafo.at[i,'COD_ID']}<br>"
+                        f"pac1:{df_trafo.at[i, 'PAC_1']}➔pac2:{pac_trf}<br>"
+                        f"LIG_FAS_P: {df_trafo.at[i, 'FAS_CON']}<br>"
+                        f"LIG_FAS_S: {df_trafo.at[i, 'LIG_FAS_S']}<br>"
+                        f"LIG_FAS_T: {df_trafo.at[i, 'LIG_FAS_T']}<br>")
+                highlight_trace_tr = go.Scatter(
+                    x=[x],
+                    y=[y],
+                    mode='markers',
+                    marker=dict(
+                        size=8,
+                        color='indigo',
+                        symbol='triangle-down'
+                    ),
+                    text=text_trf,
+                    hoverinfo='text',
+                    legendgroup='TRs',
+                    showlegend=show_legend,
+                    name='TR'
+                )
+                highlight_trace_tr.legendgroup = 'TR'
+                traces.append(highlight_trace_tr)
+                show_legend = False
+        fig = go.Figure(
+            data = traces
+        )
+        return traces
+    
+    def return_graph_trafo_plot(self,df_bt,df_trafo):
+        """Retorna o grafo em sequencia do transformador BT escolhido"""
+        pacs_trfs = []
+        grafos = []
+        for trafo in df_trafo['COD_ID'].tolist():
+            if trafo == None:
+                #print('trafo sem COD_ID')
+                continue
+            transformador = trafo
+            pac_trafo = df_trafo.at[df_trafo[df_trafo['COD_ID'] == trafo].index[0],'PAC_2']
+            pacs_trfs.append(pac_trafo)
+            #TODO não esta aparecendo as cargas
+            df_line_bt = df_bt.query("UNI_TR_MT == @transformador")
+            grafo = nx.Graph()
+            for row in df_line_bt.itertuples(index=False):
+                if row.ELEM == 'UCBT':
+                    grafo.add_node(row.PAC_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo='UCBT')
+                else:
+                    grafo.add_node(row.PAC_1, tipo='bus')
+                    grafo.add_node(row.PAC_2)
+                    grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+            
+            grafos.append(grafo)
+        
+        return grafos, pacs_trfs
+    
+        
