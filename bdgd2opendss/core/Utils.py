@@ -294,11 +294,9 @@ def create_output_all_coords(object_list=[], file_name="", object_lists="", file
             print(f"An error occurred: {str(e)}")
 
         return f'{file_name}_{feeder}.dss'
-
-
+#TODO função original
+"""
 def create_dfs_coords(filename="", feeder=""):
-    """Purpose: filename
-    """
     print("criando coordenadas...")
 
     cols = [
@@ -324,6 +322,53 @@ def create_dfs_coords(filename="", feeder=""):
     gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
 
     return gdf_SSDMT, gdf_SSDBT
+"""
+
+def create_dfs_coords(filename="", feeder=""):
+    """Purpose: filename
+    """
+    print("criando coordenadas...")
+
+    cols = [
+        "COD_ID",
+        "FAS_CON",
+        "PAC_1",
+        "PAC_2",
+        "TIP_CND",
+        "COMP",
+        "CTMT"
+    ]
+
+    cols_ucs = [
+        "COD_ID",
+        "PAC",
+        "CTMT"
+    ]
+
+    path_object = pathlib.Path(filename)
+
+    gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
+                              columns=cols,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+
+    gdf_SSDMT = gdf_SSDMT.loc[gdf_SSDMT['CTMT'] == feeder]
+
+    gdf_SSDBT = gpd.read_file(path_object, layer='SSDBT',
+                              columns=cols,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+    gdf_SSDBT = gdf_SSDBT.loc[gdf_SSDBT['CTMT'] == feeder]
+
+    gdf_UCBT = gpd.read_file(path_object, layer='UCBT',
+                              columns=cols_ucs,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+    gdf_UCBT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
+
+    gdf_UCMT = gpd.read_file(path_object, layer='UCMT',
+                              columns=cols_ucs,
+                              ignore_geometry=False, engine='pyogrio', use_arrow=True)
+    gdf_UCMT = gdf_UCBT.loc[gdf_UCBT['CTMT'] == feeder]
+
+    return gdf_SSDMT, gdf_SSDBT, gdf_UCBT, gdf_UCMT
 
 def create_voltage_bases(dicionario_kv): #remover as tensões de secundário de fase aqui
     lista=[]
@@ -354,6 +399,14 @@ def standard_curves_pv():
                f'~ temp=[25, 25, 25, 25, 25, 25, 25, 25, 35, 40, 45, 50, 60, 60, 55, 40, 35, 30, 25, 25, 25, 25, 25, 25] \n'
                )
 
+<<<<<<< Updated upstream:bdgd2opendss/core/Utils.py
+=======
+def standard_curves_pv_bt():
+    return (f'New "LoadShape.default_pv_daily_bt" npts=24 interval=1 \n'
+            f'~ mult = [0 0 0 0 0 0 0.1 0.2 0.3 0.5 0.8 0.9 1.0 1.0 0.99 0.9 0.7 0.4 0.1 0 0 0 0 0] \n'
+            )
+
+>>>>>>> Stashed changes:src/bdgd2opendss/core/Utils.py
 def check_duplicate_loads_names(df_load, consumer_type: str = ""):
     if consumer_type == 'BT':
         column = 'RAMAL'
@@ -888,6 +941,7 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
                 else:
                     tensao_dict[seq[1]] = kv
         return(print('Sequência elétrica na média tensão realizada!'))
+<<<<<<< Updated upstream:bdgd2opendss/core/Utils.py
 # def pvsystem_stats(dfs,output_folder):
 #     colunas = ['CTMT','POT_PV_TOTAL_INSTALADA','POT_OUTRAS_TOTAL_INSTALADA']
 #     df = pd.DataFrame(columns=colunas)
@@ -902,3 +956,23 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
 #         df.loc[index,'POT_OUTRAS_TOTAL_INSTALADA'] = float(df_ugmt["POT_INST"].sum() + df_ugbt["POT_INST"].sum()) - df.loc[index,'POT_PV_TOTAL_INSTALADA']
 #     file_path = os.path.join(output_folder, f'pvsystem_{get_cod_year_bdgd(typ='cod')}.csv')
 #     df.to_csv(file_path, index=False, encoding='utf-8')
+=======
+
+def get_substation(sub:Optional[str] = None):
+    global substation
+    if pd.isna(sub) or (isinstance(sub, str) and (len(sub) == 0 or " " in sub)):
+        substation = "__"
+    else:
+        substation = "__" + str(sub)
+
+def list_subs(df,output_path):
+    if output_path == None:
+        output_path = create_output_folder(output_folder=output_path)
+    file_path = os.path.join(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv")
+    if os.path.exists(file_path):
+        return
+    df_sub = df[['COD_ID','SUB']]
+    df_sub.to_csv(file_path, index=False, encoding='utf-8')
+
+
+>>>>>>> Stashed changes:src/bdgd2opendss/core/Utils.py

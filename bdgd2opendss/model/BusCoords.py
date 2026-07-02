@@ -35,6 +35,15 @@ def extract_shx(geo_df):
             columns={0: 'COD_ID', 1: 'pac1', 2: 'pac2', 3: 'lat', 4: 'long'}).dropna().reset_index(drop=True)
     return df
 
+def extract_shx_point(geo_df):
+
+    df = pd.DataFrame({
+        "PAC":geo_df['PAC'],
+        "long": geo_df.geometry.x,
+        "lat": geo_df.geometry.y
+    })
+
+    return df
 
 def buses_coords(coords_shx, df_ssd):
     coords_shx['COD_ID'] = coords_shx['COD_ID'].astype(object)
@@ -46,18 +55,9 @@ def buses_coords(coords_shx, df_ssd):
     coords_shx = pd.concat([df1[['COD_ID', 'PAC_1', 'lat', 'long']].rename(columns={'PAC_1': 'PAC'}),
                             df2[['COD_ID', 'PAC_2', 'lat', 'long']].rename(columns={'PAC_2': 'PAC'})],
                            axis=0).reset_index(drop=True)
-
-    # # Transformação para UTM, identificar zona
-    # myProj = Proj('+proj=utm +zone=22 +south +ellps=WGS84 +datum=WGS84 +units=m +towgs84=-67.35,3.88,-38.22')
-    # coords_shx['UTMx'], coords_shx['UTMy'] = myProj(coords_shx['long'],coords_shx['lat'])
-    # # long, lat = myProj(UTMx, UTMy, inverse=True) # Para voltar para latlong
-    # coords_shx['UTMx'] = round(coords_shx['UTMx'],3)
-    # coords_shx['UTMy'] = round(coords_shx['UTMy'],3)
-
     return coords_shx
-
-
-def get_buscoords(ssdmt, ssdbt):
+#TODO mudança de código aqui
+def get_buscoords(ssdmt, ssdbt, ucbt, ucmt):
     if ssdbt.empty and ssdmt.empty:
         return(None)
     if not ssdmt.empty:
@@ -74,6 +74,7 @@ def get_buscoords(ssdmt, ssdbt):
     else: #caso não exista o sistema de baixa tensão, retorna apenas o sistema de média tensão.
         print("There's no SSDBT in this feeder.")        
         return(buscoords_mt[['PAC', 'long', 'lat']])
-    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']]], axis=0).reset_index(drop=True)
-    # return buscoords[['PAC', 'long', 'lat']].to_csv(path, index=False, header=False)
+    buscoords_ucbt = extract_shx_point(ucbt)
+    buscoords_ucmt = extract_shx_point(ucmt)
+    buscoords = pd.concat([buscoords_mt[['PAC', 'long', 'lat']], buscoords_bt[['PAC', 'long', 'lat']], buscoords_ucbt, buscoords_ucmt], axis=0).reset_index(drop=True)
     return buscoords[['PAC', 'long', 'lat']]
