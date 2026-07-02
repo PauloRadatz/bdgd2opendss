@@ -406,7 +406,7 @@ class VerificadorFaseamentoTrafo:
 
 class ValidadorBDGD:
 
-    def __init__(self,df,tables,output_folder:Optional[str] = None,feeders:Optional[str] = ""):
+    def __init__(self,df,tables,output_folder:Optional[str] = None,feeders:Optional[str] = "",path_coords:Optional[str] = None):
         self.df = df
         self.feeders = feeders
         self.cod_base: str
@@ -419,6 +419,7 @@ class ValidadorBDGD:
             if not os.path.exists("dss_validation"):
                 os.mkdir("dss_validation")
             self.output_folder = os.path.join(os.getcwd(), f'dss_validation')
+        self.path_coords = path_coords
         self._verification_failures: list[dict] = []
 
     def _cod_base_from_df(self) -> str:

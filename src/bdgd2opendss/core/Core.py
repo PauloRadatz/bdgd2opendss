@@ -120,7 +120,7 @@ def _verification_summary(validation: ValidadorBDGD, phase_label: str) -> None:
 
 
 def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Optional[bool] = True, lst_feeders: Optional[list] = None,
-            output_folder: Optional[Union[str, pathlib.Path]] = None):
+            output_folder: Optional[Union[str, pathlib.Path]] = None,path_coords: Optional[Union[str, pathlib.Path]] = None):
     tipo = bdgd_type(bdgd_file_path)
     if tipo:
         _report_verification("inicio", f"BDGD {tipo} detectada")
@@ -144,7 +144,7 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
             geodataframe[key[0:4]] = geodataframe.pop(key)
 
     if all_feeders:
-        validation = ValidadorBDGD(df=geodataframe,output_folder=output_folder,tables=tables)
+        validation = ValidadorBDGD(df=geodataframe,output_folder=output_folder,tables=tables,path_coords=path_coords)
 
         _report_verification("scan", "Iniciando pre-validacao (scan)...")
         try:
@@ -175,7 +175,7 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path], all_feeders: Opti
                 else:
                     gdf[key] = geodataframe[key].query("CTMT == @alimentador").reset_index(drop=True)
 
-            validation = ValidadorBDGD(df=gdf,output_folder=output_folder,tables=tables,feeders=feeder)
+            validation = ValidadorBDGD(df=gdf,output_folder=output_folder,tables=tables,feeders=feeder,path_coords=path_coords)
 
             _report_verification("scan", f"Iniciando pre-validacao (scan) para {feeder}...")
             try:
