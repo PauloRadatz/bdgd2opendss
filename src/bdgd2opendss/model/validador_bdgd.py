@@ -1,4 +1,5 @@
 from typing import Callable, Optional, Union
+import pathlib
 from bdgd2opendss.core.JsonData import JsonData
 from bdgd2opendss.core.Utils import (
     adapt_regulators_names,
@@ -27,6 +28,12 @@ def _report_verification(step: str, message: str) -> None:
 
 def _is_missing(value) -> bool:
     return value is None or pd.isna(value)
+
+
+def _pac_key(value) -> Optional[str]:
+    if _is_missing(value):
+        return None
+    return str(value).lower()
 
 
 def _is_undeclared_string(value) -> bool:
@@ -406,19 +413,14 @@ class VerificadorFaseamentoTrafo:
 
 class ValidadorBDGD:
 
-    def __init__(self,df,tables,output_folder:Optional[str] = None,feeders:Optional[str] = "",path_coords:Optional[str] = None):
+    def __init__(self,df,tables,output_folder: Union[str, pathlib.Path],feeders:Optional[str] = "",path_coords:Optional[str] = None):
         self.df = df
         self.feeders = feeders
         self.cod_base: str
         self.isolados: list = []
         self.voltage_dict: dict
         self.tables = tables
-        if output_folder:
-            self.output_folder = output_folder
-        else:
-            if not os.path.exists("dss_validation"):
-                os.mkdir("dss_validation")
-            self.output_folder = os.path.join(os.getcwd(), f'dss_validation')
+        self.output_folder = str(output_folder)
         self.path_coords = path_coords
         self._verification_failures: list[dict] = []
 
@@ -630,10 +632,10 @@ class ValidadorBDGD:
                     continue
                 else:
                     df_isolados = pd.concat([df_isolados,df_not_connected], ignore_index=True)
-                    if self.path_coords:
-                        self.plot_isolated_circuits(df_total=df_total,pac_ctmt=pac_ctmt,df_isolated=df_not_connected,feeder=feeder,output_path=self.output_folder)
                     if df_not_connected.isnull().values.any():
                         df_not_connected = df_not_connected.fillna('Nulo')
+                    if self.path_coords:
+                        self.plot_isolated_circuits(df_total=df_total,pac_ctmt=pac_ctmt,df_isolated=df_not_connected,feeder=feeder,output_path=self.output_folder)
 
                     for elem in df_not_connected.itertuples(index=False):
                         if elem.ELEM == 'SSDMT':
@@ -2311,14 +2313,16 @@ class ValidadorBDGD:
         #cria um arquivo HTML com os elementos isolados em destaque, caso exista. 
         df = pd.read_csv(self.path_coords)
         pos = {
-            str(row["PAC"]).lower(): (row["long"], row["lat"])
+            _pac_key(row["PAC"]): (row["long"], row["lat"])
             for _, row in df.iterrows()
+            if _pac_key(row["PAC"]) is not None
         }
         edge_trace_iso,edge_hover_trace_iso,node_trace_iso = self.iso_points(df_isolated=df_isolated,pos=pos) #desenho dos elementos isolados
         edge_trace, edge_hover_trace, node_trace = self.graph_points(df_total=df_total,pos=pos)
         highlight_trace = None
-        if pac_ctmt.lower() in pos:
-            x, y = pos[pac_ctmt.lower()]
+        pac_ctmt_key = _pac_key(pac_ctmt)
+        if pac_ctmt_key in pos:
+            x, y = pos[pac_ctmt_key]
             highlight_trace = go.Scatter(
                 x=[x],
                 y=[y],
@@ -2327,7 +2331,7 @@ class ValidadorBDGD:
                     size=15,
                     color='black',
                     symbol='triangle-up'),
-                text=[pac_ctmt.lower()],
+                text=[pac_ctmt_key],
                 hoverinfo='text',
                 name='SE')
         if highlight_trace is not None:
@@ -2352,23 +2356,24 @@ class ValidadorBDGD:
     def graph_points(self,df_total,pos):
         grafo = nx.Graph()
         for row in df_total.itertuples(index=False):
-            try:
-                if row.ELEM == 'UCBT' or row.ELEM == 'UCMT':
-                    grafo.add_node(row.PAC_1.lower(),cod_id=row.COD_ID,tipo=row.ELEM)
-                else:
-                    grafo.add_node(row.PAC_1.lower())
-                if row.ELEM == 'EQTRMT':
-                    grafo.add_node(row.PAC_2.lower(),cod_id=row.COD_ID,tipo=row.ELEM)
-                else:
-                    grafo.add_node(row.PAC_2.lower())
-                grafo.add_edge(row.PAC_1.lower(), row.PAC_2.lower(), cod_id=row.COD_ID,tipo=row.ELEM)
-            except ValueError:
-                print("valor do tipo none")
+            p1 = _pac_key(row.PAC_1)
+            p2 = _pac_key(row.PAC_2)
+            if p1 is None or p2 is None:
+                continue
+            if row.ELEM == 'UCBT' or row.ELEM == 'UCMT':
+                grafo.add_node(p1,cod_id=row.COD_ID,tipo=row.ELEM)
+            else:
+                grafo.add_node(p1)
+            if row.ELEM == 'EQTRMT':
+                grafo.add_node(p2,cod_id=row.COD_ID,tipo=row.ELEM)
+            else:
+                grafo.add_node(p2)
+            grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
         try:
             grafo.remove_node('')
         except:
             pass
-        valid_nodes = [n.lower() for n in grafo.nodes if n.lower() in pos]
+        valid_nodes = [n for n in grafo.nodes if n in pos]
         subgrafo = grafo.subgraph(valid_nodes)
         # Coordenadas das linhas
         edge_x = []
@@ -2448,14 +2453,16 @@ class ValidadorBDGD:
     def iso_points(self,df_isolated,pos):
         grafo_iso = nx.Graph()
         for row in df_isolated.itertuples():
-            p1 = str(row.PAC_1).lower()
-            p2 = str(row.PAC_2).lower()
+            p1 = _pac_key(row.PAC_1)
+            p2 = _pac_key(row.PAC_2)
+            if p1 is None or p2 is None:
+                continue
             if row.ELEM == 'UCBT' or row.ELEM == 'UCBT' or row.ELEM == 'EQTRMT':
-                grafo_iso.add_node(p1,cod_id=row.COD_ID.lower(), tipo=row.ELEM.lower())
+                grafo_iso.add_node(p1,cod_id=str(row.COD_ID).lower(), tipo=row.ELEM.lower())
             else:
                 grafo_iso.add_node(p1)
             grafo_iso.add_node(p2)
-            grafo_iso.add_edge(p1, p2, cod_id=row.COD_ID.lower(), tipo=row.ELEM.lower())
+            grafo_iso.add_edge(p1, p2, cod_id=str(row.COD_ID).lower(), tipo=row.ELEM.lower())
         edge_x_iso = []
         edge_y_iso = []
         for u, v in grafo_iso.edges():
@@ -2543,8 +2550,9 @@ class ValidadorBDGD:
         path_coords -> caminho do arquivo de coordenadas em csv
         output_path -> caminho de salvamento da figura de saída"""
         df = pd.read_csv(path_coords)
-        pos = {str(row["PAC"]).lower(): (row["long"], row["lat"])
-            for _, row in df.iterrows()}
+        pos = {_pac_key(row["PAC"]): (row["long"], row["lat"])
+            for _, row in df.iterrows()
+            if _pac_key(row["PAC"]) is not None}
         df_trafo = df_mt[df_mt['ELEM'] == 'EQTRMT']
         traces_mt = self.graph_points_fase_mt(df_mt=df_mt,fase_error=fase_error,pac_ctmt=pac_ctmt,feeder=feeder,pos=pos)
         traces_bt = self.graph_points_fase_bt(df_bt=df_bt,df_trafo=df_trafo,fase_error=fase_error_bt,pos=pos)
@@ -2563,18 +2571,24 @@ class ValidadorBDGD:
     def graph_points_fase_mt(self,df_mt,fase_error,pac_ctmt,feeder,pos):
         grafo = nx.Graph()
         for row in df_mt.itertuples(index=False):
+            p1 = _pac_key(row.PAC_1)
+            p2 = _pac_key(row.PAC_2)
             if row.ELEM == 'UCMT':
-                grafo.add_node(row.PAC_1.lower(),cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
+                if p1 is None:
+                    continue
+                grafo.add_node(p1,cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
             else:
-                grafo.add_node(row.PAC_1.lower(), tipo='bus')
-                grafo.add_node(row.PAC_2.lower(), tipo='bus')
-                grafo.add_edge(row.PAC_1.lower(), row.PAC_2.lower(), cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
+                if p1 is None or p2 is None:
+                    continue
+                grafo.add_node(p1, tipo='bus')
+                grafo.add_node(p2, tipo='bus')
+                grafo.add_edge(p1, p2, cod_id=row.COD_ID,fas_con=row.FAS_CON,tipo=row.ELEM)
         try:
             grafo.remove_node('')
         except:
             pass
         ##TODO agora plotar e mostrar 
-        valid_nodes = [n for n in grafo.nodes if n.lower() in pos]
+        valid_nodes = [n for n in grafo.nodes if n in pos]
         subgrafo = grafo.subgraph(valid_nodes)
         # Coordenadas das linhas
         edge_x_normal = []
@@ -2583,8 +2597,8 @@ class ValidadorBDGD:
         edge_y_error = []
         for u, v, data in subgrafo.edges(data=True):
 
-            x0, y0 = pos[u.lower()]
-            x1, y1 = pos[v.lower()]
+            x0, y0 = pos[u]
+            x1, y1 = pos[v]
 
             if str(data['cod_id']).lower() in fase_error:
                 edge_x_error.extend([x0, x1, None])
@@ -2619,10 +2633,12 @@ class ValidadorBDGD:
 
         for u, v, data in grafo.edges(data=True):
             if u in pos and v in pos:
-                x0, y0 = pos[u.lower()]
-                x1, y1 = pos[v.lower()]
+                x0, y0 = pos[u]
+                x1, y1 = pos[v]
                 x_mid = (x0 + x1)/2
                 y_mid = (y0 + y1)/2
+            else:
+                continue
 
             if str(data['cod_id']).lower() in fase_error.keys():
                 mid_x_error.append(x_mid)
@@ -2681,7 +2697,7 @@ class ValidadorBDGD:
         node_text_ucmt = []
         node_color_ucmt = []
         for node,data in subgrafo.nodes(data=True):
-            x, y = pos[node.lower()]
+            x, y = pos[node]
             if data['tipo'] == 'UCMT':
                 if str(data['cod_id']).lower() in fase_error:
                     node_color_ucmt.append('red')
@@ -2721,8 +2737,9 @@ class ValidadorBDGD:
                 symbol='square'))
         
         highlight_trace = None
-        if pac_ctmt.lower() in pos:
-            x, y = pos[pac_ctmt.lower()]
+        pac_ctmt_key = _pac_key(pac_ctmt)
+        if pac_ctmt_key in pos:
+            x, y = pos[pac_ctmt_key]
             highlight_trace = go.Scatter(
                 x=[x],
                 y=[y],
@@ -2756,7 +2773,7 @@ class ValidadorBDGD:
         show_legend_node = True
         ##TODO agora plotar e mostrar 
         for grafo,pac_trf in zip(grafos,pacs_trf):
-            valid_nodes = [n for n in grafo.nodes if n.lower() in pos]
+            valid_nodes = [n for n in grafo.nodes if _pac_key(n) in pos]
             subgrafo = grafo.subgraph(valid_nodes)
             if len(subgrafo.nodes) == 0:
                 continue
@@ -2766,9 +2783,13 @@ class ValidadorBDGD:
             edge_x_error = []
             edge_y_error = []
             for u, v, data in subgrafo.edges(data=True):
+                u_key = _pac_key(u)
+                v_key = _pac_key(v)
+                if u_key is None or v_key is None:
+                    continue
 
-                x0, y0 = pos[u.lower()]
-                x1, y1 = pos[v.lower()]
+                x0, y0 = pos[u_key]
+                x1, y1 = pos[v_key]
 
                 if str(data['cod_id']).lower() in fase_error:
                     edge_x_error.extend([x0, x1, None])
@@ -2807,9 +2828,11 @@ class ValidadorBDGD:
             edge_text_error = []
 
             for u, v, data in grafo.edges(data=True):
-                if u.lower() in pos and v.lower() in pos:
-                    x0, y0 = pos[u.lower()]
-                    x1, y1 = pos[v.lower()]
+                u_key = _pac_key(u)
+                v_key = _pac_key(v)
+                if u_key in pos and v_key in pos:
+                    x0, y0 = pos[u_key]
+                    x1, y1 = pos[v_key]
                     x_mid = (x0 + x1)/2
                     y_mid = (y0 + y1)/2
                     if str(data['cod_id']).lower() in fase_error.keys():
@@ -2870,7 +2893,10 @@ class ValidadorBDGD:
             node_color_ucbt = []
 
             for node,data in subgrafo.nodes(data=True):
-                x, y = pos[node.lower()]
+                node_key = _pac_key(node)
+                if node_key is None:
+                    continue
+                x, y = pos[node_key]
                 if len(data) > 0 and data['tipo'] == 'UCBT':
                     if str(data['cod_id']).lower() in fase_error:
                         node_color_ucbt.append('darkorange')
@@ -2918,8 +2944,9 @@ class ValidadorBDGD:
                 
             traces.extend([edge_trace,edge_error_trace,edge_hover_trace,edge_hover_trace_error,node_trace,node_trace_ucbt])
             text_trf = []
-            if pac_trf.lower() in pos:
-                x, y = pos[pac_trf.lower()]
+            pac_trf_key = _pac_key(pac_trf)
+            if pac_trf_key in pos:
+                x, y = pos[pac_trf_key]
                 i = df_trafo[df_trafo['PAC_2'] == pac_trf].index[0]
                 text_trf.append(
                         f"Entidade:UNTRMT/EQTRMT<br>"

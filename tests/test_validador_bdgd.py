@@ -104,7 +104,7 @@ class TestPacHelpers:
 
 
 class TestCheckFeeder:
-    def test_check_feeder_does_not_raise_with_mixed_pac_types(self):
+    def test_check_feeder_does_not_raise_with_mixed_pac_types(self, tmp_path):
         df = {
             "CTMT": pd.DataFrame({"COD_ID": ["F1"], "PAC_INI": ["1"]}),
             "SSDMT": pd.DataFrame({
@@ -133,7 +133,7 @@ class TestCheckFeeder:
         df_trafo = pd.DataFrame(columns=["COD_ID", "CTMT", "PAC_1", "PAC_2", "BANC"])
         df_reg = pd.DataFrame(columns=["COD_ID", "CTMT", "PAC_1", "PAC_2", "UN_RE", "BANC"])
 
-        validator = ValidadorBDGD(df=df, tables={}, output_folder=None)
+        validator = ValidadorBDGD(df=df, tables={}, output_folder=str(tmp_path))
         validator.cod_base = "TEST"
 
         erros, _, _ = validator.check_feeder(df, df_isolados, df_trafo, df_reg)
@@ -151,7 +151,7 @@ class TestVerificationProgress:
 
 
 class TestMissingFieldChecks:
-    def test_detects_missing_ctmt_and_trafo_with_pd_na(self):
+    def test_detects_missing_ctmt_and_trafo_with_pd_na(self, tmp_path):
         df = {
             "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
             "CRVCRG": pd.DataFrame({"COD_ID": ["C1"]}),
@@ -169,7 +169,7 @@ class TestMissingFieldChecks:
             }),
             "SEGCON": pd.DataFrame({"COD_ID": ["S1"]}),
         }
-        validator = ValidadorBDGD(df=df, tables={})
+        validator = ValidadorBDGD(df=df, tables={}, output_folder=str(tmp_path))
         validator.cod_base = "TEST"
 
         ucbt_erros = validator.check_loadbt("UCBT")["erro"].tolist()
@@ -182,17 +182,17 @@ class TestMissingFieldChecks:
         assert "O transformador não foi declarado." in pip_erros
         assert "O alimentador não foi declarado." in ssdmt_erros
 
-    def test_check_pacs_handles_pd_na(self):
+    def test_check_pacs_handles_pd_na(self, tmp_path):
         df = {
             "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
             "SSDMT": pd.DataFrame({"COD_ID": ["L1"], "PAC_1": [pd.NA], "PAC_2": ["2"], "CTMT": ["F1"]}),
         }
-        validator = ValidadorBDGD(df=df, tables={})
+        validator = ValidadorBDGD(df=df, tables={}, output_folder=str(tmp_path))
         validator.cod_base = "TEST"
         erros = validator.check_pacs()
         assert any("Não foi declarado o ponto de acoplamento 1" in e for e in erros["erro"])
 
-    def test_check_loadbt_fas_con_pd_na_does_not_crash(self):
+    def test_check_loadbt_fas_con_pd_na_does_not_crash(self, tmp_path):
         df = {
             "BASE": pd.DataFrame({"DIST": ["598"], "DAT_EXT": ["31/12/2023"]}),
             "CRVCRG": pd.DataFrame({"COD_ID": ["C1"]}),
@@ -201,7 +201,7 @@ class TestMissingFieldChecks:
                 "TIP_CC": ["C1"], "UNI_TR_MT": ["T1"], "SEMRED": [0],
             }),
         }
-        validator = ValidadorBDGD(df=df, tables={})
+        validator = ValidadorBDGD(df=df, tables={}, output_folder=str(tmp_path))
         validator.cod_base = "TEST"
         erros = validator.check_loadbt("UCBT")
         assert any("valor não esperado" in e for e in erros["erro"])

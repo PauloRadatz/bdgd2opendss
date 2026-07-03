@@ -65,6 +65,7 @@ class TestRunFunctionality:
         assert 'bdgd_file_path' in params
         # Check optional parameters
         assert 'output_folder' in params
+        assert sig.parameters['output_folder'].default is inspect.Parameter.empty
         assert 'all_feeders' in params
         assert 'lst_feeders' in params
 
@@ -82,6 +83,7 @@ class TestRunFunctionality:
             try:
                 bdgd.run(
                     bdgd_file_path=invalid_path,
+                    output_folder=pathlib.Path(tempfile.mkdtemp()),
                     all_feeders=False,
                     lst_feeders=['test_feeder']
                 )

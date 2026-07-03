@@ -55,9 +55,8 @@ def assign_single_pac_network(df, elem_name, pac_col="PAC", cod_col=None):
 def log_erros(df_isolados:Optional[pd.DataFrame]=None,feeder:Optional[str]=None,output_directory: Optional[str] = None, ctmt:Optional[str] = None):
     logger = logging.getLogger(f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}')
     if not logger.hasHandlers():
-        if output_directory == None: #caso não exista o caminho para uma pasta de saída
-            output_directory = create_output_folder(feeder=ctmt,output_folder=output_directory)
-            #output_directory = os.path.dirname(file_path)
+        if output_directory is None:
+            raise ValueError("output_directory is required")
         file_path = os.path.join(output_directory, f'elementos_isolados_{get_cod_year_bdgd(typ="cod")}.log')
         logging.basicConfig(
             level=logging.INFO,  # Configura o nível mínimo de log (neste caso, INFO)
@@ -258,7 +257,7 @@ def create_master_file(file_name="", feeder="", master_content="", output_folder
         print(f"An error occurred: {str(e)}")
 
 
-def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords", output_folder=""):
+def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords", output_folder="", print_status=True):
     """Crie um arquivo de saída csv e grave dados de um DataFrame.
         Parâmetros:
         - df (DataFrame): Lista de objetos a serem gravados no arquivo.ex: objetos de linha ou transformador.
@@ -274,7 +273,8 @@ def create_output_feeder_coords(df: pd.DataFrame, feeder="", filename="buscoords
 
     try:
         df.to_csv(dir_path, index=False)
-        print(f"Arquivo {filename}.csv criado")
+        if print_status:
+            print(f"Arquivo {filename}.csv criado")
         # print(f'O arquivo {file_name}_{feeder} foi gerado\n')
     except Exception as e:
         print(f"Erro ao criar .csv da df de coordenadas: {str(e)}")
@@ -332,10 +332,11 @@ def create_output_all_coords(object_list=[], file_name="", object_lists="", file
         return f'{file_name}_{feeder}.dss'
 
 
-def create_dfs_coords(filename="", feeder=""):
+def create_dfs_coords(filename="", feeder="", print_status=True):
     """Purpose: filename
     """
-    print("criando coordenadas...")
+    if print_status:
+        print("criando coordenadas...")
 
     cols = [
         "COD_ID",
@@ -661,32 +662,11 @@ def get_configuration(feeder:Optional[str]=None,output_folder:Optional[str]=None
 
 def create_output_folder(feeder:Optional[str] = None, output_folder:Optional[str] = None):
     global substation
-    if output_folder is not None:
-        try:
-            if not os.path.exists(f'{output_folder}/sub{substation}/{feeder}'):
-                os.makedirs(f'{output_folder}/sub{substation}/{feeder}', exist_ok=True)
-                output_directory = f'{output_folder}/sub{substation}/{feeder}'
-            else:
-                output_directory = f'{output_folder}/sub{substation}'+ f'/{feeder}'
-        except FileNotFoundError:
-            if not os.path.exists("dss_models_output"):
-                os.mkdir("dss_models_output")
-
-            if not os.path.exists(f'dss_models_output/{feeder}'):
-                os.mkdir(f'dss_models_output/{feeder}')
-                print(f'Caminho para criação de pasta inválido. O arquivo DSS será criado em: dss_models_output/{feeder}')
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output/{feeder}')
-    else:
-        if not os.path.exists("dss_models_output"):
-            os.mkdir("dss_models_output")
-        if feeder is not None:
-            if not os.path.exists(f'dss_models_output/sub{substation}/{feeder}'):
-                os.makedirs(f'dss_models_output/sub{substation}/{feeder}', exist_ok=True)
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output/sub{substation}/{feeder}')
-        else:
-            output_directory = os.path.join(os.getcwd(), f'dss_models_output')
-
-    return(output_directory)
+    if output_folder is None:
+        raise ValueError("output_folder is required")
+    output_directory = f'{output_folder}/sub{substation}/{feeder}'
+    os.makedirs(output_directory, exist_ok=True)
+    return output_directory
 
 def create_aux_tramo(dataframe: gpd.geodataframe.GeoDataFrame, feeder): #tabela auxiliar para definir a ordem
     alimentador = feeder
@@ -945,8 +925,8 @@ def get_substation(sub:Optional[str] = None):
         substation = "__" + str(sub)
 
 def list_subs(df,output_path):
-    if output_path == None:
-        output_path = create_output_folder(output_folder=output_path)
+    if output_path is None:
+        raise ValueError("output_path is required")
     file_path = os.path.join(output_path, f"lista_subestações_{get_cod_year_bdgd(typ='cod')}.csv")
     if os.path.exists(file_path):
         return
