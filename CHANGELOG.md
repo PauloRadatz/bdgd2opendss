@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2 (2026-07-03)
+
+- **Breaking change**: `output_folder` is now required for `run` and `verificacao_bdgd`; implicit writes to `dss_models_output` and `dss_validation` under the current working directory were removed.
+- **verificacao_bdgd**: Replaced `path_coords` with `export_figs` to optionally generate `buscoords.csv` for validation plots.
+- **verificacao_bdgd**: Added Plotly plots for phase-wiring and isolated-element validation errors.
+- **plotly**: Added as a runtime dependency.
+- **BusCoords**: Improved coordinate generation for consumer units (UCs) and fixed public BDGD compatibility issues.
+
 ## 1.2.1 (2026-06-22)
 
 - **Transformer**: Fixed 3-winding center-tapped transformers so the 3rd winding bus keeps the correct node suffix (e.g. `.4.2`) instead of dropping to the base bus name, which had left secondary legs isolated and prevented OpenDSS from solving the model.
