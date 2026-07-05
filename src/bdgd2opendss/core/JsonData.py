@@ -1,6 +1,8 @@
 import json
 import time
+
 import geopandas as gpd
+from pyogrio.errors import DataLayerError
 
 
 # import os
@@ -89,6 +91,53 @@ class JsonData:
             JsonData.get_numeric_erros(df,column_types,name)
             return df
         
+    _OPTIONAL_LAYERS = {
+        'UNSEBT': 'validacoes de chaves BT serao ignoradas.',
+        'UNTRAT': 'catalogo de transformadores AT sera ignorado.',
+    }
+
+    @classmethod
+    def _empty_layer(cls, table):
+        return gpd.GeoDataFrame(columns=table.columns)
+
+    @classmethod
+    def _warn_missing_optional_layer(cls, table_name, message, context):
+        prefix = 'verificacao' if context == 'verification' else 'run'
+        print(
+            f"[{prefix}] AVISO: tabela {table_name} nao encontrada na BDGD; {message}",
+            flush=True,
+        )
+
+    @classmethod
+    def _read_layer(cls, file_name, table, *, context='run', public_layer_fallback=False):
+        read_kwargs = {
+            'columns': table.columns,
+            'ignore_geometry': table.ignore_geometry,
+            'engine': 'pyogrio',
+            'use_arrow': True,
+        }  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
+
+        layers_to_try = [table.name]
+        if public_layer_fallback and '_' in table.name:
+            layers_to_try.append(table.name.split('_')[0])
+
+        last_error = None
+        for layer in layers_to_try:
+            try:
+                return gpd.read_file(file_name, layer=layer, **read_kwargs)
+            except (DataLayerError, KeyError) as exc:
+                last_error = exc
+
+        if table.name in cls._OPTIONAL_LAYERS:
+            cls._warn_missing_optional_layer(
+                table.name, cls._OPTIONAL_LAYERS[table.name], context,
+            )
+            return cls._empty_layer(table)
+
+        if last_error is not None:
+            raise last_error
+        return cls._empty_layer(table)
+
     def create_geodataframes(self, file_name, runs=1):
         """
         Cria GeoDataFrames a partir de um arquivo de entrada e coleta estatísticas.
@@ -106,15 +155,9 @@ class JsonData:
             for _ in range(runs):
                 start_time = time.time()
                 print(f'Creating geodataframe {table.name}')
-                try:
-                    gdf_ = gpd.read_file(file_name, layer=table.name,
-                                     columns=table.columns,ignore_geometry=table.ignore_geometry, 
-                                     engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
-                except KeyError:
-                    name = table.name.split('_')[0]
-                    gdf_ = gpd.read_file(file_name, layer=name,
-                                     columns=table.columns,ignore_geometry=table.ignore_geometry, 
-                                     engine='pyogrio', use_arrow=True)
+                gdf_ = self._read_layer(
+                    file_name, table, context='run', public_layer_fallback=True,
+                )
                 start_conversion_time = time.time()
                 gdf_converted = self.convert_data_types(gdf_, table.data_types, table.name)
                 end_time = time.time()
@@ -149,6 +192,10 @@ class JsonData:
             }
         return geodataframes
 
+    @staticmethod
+    def _read_layer_for_verification(file_name, table):
+        return JsonData._read_layer(file_name, table, context='verification')
+
     def create_geodataframe_errors(self,file_name,runs=1):
 
         geodataframes = {}
@@ -159,12 +206,9 @@ class JsonData:
         entities = ['UCMT','UCBT','PIP','UGMT','UGBT','UNSEMT','EQTRMT','EQRE','SSDMT','SSDBT','RAMLIG']
 
         for table_name, table in self.tables.items():
-            #TODO fazer um try/except aqui para, caso não exista a tabela, não quebrar o código
             for _ in range(runs):
                 print(f"[verificacao] Carregando tabela {table.name}...", flush=True)
-                gdf_ = gpd.read_file(file_name, layer=table.name,
-                                columns=table.columns,ignore_geometry=table.ignore_geometry, 
-                                     engine='pyogrio', use_arrow=True)  # ! ignore_geometry não funciona, pq este parâmetro espera um bool e está recebendo str
+                gdf_ = self._read_layer_for_verification(file_name, table)
             
             if table_name in entities:#corrigindo as fases de acordo com o geoperdas (AX - AN, BX - BN, CX - CN)
                 for column in gdf_.columns:

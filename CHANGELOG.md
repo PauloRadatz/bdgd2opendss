@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3 (2026-07-05)
+
+- **run** / **verificacao_bdgd**: Missing optional BDGD tables `UNSEBT` and `UNTRAT` no longer abort loading; an empty table is used and a warning is printed instead.
+- **JsonData**: Consolidated BDGD layer loading into a shared `_read_layer()` helper used by both `create_geodataframes()` (`run`) and `create_geodataframe_errors()` (`verificacao_bdgd`).
+
 ## 1.2.2 (2026-07-03)
 
 - **Breaking change**: `output_folder` is now required for `run` and `verificacao_bdgd`; implicit writes to `dss_models_output` and `dss_validation` under the current working directory were removed.

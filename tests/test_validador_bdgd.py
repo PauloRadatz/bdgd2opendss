@@ -9,9 +9,11 @@ import zipfile
 
 import pandas as pd
 import pytest
+from pyogrio.errors import DataLayerError
 
 import bdgd2opendss as bdgd
-from bdgd2opendss.core.JsonData import Table
+from bdgd2opendss.config.paths import bdgd2dss_error_private_json, bdgd2dss_private_json
+from bdgd2opendss.core.JsonData import JsonData, Table
 from bdgd2opendss.core.Utils import lookup_ctmt_by_pac, normalize_pac_columns, normalize_pac_value
 from bdgd2opendss.model.validador_bdgd import (
     ValidadorBDGD,
@@ -273,6 +275,98 @@ class TestResilientVerification:
         log_path = pathlib.Path(_verification_log_path(str(tmp_path), "", "598202312"))
         assert log_path.exists()
         assert "MISSING_COL" in log_path.read_text(encoding="utf-8")
+
+
+class TestMissingOptionalLayersLoad:
+    def test_create_geodataframe_errors_returns_empty_unsebt_on_missing_layer(self, monkeypatch, capsys):
+        unsebt_columns = ["COD_ID", "FAS_CON", "PAC_1", "PAC_2", "UNI_TR_MT", "CTMT"]
+        ctmt_gdf = pd.DataFrame({"COD_ID": ["F1"], "TEN_NOM": [13.8], "TEN_OPE": [13.8], "PAC_INI": ["1"], "SUB": ["S1"]})
+
+        def fake_read_file(file_name, layer=None, **kwargs):
+            if layer == "UNSEBT":
+                raise DataLayerError("Layer 'UNSEBT' could not be opened")
+            if layer == "CTMT":
+                return ctmt_gdf
+            return pd.DataFrame()
+
+        monkeypatch.setattr("bdgd2opendss.core.JsonData.gpd.read_file", fake_read_file)
+
+        json_obj = JsonData(bdgd2dss_error_private_json)
+        json_obj.tables = {
+            "CTMT": json_obj.tables["CTMT"],
+            "UNSEBT": json_obj.tables["UNSEBT"],
+        }
+
+        geodataframes, _ = json_obj.create_geodataframe_errors("dummy_path")
+
+        assert list(geodataframes["UNSEBT"].columns) == unsebt_columns
+        assert geodataframes["UNSEBT"].empty
+        captured = capsys.readouterr()
+        assert "AVISO: tabela UNSEBT nao encontrada na BDGD" in captured.out
+
+    def test_create_geodataframe_errors_returns_empty_untrat_on_missing_layer(self, monkeypatch, capsys):
+        untrat_columns = ["COD_ID", "TIP_TRAFO", "PER_FER", "PER_TOT", "ALOC_PERD", "POS"]
+        ctmt_gdf = pd.DataFrame({"COD_ID": ["F1"], "TEN_NOM": [13.8], "TEN_OPE": [13.8], "PAC_INI": ["1"], "SUB": ["S1"]})
+
+        def fake_read_file(file_name, layer=None, **kwargs):
+            if layer == "UNTRAT":
+                raise DataLayerError("Layer 'UNTRAT' could not be opened")
+            if layer == "CTMT":
+                return ctmt_gdf
+            return pd.DataFrame()
+
+        monkeypatch.setattr("bdgd2opendss.core.JsonData.gpd.read_file", fake_read_file)
+
+        json_obj = JsonData(bdgd2dss_error_private_json)
+        json_obj.tables = {
+            "CTMT": json_obj.tables["CTMT"],
+            "UNTRAT": json_obj.tables["UNTRAT"],
+        }
+
+        geodataframes, _ = json_obj.create_geodataframe_errors("dummy_path")
+
+        assert list(geodataframes["UNTRAT"].columns) == untrat_columns
+        assert geodataframes["UNTRAT"].empty
+        captured = capsys.readouterr()
+        assert "AVISO: tabela UNTRAT nao encontrada na BDGD" in captured.out
+
+    def test_create_geodataframes_returns_empty_unsebt_on_missing_layer(self, monkeypatch, capsys):
+        unsebt_columns = ["COD_ID", "FAS_CON", "PAC_1", "PAC_2", "UNI_TR_MT", "CTMT"]
+        ctmt_gdf = pd.DataFrame({"COD_ID": ["F1"], "TEN_NOM": [13.8], "TEN_OPE": [13.8], "PAC_INI": ["1"], "SUB": ["S1"]})
+
+        def fake_read_file(file_name, layer=None, **kwargs):
+            if layer == "UNSEBT":
+                raise DataLayerError("Layer 'UNSEBT' could not be opened")
+            if layer == "CTMT":
+                return ctmt_gdf
+            return pd.DataFrame()
+
+        monkeypatch.setattr("bdgd2opendss.core.JsonData.gpd.read_file", fake_read_file)
+
+        json_obj = JsonData(bdgd2dss_private_json)
+        json_obj.tables = {
+            "CTMT": json_obj.tables["CTMT"],
+            "UNSEBT": json_obj.tables["UNSEBT"],
+        }
+
+        geodataframes = json_obj.create_geodataframes("dummy_path")
+
+        assert list(geodataframes["UNSEBT"]["gdf"].columns) == unsebt_columns
+        assert geodataframes["UNSEBT"]["gdf"].empty
+        captured = capsys.readouterr()
+        assert "[run] AVISO: tabela UNSEBT nao encontrada na BDGD" in captured.out
+
+    def test_create_geodataframe_errors_reraises_for_other_missing_layers(self, monkeypatch):
+        def fake_read_file(file_name, layer=None, **kwargs):
+            raise DataLayerError(f"Layer '{layer}' could not be opened")
+
+        monkeypatch.setattr("bdgd2opendss.core.JsonData.gpd.read_file", fake_read_file)
+
+        json_obj = JsonData(bdgd2dss_error_private_json)
+        json_obj.tables = {"CTMT": json_obj.tables["CTMT"]}
+
+        with pytest.raises(DataLayerError, match="CTMT"):
+            json_obj.create_geodataframe_errors("dummy_path")
 
 
 # class TestVerificacaoBdgd:
