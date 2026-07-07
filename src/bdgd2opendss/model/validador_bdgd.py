@@ -36,6 +36,18 @@ def _pac_key(value) -> Optional[str]:
     return str(value).lower()
 
 
+def _pac_node(value):
+    """Normalize a PAC value before adding it to a networkx graph.
+
+    Older pandas versions (< 3.0) expose missing PAC values as None/NaN while
+    pandas 3.0+ uses ''. networkx rejects None ("None cannot be a node") and
+    would crash graph construction. Coercing missing values to '' keeps behavior
+    identical across pandas versions, since empty nodes are pruned right after
+    via ``grafo.remove_node('')``.
+    """
+    return "" if _is_missing(value) else value
+
+
 def _is_undeclared_string(value) -> bool:
     return _is_missing(value) or not isinstance(value, str) or len(value) == 0
 
@@ -608,9 +620,11 @@ class ValidadorBDGD:
             grafo = nx.Graph()
             for row in df_total.itertuples(index=False):
                 try:
-                    grafo.add_node(row.PAC_1)
-                    grafo.add_node(row.PAC_2)
-                    grafo.add_edge(row.PAC_1, row.PAC_2)
+                    pac_1 = _pac_node(row.PAC_1)
+                    pac_2 = _pac_node(row.PAC_2)
+                    grafo.add_node(pac_1)
+                    grafo.add_node(pac_2)
+                    grafo.add_edge(pac_1, pac_2)
                 except ValueError:
                     continue
                     print("valor do tipo none")  # TODO add in log
@@ -1158,9 +1172,11 @@ class ValidadorBDGD:
             grafo = nx.Graph()
 
             for row in df_elements.itertuples(index=False):
-                grafo.add_node(row.PAC_1)
-                grafo.add_node(row.PAC_2)
-                grafo.add_edge(row.PAC_1, row.PAC_2)
+                pac_1 = _pac_node(row.PAC_1)
+                pac_2 = _pac_node(row.PAC_2)
+                grafo.add_node(pac_1)
+                grafo.add_node(pac_2)
+                grafo.add_edge(pac_1, pac_2)
             try:
                 grafo.remove_node('')
             except:
@@ -1793,12 +1809,14 @@ class ValidadorBDGD:
         grafo = nx.Graph()
 
         for row in df_line_bt.itertuples(index=False):
+            pac_1 = _pac_node(row.PAC_1)
+            pac_2 = _pac_node(row.PAC_2)
             if row.ELEM == 'UCBT':
-                grafo.add_node(row.PAC_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_node(pac_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
             else:
-                grafo.add_node(row.PAC_1, tipo='bus')
-            grafo.add_node(row.PAC_2)
-            grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_node(pac_1, tipo='bus')
+            grafo.add_node(pac_2)
+            grafo.add_edge(pac_1, pac_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
 
         conectados = list(nx.connected_components(grafo))
 
@@ -2155,10 +2173,12 @@ class ValidadorBDGD:
             grafo = nx.Graph()
 
             for row in df_elements.itertuples(index=False):
-                grafo.add_node(row.PAC_1)
-                grafo.add_node(row.PAC_2)
+                pac_1 = _pac_node(row.PAC_1)
+                pac_2 = _pac_node(row.PAC_2)
+                grafo.add_node(pac_1)
+                grafo.add_node(pac_2)
                 #TODO 
-                grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID,fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_edge(pac_1, pac_2, cod_id=row.COD_ID,fas_con=row.FAS_CON, tipo=row.ELEM)
             try:
                 grafo.remove_node('')
             except:
