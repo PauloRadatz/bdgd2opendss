@@ -17,7 +17,6 @@ from bdgd2opendss.model import BusCoords
 from bdgd2opendss.core.Settings import settings
 from bdgd2opendss.core import Utils
 from bdgd2opendss.model.EnergyMeters import create_energymeters
-#from bdgd2opendss.model.KVBase import KVBase
 
 @dataclass
 class Case:

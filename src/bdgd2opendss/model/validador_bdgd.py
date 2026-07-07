@@ -1260,11 +1260,11 @@ class ValidadorBDGD:
                                 i = df_elements_bt.index[(df_elements_bt[pac1] == seqx[1]) & (df_elements_bt[pac2] == seqx[0])].tolist()[0]
                             fase = df_elements_bt.at[i,'FAS_CON'] #fase do elemento anterior
                             voltage_dict[seq[0]] = voltage_dict[df_elements_bt.at[i,pac2]]#tensão da barra anterior
-                            if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
-                                continue #faseamento correto
-                            else:
-                                erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements_bt.at[i_ele,'ELEM'], "Código":df_elements_bt.at[i_ele,'COD_ID'],"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
-                                "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
+                        if set(fase_ele) <= set(fase+'N'): #verificar se a fase do elemento atual está contida no elemento anterior sem importar a ordem
+                            continue #faseamento correto
+                        else:
+                            erros.append({"COD_BASE": self.cod_base, "Erro máx":erromax[0], "Tabela":df_elements_bt.at[i_ele,'ELEM'], "Código":df_elements_bt.at[i_ele,'COD_ID'],"erro":f"Elemento com faseamento inadequado{erromax[1]}após sequenciamento elétrico.",
+                            "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
                 else:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
                     voltage_dict[df_aux_trafo.at[i,'PAC_2']] = df_aux_trafo.at[i,'TEN_LIN_SE']
@@ -2261,8 +2261,7 @@ class ValidadorBDGD:
             #faseamento das cargas de baixa tensão
             for elem in df_aux_ucbt_pip.itertuples(index=False):
                 if elem.COD_ID in lista_isolados:#remove os elementos isolados da checagem de faseamento
-                        continue
-                #TODO ver a fase do trafo se tiver conectada diretamente no trafo
+                    continue
                 i_tr = df_aux_trafo.index[(df_aux_trafo['PAC_2'] == elem.PAC_1)].tolist()
                 if len(i_tr) > 0:
                     if set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_S']+'N')) or set(elem.FAS_CON) <= set(str(df_aux_trafo.loc[i_tr,'LIG_FAS_T']+'N')):
@@ -2317,8 +2316,8 @@ class ValidadorBDGD:
             for _, row in df.iterrows()
             if _pac_key(row["PAC"]) is not None
         }
-        edge_trace_iso,edge_hover_trace_iso,node_trace_iso = self.iso_points(df_isolated=df_isolated,pos=pos) #desenho dos elementos isolados
-        edge_trace, edge_hover_trace, node_trace = self.graph_points(df_total=df_total,pos=pos)
+        iso_traces = self.iso_points(df_isolated=df_isolated,pos=pos) #desenho dos elementos isolados
+        regular_traces = self.graph_points(df_total=df_total,pos=pos)
         highlight_trace = None
         pac_ctmt_key = _pac_key(pac_ctmt)
         if pac_ctmt_key in pos:
@@ -2334,17 +2333,9 @@ class ValidadorBDGD:
                 text=[pac_ctmt_key],
                 hoverinfo='text',
                 name='SE')
-        if highlight_trace is not None:
-            fig = go.Figure(data=[edge_trace, edge_hover_trace, node_trace, edge_trace_iso, edge_hover_trace_iso, node_trace_iso, highlight_trace])
-        else:
-            fig = go.Figure(data=[edge_trace, edge_hover_trace, node_trace, edge_trace_iso, edge_hover_trace_iso, node_trace_iso])
-        fig.update_layout(
-            showlegend=False,
-            hovermode='closest',
-            margin=dict(b=20, l=20, r=20, t=20),
-            xaxis=dict(showgrid=False, zeroline=False, visible=False),
-            yaxis=dict(showgrid=False, zeroline=False, visible=False, scaleanchor="x"))
-        
+        traces = regular_traces+iso_traces+[highlight_trace]
+        fig = go.Figure(data=traces)
+       
         fig_path = os.path.join(output_path, f"figuras_{feeder}")
 
         if not os.path.exists(fig_path):
@@ -2362,13 +2353,17 @@ class ValidadorBDGD:
                 continue
             if row.ELEM == 'UCBT' or row.ELEM == 'UCMT':
                 grafo.add_node(p1,cod_id=row.COD_ID,tipo=row.ELEM)
+            elif row.ELEM == 'SSDBT' or row.ELEM == 'RAMLIG':
+                grafo.add_node(p1,tipo='BT')
+                grafo.add_node(p2,tipo='BT')
+                grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
             else:
-                grafo.add_node(p1)
-            if row.ELEM == 'EQTRMT':
-                grafo.add_node(p2,cod_id=row.COD_ID,tipo=row.ELEM)
-            else:
-                grafo.add_node(p2)
-            grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
+                grafo.add_node(p1,tipo='MT')
+                if row.ELEM == 'UNTRMT':
+                    grafo.add_node(p2,cod_id=row.COD_ID,tipo='UNTRMT')#TODO continuar
+                else:
+                    grafo.add_node(p2,tipo='MT')
+                grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
         try:
             grafo.remove_node('')
         except:
@@ -2376,168 +2371,421 @@ class ValidadorBDGD:
         valid_nodes = [n for n in grafo.nodes if n in pos]
         subgrafo = grafo.subgraph(valid_nodes)
         # Coordenadas das linhas
-        edge_x = []
-        edge_y = []
-        for u, v in subgrafo.edges():
+        edge_x_mt = []
+        edge_y_mt = []
+        edge_x_bt = []
+        edge_y_bt = []
+
+        for u, v, data in subgrafo.edges(data=True):
             x0, y0 = pos[u]
             x1, y1 = pos[v]
-            edge_x.extend([x0, x1, None])
-            edge_y.extend([y0, y1, None])
-
-        edge_trace = go.Scatter(
-            x=edge_x,
-            y=edge_y,
+            if data['tipo'] == 'SSDBT' or data['tipo'] == 'RAMLIG':
+                edge_x_bt.extend([x0, x1, None])
+                edge_y_bt.extend([y0, y1, None])
+            else:
+                edge_x_mt.extend([x0, x1, None])
+                edge_y_mt.extend([y0, y1, None])
+        edge_trace_mt = go.Scatter(
+            x=edge_x_mt,
+            y=edge_y_mt,
             mode='lines',
-            line=dict(width=0.5, color='gray'),
-            hoverinfo='none')
-        mid_x = []
-        mid_y = []
-        edge_text = []
+            legendgroup='Linhas MT',
+            name='Linhas MT',
+            line=dict(width=0.8, color='gray'),
+            hoverinfo='none',
+            showlegend=True)
+        edge_trace_bt = go.Scatter(
+            x=edge_x_bt,
+            y=edge_y_bt,
+            mode='lines',
+            legendgroup='Linhas BT',
+            name='Linhas BT',
+            line=dict(width=0.5, color='green'),
+            hoverinfo='none',
+            showlegend=True)
+        
+        mid_x_mt = []
+        mid_y_mt = []
+        edge_text_mt = []
+        mid_x_bt = []
+        mid_y_bt = []
+        edge_text_bt = []
 
-        for u, v, data in grafo.edges(data=True):
+        for u, v, data in subgrafo.edges(data=True):
             if u in pos and v in pos:
                 x0, y0 = pos[u]
                 x1, y1 = pos[v]
-                mid_x.append((x0 + x1) / 2)
-                mid_y.append((y0 + y1) / 2)
-                edge_text.append(
-                    f"COD_ID: {data['cod_id']}<br>"
-                    f"Elem: {data['tipo']}<br>"
-                    f"PAC1:{u}<br>"
-                    f"PAC2:{v}")
+                if data['tipo'] == 'SSDBT' or data['tipo'] == 'RAMLIG':
+                    mid_x_bt.append((x0 + x1) / 2)
+                    mid_y_bt.append((y0 + y1) / 2)
+                    edge_text_bt.append(
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"Elem: {data['tipo']}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")
+                else: 
+                    mid_x_mt.append((x0 + x1) / 2)
+                    mid_y_mt.append((y0 + y1) / 2)
+                    edge_text_mt.append(
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"Elem: {data['tipo']}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")
                 
-        edge_hover_trace = go.Scatter(
-        x=mid_x,
-        y=mid_y,
+        edge_hover_trace_mt = go.Scatter(
+        x=mid_x_mt,
+        y=mid_y_mt,
         mode='markers',
         marker=dict(
             size=10,
             opacity=0 #invisível
         ),
-        text=edge_text,
+        text=edge_text_mt,
         hoverinfo='text',
         hoverlabel=dict(
         bgcolor="lightblue",
         bordercolor="black",
         font_color="black"),
+        legendgroup='Linhas MT',
         showlegend=False)
 
+        edge_hover_trace_bt = go.Scatter(
+        x=mid_x_bt,
+        y=mid_y_bt,
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0 #invisível
+        ),
+        text=edge_text_bt,
+        hoverinfo='text',
+        hoverlabel=dict(
+        bgcolor="green",
+        bordercolor="black",
+        font_color="black"),
+        legendgroup='Linhas BT',
+        showlegend=False)
         # Coordenadas dos nós
-        node_x = []
-        node_y = []
-        node_text = []
+        node_x_bt = []
+        node_y_bt = []
+        node_text_bt = []
+        node_x_mt = []
+        node_y_mt = []
+        node_text_mt = []
+        node_x_ucbt = []
+        node_y_ucbt = []
+        node_text_ucbt = []
+        node_x_tr = []
+        node_y_tr = []
+        node_text_tr = []
+        node_x_ucmt = []
+        node_y_ucmt = []
+        node_text_ucmt = []
         for node,data in subgrafo.nodes(data=True):
             x, y = pos[node]
-            node_x.append(x)
-            node_y.append(y)
-            #if data['tipo'] == 'UCBT' or data['tipo'] == 'UCMT' or data['tipo'] == 'EQTRMT':
-            if len(data):
-                node_text.append(f"COD_ID:{data['cod_id']}<br>"
+            if data['tipo'] == 'MT':
+                node_x_mt.append(x)
+                node_y_mt.append(y)
+                node_text_mt.append(node)
+            elif data['tipo'] == 'BT':
+                node_x_bt.append(x)
+                node_y_bt.append(y)
+                node_text_bt.append(node)
+            elif data['tipo'] == 'UCBT':
+                node_x_ucbt.append(x)
+                node_y_ucbt.append(y)
+                node_text_ucbt.append(f"COD_ID:{data['cod_id']}<br>"
+                    f"Elem:{data['tipo']}<br>"
+                    f"PAC:{node}<br>")
+            elif data['tipo'] == 'UNTRMT':
+                node_x_tr.append(x)
+                node_y_tr.append(y)
+                node_text_tr.append(f"COD_ID:{data['cod_id']}<br>"
                     f"Elem:{data['tipo']}<br>"
                     f"PAC:{node}<br>")
             else:
-                node_text.append(node)
+                node_x_ucmt.append(x)
+                node_y_ucmt.append(y)
+                node_text_ucmt.append(f"COD_ID:{data['cod_id']}<br>"
+                    f"Elem:{data['tipo']}<br>"
+                    f"PAC:{node}<br>")
 
-        node_trace = go.Scatter(
-            x=node_x,
-            y=node_y,
+        node_trace_mt = go.Scatter(
+            x=node_x_mt,
+            y=node_y_mt,
             mode='markers',
             hoverinfo='text',
-            text=node_text,
+            text=node_text_mt,
+            legendgroup='barras MT',
+            name='barras MT',
             marker=dict(
                 size=2,
                 color='blue'
             ))
-        return edge_trace, edge_hover_trace, node_trace
+        node_trace_bt = go.Scatter(
+            x=node_x_bt,
+            y=node_y_bt,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_bt,
+            legendgroup='barras BT',
+            name='barras BT',
+            marker=dict(
+                size=2,
+                color='green'
+            ))
+        node_trace_ucbt = go.Scatter(
+            x=node_x_ucbt,
+            y=node_y_ucbt,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_ucbt,
+            legendgroup='UCBT',
+            name='UCBT',
+            marker=dict(
+                size=2,
+                color='green'
+            ))
+        node_trace_ucmt = go.Scatter(
+            x=node_x_ucmt,
+            y=node_y_ucmt,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_ucmt,
+            legendgroup='UCMT',
+            name='UCMT',
+            marker=dict(
+                size=8,
+                color='blue'
+            ))
+        node_trace_tr = go.Scatter(
+            x=node_x_tr,
+            y=node_y_tr,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_tr,
+            legendgroup='UNTRMT',
+            name='UNTRMT',
+            marker=dict(
+                symbol='triangle-down',
+                size=5,
+                color='purple'
+            ))
+        return [edge_trace_mt, edge_trace_bt, edge_hover_trace_mt, edge_hover_trace_bt, node_trace_bt, node_trace_mt,node_trace_ucbt,node_trace_ucmt,node_trace_tr]
 
     def iso_points(self,df_isolated,pos):
-        grafo_iso = nx.Graph()
+        grafo = nx.Graph()
         for row in df_isolated.itertuples():
             p1 = _pac_key(row.PAC_1)
             p2 = _pac_key(row.PAC_2)
             if p1 is None or p2 is None:
                 continue
-            if row.ELEM == 'UCBT' or row.ELEM == 'UCBT' or row.ELEM == 'EQTRMT':
-                grafo_iso.add_node(p1,cod_id=str(row.COD_ID).lower(), tipo=row.ELEM.lower())
+            if row.ELEM == 'UCBT' or row.ELEM == 'UCMT':
+                grafo.add_node(p1,cod_id=row.COD_ID,tipo=row.ELEM)
+            elif row.ELEM == 'SSDBT' or row.ELEM == 'RAMLIG':
+                grafo.add_node(p1)
+                grafo.add_node(p2)
+                grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
             else:
-                grafo_iso.add_node(p1)
-            grafo_iso.add_node(p2)
-            grafo_iso.add_edge(p1, p2, cod_id=str(row.COD_ID).lower(), tipo=row.ELEM.lower())
-        edge_x_iso = []
-        edge_y_iso = []
-        for u, v in grafo_iso.edges():
-            if u in pos and v in pos:
-                x0, y0 = pos[u]
-                x1, y1 = pos[v]
-                edge_x_iso.extend([x0, x1, None])
-                edge_y_iso.extend([y0, y1, None])
+                grafo.add_node(p1)
+                if row.ELEM == 'UNTRMT':
+                    grafo.add_node(p2,cod_id=row.COD_ID,tipo='UNTRMT')#TODO continuar
+                else:
+                    grafo.add_node(p2)
+                grafo.add_edge(p1, p2, cod_id=row.COD_ID,tipo=row.ELEM)
+        try:
+            grafo.remove_node('')
+        except:
+            pass
+        valid_nodes = [n for n in grafo.nodes if n in pos]
+        subgrafo = grafo.subgraph(valid_nodes)
+        edge_x_mt = []
+        edge_y_mt = []
+        edge_x_bt = []
+        edge_y_bt = []
 
-        edge_trace_iso = go.Scatter(
-            x=edge_x_iso,
-            y=edge_y_iso,
+        for u, v, data in subgrafo.edges(data=True):
+            x0, y0 = pos[u]
+            x1, y1 = pos[v]
+            if data['tipo'] == 'SSDBT' or data['tipo'] == 'RAMLIG':
+                edge_x_bt.extend([x0, x1, None])
+                edge_y_bt.extend([y0, y1, None])
+            else:
+                edge_x_mt.extend([x0, x1, None])
+                edge_y_mt.extend([y0, y1, None])
+        edge_trace_mt = go.Scatter(
+            x=edge_x_mt,
+            y=edge_y_mt,
             mode='lines',
-            line=dict(width=1.5, color='red'),
+            legendgroup='Linhas MT isoladas',
+            name='Linhas MT isoladas',
+            line=dict(width=1, color='red'),
             hoverinfo='none',
-            name='Trechos isolados')
-        ##criação do nome das edges
-        mid_x = []
-        mid_y = []
-        edge_text_iso = []
+            showlegend=True)
+        edge_trace_bt = go.Scatter(
+            x=edge_x_bt,
+            y=edge_y_bt,
+            mode='lines',
+            legendgroup='Linhas BT isoladas',
+            name='Linhas BT isoladas',
+            line=dict(width=0.8, color='red'),
+            hoverinfo='none',
+            showlegend=True)
+        
+        mid_x_mt = []
+        mid_y_mt = []
+        edge_text_mt = []
+        mid_x_bt = []
+        mid_y_bt = []
+        edge_text_bt = []
 
-        for u, v, data in grafo_iso.edges(data=True):
-
+        for u, v, data in subgrafo.edges(data=True):
             if u in pos and v in pos:
-
                 x0, y0 = pos[u]
                 x1, y1 = pos[v]
-
-                mid_x.append((x0 + x1) / 2)
-                mid_y.append((y0 + y1) / 2)
-
-                edge_text_iso.append(
-                    f"Entidade: {data['tipo']}<br>"
-                    f"COD_ID: {data['cod_id']}<br>"
-                    f"PAC1:{u}<br>"
-                    f"PAC2:{v}")
-                
-        edge_hover_trace_iso = go.Scatter(
-        x=mid_x,
-        y=mid_y,
+                if data['tipo'] == 'SSDBT' or data['tipo'] == 'RAMLIG':
+                    mid_x_bt.append((x0 + x1) / 2)
+                    mid_y_bt.append((y0 + y1) / 2)
+                    edge_text_bt.append(
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"Elem: {data['tipo']}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")
+                else: 
+                    mid_x_mt.append((x0 + x1) / 2)
+                    mid_y_mt.append((y0 + y1) / 2)
+                    edge_text_mt.append(
+                        f"COD_ID: {data['cod_id']}<br>"
+                        f"Elem: {data['tipo']}<br>"
+                        f"PAC1:{u}<br>"
+                        f"PAC2:{v}")          
+        edge_hover_trace_mt = go.Scatter(
+        x=mid_x_mt,
+        y=mid_y_mt,
         mode='markers',
         marker=dict(
             size=10,
-            opacity=0  # invisível
+            opacity=0 #invisível
         ),
-        text=edge_text_iso,
+        text=edge_text_mt,
         hoverinfo='text',
+        hoverlabel=dict(
+        bgcolor="red",
+        bordercolor="black",
+        font_color="black"),
+        legendgroup='Linhas MT isoladas',
         showlegend=False)
 
+        edge_hover_trace_bt = go.Scatter(
+        x=mid_x_bt,
+        y=mid_y_bt,
+        mode='markers',
+        marker=dict(
+            size=10,
+            opacity=0 #invisível
+        ),
+        text=edge_text_bt,
+        hoverinfo='text',
+        hoverlabel=dict(
+        bgcolor="red",
+        bordercolor="black",
+        font_color="black"),
+        legendgroup='Linhas BT isoladas',
+        showlegend=False)
+        # Coordenadas dos nós
         node_x_iso = []
         node_y_iso = []
         node_text_iso = []
-
-        for node in grafo_iso.nodes():
-            if node in pos:
-                x, y = pos[node]
-
-                node_x_iso.append(x)
-                node_y_iso.append(y)
-                node_text_iso.append(node)
+        node_x_ucbt = []
+        node_y_ucbt = []
+        node_text_ucbt = []
+        node_x_tr = []
+        node_y_tr = []
+        node_text_tr = []
+        node_x_ucmt = []
+        node_y_ucmt = []
+        node_text_ucmt = []
+        for node,data in subgrafo.nodes(data=True):
+            x, y = pos[node]
+            tipo = data.get('tipo','')
+            try:
+                if tipo == 'UCBT':
+                    node_x_ucbt.append(x)
+                    node_y_ucbt.append(y)
+                    node_text_ucbt.append(f"COD_ID:{data['cod_id']}<br>"
+                        f"Elem:{data['tipo']}<br>"
+                        f"PAC:{node}<br>")
+                elif tipo == 'UNTRMT':
+                    node_x_tr.append(x)
+                    node_y_tr.append(y)
+                    node_text_tr.append(f"COD_ID:{data['cod_id']}<br>"
+                        f"Elem:{data['tipo']}<br>"
+                        f"PAC:{node}<br>")
+                elif tipo == 'UCMT':
+                    node_x_ucmt.append(x)
+                    node_y_ucmt.append(y)
+                    node_text_ucmt.append(f"COD_ID:{data['cod_id']}<br>"
+                        f"Elem:{data['tipo']}<br>"
+                        f"PAC:{node}<br>")
+                else:
+                    node_x_iso.append(x)
+                    node_y_iso.append(y)
+                    node_text_iso.append(node)
+            except:
+                print('z')
 
         node_trace_iso = go.Scatter(
             x=node_x_iso,
             y=node_y_iso,
             mode='markers',
-            text=node_text_iso,
             hoverinfo='text',
+            text=node_text_iso,
+            legendgroup='PACs isolados',
+            name='PACs isolados',
             marker=dict(
-                size=6,
+                size=4,
                 color='red',
                 symbol='diamond'
-            ),
-            name='PACs isolados'
-        )
-        return edge_trace_iso,edge_hover_trace_iso,node_trace_iso
+            ))
+        node_trace_ucbt = go.Scatter(
+            x=node_x_ucbt,
+            y=node_y_ucbt,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_ucbt,
+            legendgroup='UCBT isolada',
+            name='UCBT isolada',
+            marker=dict(
+                size=5,
+                color='red',
+                symbol='diamond'
+            ))
+        node_trace_ucmt = go.Scatter(
+            x=node_x_ucmt,
+            y=node_y_ucmt,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_ucmt,
+            legendgroup='UCMT isolada',
+            name='UCMT isolada',
+            marker=dict(
+                size=6,
+                color='red'
+            ))
+        node_trace_tr = go.Scatter(
+            x=node_x_tr,
+            y=node_y_tr,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text_tr,
+            legendgroup='UNTRMT isolado',
+            name='UNTRMT isolado',
+            marker=dict(
+                symbol='triangle-down',
+                size=5,
+                color='red'
+            ))
+        return [edge_trace_mt,edge_hover_trace_mt,edge_trace_bt,edge_hover_trace_bt,node_trace_iso,node_trace_ucbt,node_trace_ucmt,node_trace_tr]
     
     def plot_fase_error(self,df_mt,df_bt,fase_error,fase_error_bt,pac_ctmt,feeder,path_coords,output_path):
         """
