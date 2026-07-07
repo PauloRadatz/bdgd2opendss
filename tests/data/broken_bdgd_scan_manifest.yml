@@ -1,0 +1,801 @@
+- id: scan_base_dist
+  phase: scan
+  validation: _scan_table_columns
+  table: BASE
+  field: DIST
+  rule_kind: int
+  record_key:
+    column: DIST
+    value: 401
+  injected_problem: Set DIST to a non-integer value during scan (patched in memory
+    for int rules).
+  expected_message_contains: O valor esperado deve ser um número inteiro
+  expected_table: BASE
+  inject_value: null
+  patch_in_memory: true
+- id: scan_base_dat_ext
+  phase: scan
+  validation: _scan_table_columns
+  table: BASE
+  field: DAT_EXT
+  rule_kind: string
+  record_key:
+    column: DIST
+    value: 401
+  injected_problem: Clear DAT_EXT to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: BASE
+  inject_value: ''
+  patch_in_memory: true
+- id: scan_ctmt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: CTMT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: 1_TAP2_1
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: CTMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ctmt_pac_ini
+  phase: scan
+  validation: _scan_table_columns
+  table: CTMT
+  field: PAC_INI
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: 1_TAP2_1
+  injected_problem: Clear PAC_INI to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: CTMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ctmt_ten_nom
+  phase: scan
+  validation: _scan_table_columns
+  table: CTMT
+  field: TEN_NOM
+  rule_kind: range
+  record_key:
+    column: COD_ID
+    value: 1_TAP2_1
+  injected_problem: Set TEN_NOM outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_NOM possui valor fora dos limites
+  expected_table: CTMT
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_ctmt_ten_ope
+  phase: scan
+  validation: _scan_table_columns
+  table: CTMT
+  field: TEN_OPE
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: 1_TAP2_1
+  injected_problem: Set TEN_OPE to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: CTMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_segcon_r1
+  phase: scan
+  validation: _scan_table_columns
+  table: SEGCON
+  field: R1
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '2'
+  injected_problem: Set R1 to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: SEGCON
+  inject_value: null
+  patch_in_memory: true
+- id: scan_segcon_x1
+  phase: scan
+  validation: _scan_table_columns
+  table: SEGCON
+  field: X1
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '2'
+  injected_problem: Set X1 to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: SEGCON
+  inject_value: null
+  patch_in_memory: true
+- id: scan_segcon_r_regul
+  phase: scan
+  validation: _scan_table_columns
+  table: SEGCON
+  field: R_REGUL
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '2'
+  injected_problem: Clear R_REGUL to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: SEGCON
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_segcon_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: SEGCON
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '2'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: SEGCON
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_crvcrg_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: CRVCRG
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: RES_1
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: CRVCRG
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_crvcrg_tip_dia
+  phase: scan
+  validation: _scan_table_columns
+  table: CRVCRG
+  field: TIP_DIA
+  rule_kind: enum_list
+  record_key:
+    column: COD_ID
+    value: RES_1
+  injected_problem: Set TIP_DIA to an invalid enum value.
+  expected_message_contains: O atributo TIP_DIA possui valor não esperado
+  expected_table: CRVCRG
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ssdmt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDMT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '2656'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: SSDMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ssdmt_tip_cnd
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDMT
+  field: TIP_CND
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: '2656'
+  injected_problem: Set TIP_CND to an unknown reference id.
+  expected_message_contains: O atributo TIP_CND possui valor não esperado
+  expected_table: SSDMT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ssdmt_comp
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDMT
+  field: COMP
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '2656'
+  injected_problem: Set COMP to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: SSDMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_unsemt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: UNSEMT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: 1CF_1
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UNSEMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_untrmt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: UNTRMT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '1_19'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UNTRMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_untrmt_tap
+  phase: scan
+  validation: _scan_table_columns
+  table: UNTRMT
+  field: TAP
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '1_19'
+  injected_problem: Set TAP to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UNTRMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_untrmt_per_fer
+  phase: scan
+  validation: _scan_table_columns
+  table: UNTRMT
+  field: PER_FER
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '1_19'
+  injected_problem: Set PER_FER to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UNTRMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_untrmt_per_tot
+  phase: scan
+  validation: _scan_table_columns
+  table: UNTRMT
+  field: PER_TOT
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '1_19'
+  injected_problem: Set PER_TOT to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UNTRMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_untrmt_ten_lin_se
+  phase: scan
+  validation: _scan_table_columns
+  table: UNTRMT
+  field: TEN_LIN_SE
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '1_19'
+  injected_problem: Set TEN_LIN_SE to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UNTRMT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_eqtrmt_ten_pri
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: TEN_PRI
+  rule_kind: range
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set TEN_PRI outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_PRI possui valor fora dos limites
+  expected_table: EQTRMT
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_eqtrmt_ten_sec
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: TEN_SEC
+  rule_kind: range
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set TEN_SEC outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_SEC possui valor fora dos limites
+  expected_table: EQTRMT
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_eqtrmt_ten_ter
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: TEN_TER
+  rule_kind: range
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set TEN_TER outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_TER possui valor fora dos limites
+  expected_table: EQTRMT
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_eqtrmt_lig_fas_p
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: LIG_FAS_P
+  rule_kind: enum_list
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set LIG_FAS_P to an invalid enum value.
+  expected_message_contains: O atributo LIG_FAS_P possui valor não esperado
+  expected_table: EQTRMT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_eqtrmt_lig_fas_s
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: LIG_FAS_S
+  rule_kind: enum_list
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set LIG_FAS_S to an invalid enum value.
+  expected_message_contains: O atributo LIG_FAS_S possui valor não esperado
+  expected_table: EQTRMT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_eqtrmt_lig_fas_t
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: LIG_FAS_T
+  rule_kind: enum_list
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set LIG_FAS_T to an invalid enum value.
+  expected_message_contains: O atributo LIG_FAS_T possui valor não esperado
+  expected_table: EQTRMT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_eqtrmt_pot_nom
+  phase: scan
+  validation: _scan_table_columns
+  table: EQTRMT
+  field: POT_NOM
+  rule_kind: range
+  record_key:
+    column: UNI_TR_MT
+    value: '1_19'
+  injected_problem: Set POT_NOM outside the allowed numeric code range.
+  expected_message_contains: O atributo POT_NOM possui valor fora dos limites
+  expected_table: EQTRMT
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_unremt_tip_regu
+  phase: scan
+  validation: _scan_table_columns
+  table: UNREMT
+  field: TIP_REGU
+  rule_kind: enum_list
+  record_key:
+    column: COD_ID
+    value: '1_3000'
+  injected_problem: Set TIP_REGU to an invalid enum value.
+  expected_message_contains: O atributo TIP_REGU possui valor não esperado
+  expected_table: UNREMT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_unremt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: UNREMT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '1_3000'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UNREMT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_eqre_pot_nom
+  phase: scan
+  validation: _scan_table_columns
+  table: EQRE
+  field: POT_NOM
+  rule_kind: range
+  record_key:
+    column: UN_RE
+    value: '2_3002'
+  injected_problem: Set POT_NOM outside the allowed numeric code range.
+  expected_message_contains: O atributo POT_NOM possui valor fora dos limites
+  expected_table: EQRE
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_eqre_per_fer
+  phase: scan
+  validation: _scan_table_columns
+  table: EQRE
+  field: PER_FER
+  rule_kind: float
+  record_key:
+    column: UN_RE
+    value: '2_3002'
+  injected_problem: Set PER_FER to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: EQRE
+  inject_value: null
+  patch_in_memory: true
+- id: scan_eqre_per_tot
+  phase: scan
+  validation: _scan_table_columns
+  table: EQRE
+  field: PER_TOT
+  rule_kind: float
+  record_key:
+    column: UN_RE
+    value: '2_3002'
+  injected_problem: Set PER_TOT to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: EQRE
+  inject_value: null
+  patch_in_memory: true
+- id: scan_eqre_xhl
+  phase: scan
+  validation: _scan_table_columns
+  table: EQRE
+  field: XHL
+  rule_kind: float
+  record_key:
+    column: UN_RE
+    value: '2_3002'
+  injected_problem: Set XHL to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: EQRE
+  inject_value: null
+  patch_in_memory: true
+- id: scan_eqre_ten_reg
+  phase: scan
+  validation: _scan_table_columns
+  table: EQRE
+  field: TEN_REG
+  rule_kind: float
+  record_key:
+    column: UN_RE
+    value: '2_3002'
+  injected_problem: Set TEN_REG to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: EQRE
+  inject_value: null
+  patch_in_memory: true
+- id: scan_ssdbt_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDBT
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '6200'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: SSDBT
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ssdbt_comp
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDBT
+  field: COMP
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '6200'
+  injected_problem: Set COMP to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: SSDBT
+  inject_value: null
+  patch_in_memory: true
+- id: scan_ssdbt_tip_cnd
+  phase: scan
+  validation: _scan_table_columns
+  table: SSDBT
+  field: TIP_CND
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: '6200'
+  injected_problem: Set TIP_CND to an unknown reference id.
+  expected_message_contains: O atributo TIP_CND possui valor não esperado
+  expected_table: SSDBT
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ramlig_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: RAMLIG
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '17568'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: RAMLIG
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ramlig_tip_cnd
+  phase: scan
+  validation: _scan_table_columns
+  table: RAMLIG
+  field: TIP_CND
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: '17568'
+  injected_problem: Set TIP_CND to an unknown reference id.
+  expected_message_contains: O atributo TIP_CND possui valor não esperado
+  expected_table: RAMLIG
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ramlig_comp
+  phase: scan
+  validation: _scan_table_columns
+  table: RAMLIG
+  field: COMP
+  rule_kind: float
+  record_key:
+    column: COD_ID
+    value: '17568'
+  injected_problem: Set COMP to a non-float value during scan (patched in memory for
+    float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: RAMLIG
+  inject_value: null
+  patch_in_memory: true
+- id: scan_ucmt_tab_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: UCMT_tab
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: f26bfed326918116e0dc79566ef0427e9505e38d622633d2c2fa81aa9bee52d4
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UCMT_tab
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ucmt_tab_ten_forn
+  phase: scan
+  validation: _scan_table_columns
+  table: UCMT_tab
+  field: TEN_FORN
+  rule_kind: range
+  record_key:
+    column: COD_ID
+    value: f26bfed326918116e0dc79566ef0427e9505e38d622633d2c2fa81aa9bee52d4
+  injected_problem: Set TEN_FORN outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_FORN possui valor fora dos limites
+  expected_table: UCMT_tab
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_ucmt_tab_tip_cc
+  phase: scan
+  validation: _scan_table_columns
+  table: UCMT_tab
+  field: TIP_CC
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: f26bfed326918116e0dc79566ef0427e9505e38d622633d2c2fa81aa9bee52d4
+  injected_problem: Set TIP_CC to an unknown reference id.
+  expected_message_contains: O atributo TIP_CC possui valor não esperado
+  expected_table: UCMT_tab
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ucbt_tab_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: UCBT_tab
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: cc1ceef34eeb9a89a42364a69271f952ed9f82e6da74c67542f198f18158da76
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UCBT_tab
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ucbt_tab_ten_forn
+  phase: scan
+  validation: _scan_table_columns
+  table: UCBT_tab
+  field: TEN_FORN
+  rule_kind: range
+  record_key:
+    column: COD_ID
+    value: cc1ceef34eeb9a89a42364a69271f952ed9f82e6da74c67542f198f18158da76
+  injected_problem: Set TEN_FORN outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_FORN possui valor fora dos limites
+  expected_table: UCBT_tab
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_ucbt_tab_tip_cc
+  phase: scan
+  validation: _scan_table_columns
+  table: UCBT_tab
+  field: TIP_CC
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: cc1ceef34eeb9a89a42364a69271f952ed9f82e6da74c67542f198f18158da76
+  injected_problem: Set TIP_CC to an unknown reference id.
+  expected_message_contains: O atributo TIP_CC possui valor não esperado
+  expected_table: UCBT_tab
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_pip_cod_id
+  phase: scan
+  validation: _scan_table_columns
+  table: PIP
+  field: COD_ID
+  rule_kind: string
+  record_key:
+    column: COD_ID
+    value: '4876'
+  injected_problem: Clear COD_ID to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: PIP
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_pip_ten_forn
+  phase: scan
+  validation: _scan_table_columns
+  table: PIP
+  field: TEN_FORN
+  rule_kind: range
+  record_key:
+    column: COD_ID
+    value: '4876'
+  injected_problem: Set TEN_FORN outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_FORN possui valor fora dos limites
+  expected_table: PIP
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_pip_tip_cc
+  phase: scan
+  validation: _scan_table_columns
+  table: PIP
+  field: TIP_CC
+  rule_kind: category
+  record_key:
+    column: COD_ID
+    value: '4876'
+  injected_problem: Set TIP_CC to an unknown reference id.
+  expected_message_contains: O atributo TIP_CC possui valor não esperado
+  expected_table: PIP
+  inject_value: __INVALID__
+  patch_in_memory: false
+- id: scan_ugbt_tab_ceg_gd
+  phase: scan
+  validation: _scan_table_columns
+  table: UGBT_tab
+  field: CEG_GD
+  rule_kind: string
+  record_key:
+    column: CEG_GD
+    value: GD.RS.000.720.131
+  injected_problem: Clear CEG_GD to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UGBT_tab
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ugbt_tab_pot_inst
+  phase: scan
+  validation: _scan_table_columns
+  table: UGBT_tab
+  field: POT_INST
+  rule_kind: float
+  record_key:
+    column: CEG_GD
+    value: GD.RS.000.720.131
+  injected_problem: Set POT_INST to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UGBT_tab
+  inject_value: null
+  patch_in_memory: true
+- id: scan_ugbt_tab_ten_con
+  phase: scan
+  validation: _scan_table_columns
+  table: UGBT_tab
+  field: TEN_CON
+  rule_kind: range
+  record_key:
+    column: CEG_GD
+    value: GD.RS.000.720.131
+  injected_problem: Set TEN_CON outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_CON possui valor fora dos limites
+  expected_table: UGBT_tab
+  inject_value: '99999'
+  patch_in_memory: false
+- id: scan_ugmt_tab_ceg_gd
+  phase: scan
+  validation: _scan_table_columns
+  table: UGMT_tab
+  field: CEG_GD
+  rule_kind: string
+  record_key:
+    column: CEG_GD
+    value: CGH.PH.RS.000177-5
+  injected_problem: Clear CEG_GD to an empty string.
+  expected_message_contains: O valor esperado deve ser uma string
+  expected_table: UGMT_tab
+  inject_value: ''
+  patch_in_memory: false
+- id: scan_ugmt_tab_pot_inst
+  phase: scan
+  validation: _scan_table_columns
+  table: UGMT_tab
+  field: POT_INST
+  rule_kind: float
+  record_key:
+    column: CEG_GD
+    value: CGH.PH.RS.000177-5
+  injected_problem: Set POT_INST to a non-float value during scan (patched in memory
+    for float rules).
+  expected_message_contains: O valor esperado deve ser um número.
+  expected_table: UGMT_tab
+  inject_value: null
+  patch_in_memory: true
+- id: scan_ugmt_tab_ten_con
+  phase: scan
+  validation: _scan_table_columns
+  table: UGMT_tab
+  field: TEN_CON
+  rule_kind: range
+  record_key:
+    column: CEG_GD
+    value: CGH.PH.RS.000177-5
+  injected_problem: Set TEN_CON outside the allowed numeric code range.
+  expected_message_contains: O atributo TEN_CON possui valor fora dos limites
+  expected_table: UGMT_tab
+  inject_value: '99999'
+  patch_in_memory: false

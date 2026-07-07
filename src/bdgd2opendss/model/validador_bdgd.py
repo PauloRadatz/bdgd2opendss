@@ -1051,7 +1051,7 @@ class ValidadorBDGD:
         df_erro = df_erro.drop_duplicates(keep='first')#remove linhas duplicadas
         for index,elem in df_erro.iterrows():
             erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":elem['UN_RE'],"erro":f"Faseamento interno do regulador inconsistente.",
-            "detalhamento":f"Tipo do regulador - {elem['TIP_TRAFO']}. FAS_CON_P:{elem['LIG_FAS_P']},FAS_CON_S:{elem['LIG_FAS_S']}. Alimentador - {elem['CTMT']}"})
+            "detalhamento":f"Tipo do regulador - {elem['TIP_REGU']}. FAS_CON_P:{elem['LIG_FAS_P']},FAS_CON_S:{elem['LIG_FAS_S']}. Alimentador - {elem['CTMT']}"})
         return(pd.DataFrame(erros))
 
     def bancos_regul(self,dfs):
@@ -1084,6 +1084,8 @@ class ValidadorBDGD:
                 elif dfs.loc[i,'TIP_REGU'] == 'DA' and quantidade != 2:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":value,"erro":f"Quantidade de módulos inconsistente para o tipo de regulador.",
                     "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = DA."})
+
+        return(pd.DataFrame(erros))
 
     def check_faseamento(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
         """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento
@@ -1186,7 +1188,10 @@ class ValidadorBDGD:
                     try:
                         i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
                     except IndexError: #elemento que não está seguindo a mesma ordem dos outros
-                        i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
+                        matches = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()
+                        if not matches:
+                            continue
+                        i_ele = matches[0]
                     cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
                     if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
                         fase_ele = df_elements.at[i_ele,'FAS_CON']
@@ -1351,7 +1356,7 @@ class ValidadorBDGD:
         df_trafo = dataframe com todos os trafos da BDGD"""
         voltage_dict = self.voltage_dict
         erros = []
-        for trf in df_trafo.itertuples(index=False):
+        for trf in self.df['UNTRMT'].itertuples(index=False):
             if trf.COD_ID in self.isolados:
                 continue
             try:
@@ -1367,6 +1372,8 @@ class ValidadorBDGD:
                 else:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trf.COD_ID,"erro":"Tensão no Primário igual ao Secundário no Trafo após sequenciamento elétrico.",
                     "detalhamento":f"Tensão no primário do trafo (barra:{trf.PAC_1}) igual a do secundário (barra:{trf.PAC_2}). Tensão:{v1} kV. Alimentador - {trf.CTMT}"})
+
+        return(pd.DataFrame(erros))
 
     def pac_iguais(self,df):
         """ Verifica se os pontos de acoplamento elétrico são iguais para as linhas de média e baixa tensão, incluindo ramais.
@@ -2177,7 +2184,10 @@ class ValidadorBDGD:
                     try:
                         i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
                     except IndexError: #elemento que não está seguindo a mesma ordem dos outros
-                        i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
+                        matches = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()
+                        if not matches:
+                            continue
+                        i_ele = matches[0]
                     cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
                     if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
                         fase_ele = df_elements.at[i_ele,'FAS_CON']

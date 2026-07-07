@@ -21,6 +21,7 @@ dependencies = [
     "docopt>=0.6.2",
     "xlsxwriter==3.2.9",
     "plotly==6.8.0",
+    "PyYAML==6.0.3",
 
     # Version-specific core dependencies
     "colorama==0.4.6; python_version < '3.13'",
