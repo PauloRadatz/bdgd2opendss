@@ -86,3 +86,8 @@ tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_EXP_SEQVOLTAGES.CSV
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLL.Txt
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLN.Txt
 tests/py_dss_interface/cases/13Bus/IEEE13Nodeckt_VLN_Node.Txt
+
+# Generated BDGD samples (committed zip only; extract and broken copies stay local)
+sample/raw/aneel/Mux_Energia_401_2024-12-31_V11_20250806-1857.gdb/
+sample/raw/aneel/Mux_Energia_401_broken_scan_for_tests.gdb/
+sample/raw/aneel/Mux_Energia_401_broken_etapa17_for_tests.gdb/

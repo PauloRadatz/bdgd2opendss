@@ -1,0 +1,416 @@
+- id: etapa17_ctmt_energy_low
+  phase: etapa17
+  validation: check_ctmt_energy
+  table: CTMT
+  field: ENE_01
+  record_key: {column: COD_ID, value: "2_TAP2_1"}
+  inject_fields:
+    ENE_01: 1
+    ENE_02: 1
+    ENE_03: 1
+    ENE_04: 1
+    ENE_05: 1
+    ENE_06: 1
+    ENE_07: 1
+    ENE_08: 1
+    ENE_09: 1
+    ENE_10: 1
+    ENE_11: 1
+    ENE_12: 1
+  injected_problem: Set feeder monthly energy far below connected load energy.
+  expected_message_contains: "Energia fornecida superior à energia injetada"
+  expected_table: CTMT
+
+- id: etapa17_null_pac_ssdmt
+  phase: etapa17
+  validation: check_pacs
+  table: SSDMT
+  field: PAC_1
+  record_key: {column: COD_ID, value: "2654"}
+  inject_value: null
+  injected_problem: Clear PAC_1 on an MT segment.
+  expected_message_contains: "Não foi declarado o ponto de acoplamento 1"
+  expected_table: SSDMT
+
+- id: etapa17_ctmt_missing_sub
+  phase: etapa17
+  validation: check_ctmt
+  table: CTMT
+  field: SUB
+  record_key: {column: COD_ID, value: "2_TAP2_1"}
+  inject_value: null
+  injected_problem: Clear the substation code on a feeder.
+  expected_message_contains: "Não foi declarado o código da subestação"
+  expected_table: CTMT
+
+- id: etapa17_ssdmt_bad_fascon
+  phase: etapa17
+  validation: check_lines
+  table: SSDMT
+  field: FAS_CON
+  record_key: {column: COD_ID, value: "2655"}
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid SSDMT phase code.
+  expected_message_contains: "O código do faseamento possui valor não esperado"
+  expected_table: SSDMT
+
+- id: etapa17_ssdbt_zero_length
+  phase: etapa17
+  validation: check_lines
+  table: SSDBT
+  field: COMP
+  record_key: {column: COD_ID, value: "6200"}
+  inject_value: 0
+  injected_problem: Set a BT line length to zero.
+  expected_message_contains: "O comprimento do SSDBT foi declarado igual a 0"
+  expected_table: SSDBT
+
+- id: etapa17_ramalig_missing_ctmt
+  phase: etapa17
+  validation: check_lines
+  table: RAMLIG
+  field: CTMT
+  record_key: {column: COD_ID, value: "17568"}
+  inject_value: null
+  injected_problem: Clear CTMT on a service drop.
+  expected_message_contains: "O alimentador não foi declarado"
+  expected_table: RAMLIG
+
+- id: etapa17_unsemt_bad_fascon
+  phase: etapa17
+  validation: check_unse
+  table: UNSEMT
+  field: FAS_CON
+  record_key: {column: COD_ID, value: "1CF_1"}
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid MT switch phase code.
+  expected_message_contains: "O código do faseamento possui valor não esperado"
+  expected_table: UNSEMT
+
+- id: etapa17_transformer_bad_type
+  phase: etapa17
+  validation: check_transformer
+  table: UNTRMT
+  field: TIP_TRAFO
+  record_key: {column: COD_ID, value: "1_19"}
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid transformer type.
+  expected_message_contains: "O código do tipo de transformador possui um valor não esperado"
+  expected_table: UNTRMT
+
+- id: etapa17_regulator_bad_type
+  phase: etapa17
+  validation: check_regulator
+  table: UNREMT
+  field: TIP_REGU
+  record_key: {column: COD_ID, value: "1_3001"}
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid regulator type.
+  expected_message_contains: "O código do tipo de regulador possui um valor não esperado"
+  expected_table: UNREMT
+
+- id: etapa17_ucmt_bad_fascon
+  phase: etapa17
+  validation: check_ucmt
+  table: UCMT_tab
+  field: FAS_CON
+  record_key:
+    column: COD_ID
+    value: "f26bfed326918116e0dc79566ef0427e9505e38d622633d2c2fa81aa9bee52d4"
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid MT load phase code.
+  expected_message_contains: "O código do faseamento possui valor não esperado"
+  expected_table: UCMT
+
+- id: etapa17_ucmt_zero_energy
+  phase: etapa17
+  validation: check_energy
+  table: UCMT_tab
+  field: ENE_01
+  record_key:
+    column: COD_ID
+    value: "f26bfed326918116e0dc79566ef0427e9505e38d622633d2c2fa81aa9bee52d4"
+  inject_fields:
+    ENE_01: 0
+    ENE_02: 0
+    ENE_03: 0
+    ENE_04: 0
+    ENE_05: 0
+    ENE_06: 0
+    ENE_07: 0
+    ENE_08: 0
+    ENE_09: 0
+    ENE_10: 0
+    ENE_11: 0
+    ENE_12: 0
+  injected_problem: Zero all monthly MT load energy values.
+  expected_message_contains: "Não houve consumo da carga em nenhum mês?"
+  expected_table: UCMT
+
+- id: etapa17_ucbt_missing_trafo
+  phase: etapa17
+  validation: check_loadbt
+  table: UCBT_tab
+  field: UNI_TR_MT
+  record_key:
+    column: COD_ID
+    value: "aa3e744d9ea1bfef5bac5c29b695be41bbe453b6bf59bb5ff04d04fe3ddb9b7e"
+  inject_value: null
+  injected_problem: Clear the transformer reference on a BT load.
+  expected_message_contains: "O transformador não foi declarado"
+  expected_table: UCBT
+
+- id: etapa17_ucbt_zero_energy
+  phase: etapa17
+  validation: check_energy
+  table: UCBT_tab
+  field: ENE_01
+  record_key:
+    column: COD_ID
+    value: "cc1ceef34eeb9a89a42364a69271f952ed9f82e6da74c67542f198f18158da76"
+  inject_fields:
+    ENE_01: 0
+    ENE_02: 0
+    ENE_03: 0
+    ENE_04: 0
+    ENE_05: 0
+    ENE_06: 0
+    ENE_07: 0
+    ENE_08: 0
+    ENE_09: 0
+    ENE_10: 0
+    ENE_11: 0
+    ENE_12: 0
+  injected_problem: Zero all monthly BT load energy values.
+  expected_message_contains: "Não houve consumo da carga em nenhum mês?"
+  expected_table: UCBT
+
+- id: etapa17_pip_bad_fascon
+  phase: etapa17
+  validation: check_loadbt
+  table: PIP
+  field: FAS_CON
+  record_key: {column: COD_ID, value: "4876"}
+  inject_value: "ZZZ"
+  injected_problem: Declare an invalid public lighting phase code.
+  expected_message_contains: "O código do faseamento possui valor não esperado"
+  expected_table: PIP
+
+- id: etapa17_isolated_ssdmt
+  phase: etapa17
+  validation: elem_isolados
+  table: SSDMT
+  field: PAC_2
+  record_key: {column: COD_ID, value: "2657"}
+  inject_value: "ISOLATED_TEST_NODE"
+  injected_problem: Disconnect an MT segment from the feeder graph.
+  expected_message_contains: "Segmento de média tensão isolado"
+  expected_table: SSDMT
+
+- id: etapa17_wrong_feeder_assignment
+  phase: etapa17
+  validation: check_feeder
+  table: SSDMT
+  field: CTMT
+  record_key: {column: COD_ID, value: "2638"}
+  inject_value: "1_TAP2_1"
+  injected_problem: Assign a feeder-2 element to feeder 1 while keeping its original PACs.
+  expected_message_contains: "O código do alimentador declarado não guarda correspondência"
+  expected_table: SSDMT
+
+- id: etapa17_faseamento_mismatch
+  phase: etapa17
+  validation: check_faseamento
+  table: SSDMT
+  field: FAS_CON
+  # 2624 and 2625 are in direct series sharing node 90311, which is degree-2 in the
+  # full MT faseamento graph. That makes find_seq() pick one as the other's electrical
+  # parent regardless of the networkx BFS traversal order (stable across nx 3.5/3.6),
+  # so the incompatible phasing (A upstream vs BC downstream) always triggers the error.
+  record_key: {column: COD_ID, value: "2625"}
+  inject_value: "BC"
+  secondary_injections:
+    - table: SSDMT
+      record_key: {column: COD_ID, value: "2624"}
+      inject_fields:
+        FAS_CON: "A"
+  injected_problem: Use incompatible MT phasing between adjacent sequenced segments.
+  expected_message_contains: "Elemento com faseamento inadequado"
+  expected_table: SSDMT
+
+- id: etapa17_propagacao_mismatch
+  phase: etapa17
+  validation: check_propagacao
+  table: SSDBT
+  field: FAS_CON
+  record_key: {column: COD_ID, value: "5912"}
+  inject_value: "ABN"
+  injected_problem: >-
+    Set SSDBT 5912 (originally CAN) to ABN. It shares degree-2 node BT89041 with
+    its series sibling SSDBT 5911 (CAN) under transformer 1_74 on feeder
+    1_TAP2_1. CAN and ABN are mutually incompatible (each carries a phase the
+    other lacks), so the propagation mismatch fires regardless of the networkx
+    BFS parent/child traversal order.
+  expected_message_contains: "propagação de fase inadequada"
+  expected_table: SSDBT
+
+- id: etapa17_voltage_bt_on_mt
+  phase: etapa17
+  validation: check_voltage
+  table: UCMT_tab
+  field: PAC
+  record_key:
+    column: COD_ID
+    value: "c33de0ad08dcd16ac857d335bac61bcc52b398eabab9b4ba257a0f835fc4dd19"
+  inject_value: "ET1_89"
+  patch_in_memory: true
+  injected_problem: Declare an MT load on a BT transformer secondary PAC to trigger voltage-level mismatch.
+  expected_message_contains: "com tensão inadequada após sequenciamento elétrico"
+  expected_table: UCMT
+
+- id: etapa17_wrong_trafo_reference
+  phase: etapa17
+  validation: iso_trafo
+  table: UCBT_tab
+  field: UNI_TR_MT
+  record_key:
+    column: COD_ID
+    value: "cc1ceef34eeb9a89a42364a69271f952ed9f82e6da74c67542f198f18158da76"
+  inject_value: "1_19"
+  injected_problem: Associate a BT load with the wrong transformer code.
+  expected_message_contains: "O código do transformador declarado não guarda correspondência"
+  expected_table: UCBT
+
+- id: etapa17_mrt_inconsistent
+  phase: etapa17
+  validation: check_mrt
+  table: UNTRMT
+  field: MRT
+  record_key: {column: COD_ID, value: "1_198"}
+  inject_fields:
+    MRT: 1
+    TIP_TRAFO: "T"
+  injected_problem: Flag a transformer as MRT while keeping a three-phase type.
+  expected_message_contains: "Tipo do transformador inconsistente com o valor declarado no campo MRT"
+  expected_table: UNTRMT
+
+- id: etapa17_transformer_phase_error
+  phase: etapa17
+  validation: phase_error
+  table: EQTRMT
+  field: LIG_FAS_P
+  record_key: {column: UNI_TR_MT, value: "1_8"}
+  inject_value: "A"
+  injected_problem: Use monophase primary phasing on a three-phase transformer.
+  expected_message_contains: "O código de faseamento (primário, secundário ou terciário) possui valor não esperado"
+  expected_table: EQTRMT
+
+- id: etapa17_transformer_bank_count
+  phase: etapa17
+  validation: bancos_trafos
+  table: UNTRMT
+  field: TIP_TRAFO
+  record_key: {column: COD_ID, value: "1_225"}
+  inject_fields:
+    TIP_TRAFO: "DF"
+    BANC: 1
+  injected_problem: Declare a delta-closed bank with only one module.
+  expected_message_contains: "Quantidade de módulos inconsistente para o tipo de transformador"
+  expected_table: UNTRMT
+
+- id: etapa17_transformer_da_internal_phase
+  phase: etapa17
+  validation: fase_df_da_problematico
+  table: UNTRMT
+  field: TIP_TRAFO
+  record_key: {column: COD_ID, value: "1_227"}
+  inject_fields:
+    TIP_TRAFO: "DA"
+    BANC: 1
+  secondary_injections:
+    - table: EQTRMT
+      record_key: {column: UNI_TR_MT, value: "1_227"}
+      inject_fields:
+        LIG_FAS_P: "A"
+        LIG_FAS_S: "B"
+        LIG_FAS_T: "C"
+  injected_problem: Declare a delta-open bank with incompatible tertiary phasing.
+  expected_message_contains: "O código do faseamento do terciário possui valor não esperado"
+  expected_table: EQTRMT
+
+- id: etapa17_trafo_equal_voltage
+  phase: etapa17
+  validation: check_voltage_trafo
+  table: UNTRMT
+  field: PAC_2
+  record_key: {column: COD_ID, value: "1_11"}
+  inject_value: "87051"
+  injected_problem: Make primary and secondary PACs identical on a transformer.
+  expected_message_contains: "Tensão no Primário igual ao Secundário no Trafo"
+  expected_table: UNTRMT
+
+- id: etapa17_regulator_phase_error
+  phase: etapa17
+  validation: phase_error
+  table: EQRE
+  field: LIG_FAS_P
+  record_key: {column: UN_RE, value: "1_3000"}
+  inject_value: "ZZZ"
+  injected_problem: Use incompatible regulator winding phasing.
+  expected_message_contains: "O código de faseamento do primário ou secundário do Regulador possui valor não esperado"
+  expected_table: EQRE
+
+- id: etapa17_regulator_bank_count
+  phase: etapa17
+  validation: bancos_regul
+  table: UNREMT
+  field: TIP_REGU
+  record_key: {column: COD_ID, value: "1_3000"}
+  inject_value: "T"
+  injected_problem: Declare a three-phase regulator bank with three modules.
+  expected_message_contains: "Quantidade de módulos inconsistente para o tipo de regulador"
+  expected_table: EQRE
+
+- id: etapa17_regulator_da_internal_phase
+  phase: etapa17
+  validation: fase_df_da_problematico_regul
+  table: UNREMT
+  field: TIP_REGU
+  record_key: {column: COD_ID, value: "2_3002"}
+  inject_fields:
+    TIP_REGU: "DA"
+    BANC: 1
+  secondary_injections:
+    - table: EQRE
+      record_key: {column: UN_RE, value: "2_3002"}
+      inject_fields:
+        LIG_FAS_P: "AB"
+        LIG_FAS_S: "CA"
+  injected_problem: Use mismatched primary and secondary regulator bank phasing.
+  expected_message_contains: "Faseamento interno do regulador inconsistente"
+  expected_table: EQRE
+
+- id: etapa17_equal_pacs
+  phase: etapa17
+  validation: pac_iguais
+  table: SSDMT
+  field: PAC_2
+  record_key: {column: COD_ID, value: "2661"}
+  inject_fields:
+    PAC_2: "91111"
+  injected_problem: Make PAC_1 and PAC_2 identical on an MT line.
+  expected_message_contains: "O ponto de acoplamento 1 tem que ser diferente do ponto de acoplamento 2"
+  expected_table: SSDMT
+
+- id: etapa17_parallel_with_trafo
+  phase: etapa17
+  validation: check_parallel
+  table: SSDMT
+  field: PAC_1
+  record_key: {column: COD_ID, value: "2663"}
+  inject_fields:
+    PAC_1: "10741"
+    PAC_2: "ET1_19"
+  injected_problem: Place an MT line in parallel with a transformer PAC pair.
+  expected_message_contains: "está em paralelo com o transformador"
+  expected_table: SSDMT

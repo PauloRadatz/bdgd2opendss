@@ -36,6 +36,18 @@ def _pac_key(value) -> Optional[str]:
     return str(value).lower()
 
 
+def _pac_node(value):
+    """Normalize a PAC value before adding it to a networkx graph.
+
+    Older pandas versions (< 3.0) expose missing PAC values as None/NaN while
+    pandas 3.0+ uses ''. networkx rejects None ("None cannot be a node") and
+    would crash graph construction. Coercing missing values to '' keeps behavior
+    identical across pandas versions, since empty nodes are pruned right after
+    via ``grafo.remove_node('')``.
+    """
+    return "" if _is_missing(value) else value
+
+
 def _is_undeclared_string(value) -> bool:
     return _is_missing(value) or not isinstance(value, str) or len(value) == 0
 
@@ -608,9 +620,11 @@ class ValidadorBDGD:
             grafo = nx.Graph()
             for row in df_total.itertuples(index=False):
                 try:
-                    grafo.add_node(row.PAC_1)
-                    grafo.add_node(row.PAC_2)
-                    grafo.add_edge(row.PAC_1, row.PAC_2)
+                    pac_1 = _pac_node(row.PAC_1)
+                    pac_2 = _pac_node(row.PAC_2)
+                    grafo.add_node(pac_1)
+                    grafo.add_node(pac_2)
+                    grafo.add_edge(pac_1, pac_2)
                 except ValueError:
                     continue
                     print("valor do tipo none")  # TODO add in log
@@ -1051,7 +1065,7 @@ class ValidadorBDGD:
         df_erro = df_erro.drop_duplicates(keep='first')#remove linhas duplicadas
         for index,elem in df_erro.iterrows():
             erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":elem['UN_RE'],"erro":f"Faseamento interno do regulador inconsistente.",
-            "detalhamento":f"Tipo do regulador - {elem['TIP_TRAFO']}. FAS_CON_P:{elem['LIG_FAS_P']},FAS_CON_S:{elem['LIG_FAS_S']}. Alimentador - {elem['CTMT']}"})
+            "detalhamento":f"Tipo do regulador - {elem['TIP_REGU']}. FAS_CON_P:{elem['LIG_FAS_P']},FAS_CON_S:{elem['LIG_FAS_S']}. Alimentador - {elem['CTMT']}"})
         return(pd.DataFrame(erros))
 
     def bancos_regul(self,dfs):
@@ -1084,6 +1098,8 @@ class ValidadorBDGD:
                 elif dfs.loc[i,'TIP_REGU'] == 'DA' and quantidade != 2:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"EQRE","Código":value,"erro":f"Quantidade de módulos inconsistente para o tipo de regulador.",
                     "detalhamento":f"Quantidade de módulos [EQREs] = {quantidade}. Tipo do regulador = DA."})
+
+        return(pd.DataFrame(erros))
 
     def check_faseamento(self,dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, lista_isolados:list = []): #Criar um dicionário de tensão por nó para verificar as tensões nos SSDMT,SSDBT,CHVMT,CHVBT e REGUL
         """Faz o faseamento de todos os elementos do alimentador específico para verificar se há alguma inconsistência entre o faseamento
@@ -1156,9 +1172,11 @@ class ValidadorBDGD:
             grafo = nx.Graph()
 
             for row in df_elements.itertuples(index=False):
-                grafo.add_node(row.PAC_1)
-                grafo.add_node(row.PAC_2)
-                grafo.add_edge(row.PAC_1, row.PAC_2)
+                pac_1 = _pac_node(row.PAC_1)
+                pac_2 = _pac_node(row.PAC_2)
+                grafo.add_node(pac_1)
+                grafo.add_node(pac_2)
+                grafo.add_edge(pac_1, pac_2)
             try:
                 grafo.remove_node('')
             except:
@@ -1186,7 +1204,10 @@ class ValidadorBDGD:
                     try:
                         i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
                     except IndexError: #elemento que não está seguindo a mesma ordem dos outros
-                        i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
+                        matches = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()
+                        if not matches:
+                            continue
+                        i_ele = matches[0]
                     cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
                     if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
                         fase_ele = df_elements.at[i_ele,'FAS_CON']
@@ -1351,7 +1372,7 @@ class ValidadorBDGD:
         df_trafo = dataframe com todos os trafos da BDGD"""
         voltage_dict = self.voltage_dict
         erros = []
-        for trf in df_trafo.itertuples(index=False):
+        for trf in self.df['UNTRMT'].itertuples(index=False):
             if trf.COD_ID in self.isolados:
                 continue
             try:
@@ -1367,6 +1388,8 @@ class ValidadorBDGD:
                 else:
                     erros.append({"COD_BASE":self.cod_base,"Erro máx":"0%","Tabela":"UNTRMT","Código":trf.COD_ID,"erro":"Tensão no Primário igual ao Secundário no Trafo após sequenciamento elétrico.",
                     "detalhamento":f"Tensão no primário do trafo (barra:{trf.PAC_1}) igual a do secundário (barra:{trf.PAC_2}). Tensão:{v1} kV. Alimentador - {trf.CTMT}"})
+
+        return(pd.DataFrame(erros))
 
     def pac_iguais(self,df):
         """ Verifica se os pontos de acoplamento elétrico são iguais para as linhas de média e baixa tensão, incluindo ramais.
@@ -1786,12 +1809,14 @@ class ValidadorBDGD:
         grafo = nx.Graph()
 
         for row in df_line_bt.itertuples(index=False):
+            pac_1 = _pac_node(row.PAC_1)
+            pac_2 = _pac_node(row.PAC_2)
             if row.ELEM == 'UCBT':
-                grafo.add_node(row.PAC_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_node(pac_1,cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
             else:
-                grafo.add_node(row.PAC_1, tipo='bus')
-            grafo.add_node(row.PAC_2)
-            grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_node(pac_1, tipo='bus')
+            grafo.add_node(pac_2)
+            grafo.add_edge(pac_1, pac_2, cod_id=row.COD_ID, fas_con=row.FAS_CON, tipo=row.ELEM)
 
         conectados = list(nx.connected_components(grafo))
 
@@ -2148,10 +2173,12 @@ class ValidadorBDGD:
             grafo = nx.Graph()
 
             for row in df_elements.itertuples(index=False):
-                grafo.add_node(row.PAC_1)
-                grafo.add_node(row.PAC_2)
+                pac_1 = _pac_node(row.PAC_1)
+                pac_2 = _pac_node(row.PAC_2)
+                grafo.add_node(pac_1)
+                grafo.add_node(pac_2)
                 #TODO 
-                grafo.add_edge(row.PAC_1, row.PAC_2, cod_id=row.COD_ID,fas_con=row.FAS_CON, tipo=row.ELEM)
+                grafo.add_edge(pac_1, pac_2, cod_id=row.COD_ID,fas_con=row.FAS_CON, tipo=row.ELEM)
             try:
                 grafo.remove_node('')
             except:
@@ -2177,7 +2204,10 @@ class ValidadorBDGD:
                     try:
                         i_ele = df_elements.index[(df_elements[pac1] == seq[0]) & (df_elements[pac2] == seq[1])].tolist()[0] #índice do elemento atual
                     except IndexError: #elemento que não está seguindo a mesma ordem dos outros
-                        i_ele = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()[0]
+                        matches = df_elements.index[(df_elements[pac2] == seq[0]) & (df_elements[pac1] == seq[1])].tolist()
+                        if not matches:
+                            continue
+                        i_ele = matches[0]
                     cod_ele = df_elements.at[i_ele,'COD_ID'] #código do elemento atual
                     if df_elements.at[i_ele,'ELEM'] == 'EQTRMT':
                         fase_ele = df_elements.at[i_ele,'FAS_CON']
