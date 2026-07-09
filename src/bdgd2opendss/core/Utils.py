@@ -716,7 +716,7 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
         return(seq)
 
 #TODO cria uma lista dos elementos isolados no circuito
-def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None): #cria uma lista de elementos isolados
+def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None, log_isolated: bool = False): #cria uma lista de elementos isolados
     global lista_isolados
     if settings.TipoBDGD: #BDGD privada
         ucbt = "UCBT"
@@ -809,7 +809,8 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                     #df_x = df_total[~df_total['PAC_1'].isin(conection) & ~df_total['PAC_2'].isin(conection)]
                     continue
             if not df_not_connected.empty:
-                log_erros(df_not_connected,alimentador,output_folder)
+                if log_isolated:
+                    log_erros(df_not_connected,alimentador,output_folder)
 
                 if df_not_connected.isnull().values.any():
                     df_not_connected.fillna('Nulo', inplace=True)
@@ -837,7 +838,8 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
                         lista_isolados.append(cod_id)
             return(print('Lista de elementos isolados criados!'))
         else:
-            log_erros(feeder=alimentador,output_directory=output_folder,ctmt=pac_ctmt)
+            if log_isolated:
+                log_erros(feeder=alimentador,output_directory=output_folder,ctmt=pac_ctmt)
             return(print('Alimentador não tem conexão com a fonte!!'))
     else:
         return(lista_isolados)

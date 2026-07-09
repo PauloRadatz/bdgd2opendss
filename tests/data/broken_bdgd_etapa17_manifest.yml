@@ -223,10 +223,6 @@
   validation: check_faseamento
   table: SSDMT
   field: FAS_CON
-  # 2624 and 2625 are in direct series sharing node 90311, which is degree-2 in the
-  # full MT faseamento graph. That makes find_seq() pick one as the other's electrical
-  # parent regardless of the networkx BFS traversal order (stable across nx 3.5/3.6),
-  # so the incompatible phasing (A upstream vs BC downstream) always triggers the error.
   record_key: {column: COD_ID, value: "2625"}
   inject_value: "BC"
   secondary_injections:

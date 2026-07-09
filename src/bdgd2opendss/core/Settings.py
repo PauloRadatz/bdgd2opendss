@@ -4,7 +4,20 @@
 # @File    : Settings.py
 # @Software: PyCharm
 
+import locale
 from dataclasses import dataclass, field
+
+
+def _detect_csv_separator() -> str:
+    current_locale = locale.setlocale(locale.LC_NUMERIC)
+    try:
+        locale.setlocale(locale.LC_NUMERIC, "")
+        decimal_point = locale.localeconv().get("decimal_point", ".")
+    except locale.Error:
+        decimal_point = "."
+    finally:
+        locale.setlocale(locale.LC_NUMERIC, current_locale)
+    return ";" if decimal_point == "," else ","
 
 @dataclass
 class Settings:
@@ -34,6 +47,7 @@ class Settings:
     cbMeterComplete: bool = field(default=False, metadata={"description": "Medidores de Energia no barramento principal e transformadores"})
     # BDGD pública ou PRIVADA
     TipoBDGD: bool = field(default=False, metadata={"description": "Define o arquivo JSON para a BDGD: privada (True) ou pública (False)"})
-    TabelaPT: bool = field(default=False, metadata={"description": "Define se o usuário quer gerar as tabelas de perdas técnicas"})
+    TabelaPT: bool = field(default=True, metadata={"description": "Define se o usuário quer gerar as tabelas de perdas técnicas"})
+    csv_separator: str = field(default_factory=_detect_csv_separator, metadata={"description": "Separador usado nos arquivos CSV"})
 
 settings = Settings()

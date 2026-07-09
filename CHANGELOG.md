@@ -1,11 +1,11 @@
 # Changelog
 
-## 1.2.4 (2026-07-07)
+## 1.2.4 (2026-07-XX)
 
 - **Tests**: Added broken-BDGD integration pytest coverage for scan and Etapa17 validation, with manifest-driven GDB injections and in-memory patches where GDB edits are unreliable.
 - **Tests**: Hardened Etapa17 `faseamento_mismatch` and `propagacao_mismatch` injections using degree-2 topology so results are stable across `networkx` versions.
 - **Tests**: Excluded `UNTRAT` from scan validation manifest and test seeding.
-- **Tests**: Broken GDB fixtures now regenerate automatically when the manifest or `create_broken_bdgd.py` is newer than the on-disk GDB.
+- **Tests**: Broken GDB fixtures delete the clean and broken Mux Energia GDB folders at the start of each pytest session, then re-unzip the sample zip and rebuild both broken GDBs from the manifests.
 - **Dependencies**: Aligned the Python 3.11–3.13 data/geo stack with 3.14 (`pandas==3.0.1`, `numpy==2.4.3`, `networkx==3.6.1`, `geopandas==1.1.3`, etc.); pandas below 3.0 reads empty PAC fields as `None`, which crashed `check_faseamento` in `networkx`.
 - **Dependencies**: Resolved Python 3.12 `PyYAML` pin conflict (`6.0.1` → `6.0.3`) for `pip`/`tox` installs; fixed `requirements_py312.txt` UTF-8 encoding.
 - **tox**: Default testenv and `flake8` env use Python 3.14; added `skip_missing_interpreters`; added `.python-version` (`3.14`) for IDE defaults.

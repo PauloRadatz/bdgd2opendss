@@ -718,10 +718,10 @@ class Load:
         path_file_mt = output_folder + r"/csv_files" + r"/AuxCargaMT" + f"_{feeder}.csv"
         path_file_btnt = output_folder + r"/csv_files" + r"/AuxCargaBTNT" + f"_{feeder}.csv"
         path_file_mtnt = output_folder + r"/csv_files" + r"/AuxCargaMTNT" + f"_{feeder}.csv"
-        df_energ_load.to_csv(path_file_bt,encoding='utf-8', decimal='.',sep=';', index=False)
-        df_energ_loadmt.to_csv(path_file_mt,encoding='utf-8', decimal='.',sep=';',index=False)
-        df_energ_btnt.to_csv(path_file_btnt,encoding='utf-8', decimal='.',sep=';', index=False)
-        df_energ_mtnt.to_csv(path_file_mtnt,encoding='utf-8', decimal='.',sep=';',index=False)
+        df_energ_load.to_csv(path_file_bt, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
+        df_energ_loadmt.to_csv(path_file_mt, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
+        df_energ_btnt.to_csv(path_file_btnt, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
+        df_energ_mtnt.to_csv(path_file_mtnt, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
         return(print('Tabela de perdas técnicas criada'))
         
     def create_csv_dias(output_folder,feeder):
@@ -734,6 +734,6 @@ class Load:
                 df_dias.at[month,dia] = return_day_type(tip_dia=dia,mes=f'{month:02d}')
 
         path_file = output_folder + r"/csv_files" + r"/contagem_dias" + f"_{feeder}.csv"
-        df_dias.to_csv(path_file,encoding='utf-8', decimal='.',sep=';', index=False)
+        df_dias.to_csv(path_file, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
 
                 

@@ -279,5 +279,5 @@ class Circuit:
                 os.mkdir(f"{pastadesaida}/csv_files")
         path_folder = f"{pastadesaida}/csv_files"
         path_file = path_folder + f"/CircMT_{feeder}.csv"
-        df.to_csv(path_file,sep=';',encoding='utf-8', index=False)
+        df.to_csv(path_file, sep=settings.csv_separator, encoding='utf-8', index=False)
         return(print('Tabela CircMT criada'))

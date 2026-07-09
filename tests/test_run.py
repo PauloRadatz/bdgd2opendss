@@ -55,6 +55,14 @@ class TestRunFunctionality:
         # Restore original value
         settings.TabelaPT = original_value
 
+    def test_csv_separator_setting(self):
+        """Test that CSV separator can be configured."""
+        assert settings.csv_separator in {",", ";"}
+        original_value = settings.csv_separator
+        settings.csv_separator = ","
+        assert settings.csv_separator == ","
+        settings.csv_separator = original_value
+
     def test_run_function_signature(self):
         """Test that run function has the correct signature."""
         import inspect
