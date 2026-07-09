@@ -1288,6 +1288,7 @@ class ValidadorBDGD:
                             "detalhamento":f"Elemento analisado = {df_elements_bt.at[i_ele,'ELEM']}:{df_elements_bt.at[i_ele,'COD_ID']} - fase:{fase_ele}, Elemento de conexão = {df_elements_bt.at[i,'ELEM']}:{df_elements_bt.at[i,'COD_ID']}. Fase de conexão - {fase}. Alimentador: {df_elements_bt.at[i_ele,'CTMT']}."})
                 else:
                     i = df_aux_trafo[df_aux_trafo['COD_ID'] == trafo].index[0]
+                     #TODO se não há nada conectado no secundário, devo atribuir alguma tensão a esse nó???
                     voltage_dict[df_aux_trafo.at[i,'PAC_2']] = df_aux_trafo.at[i,'TEN_LIN_SE']
                     # print(f'trafo {trafo} sem linhas de baixa tensão ou cargas!')
             #faseamento das cargas de baixa tensão
@@ -2360,12 +2361,19 @@ class ValidadorBDGD:
                     size=15,
                     color='black',
                     symbol='triangle-up'),
-                text=[pac_ctmt_key],
+                text=[f'PAC_INI:{pac_ctmt_key}<br>'
+                      f'Alimentador:{feeder}'],
                 hoverinfo='text',
                 name='SE')
         traces = regular_traces+iso_traces+[highlight_trace]
         fig = go.Figure(data=traces)
-       
+        fig.add_annotation(
+            x=0,
+            y=1.05,
+            xref="paper",
+            yref="paper",
+            text=f"Alimentador:{feeder} - Elementos Isolados",
+            showarrow=False)
         fig_path = os.path.join(output_path, f"figuras_{feeder}")
 
         if not os.path.exists(fig_path):
@@ -2421,7 +2429,7 @@ class ValidadorBDGD:
             mode='lines',
             legendgroup='Linhas MT',
             name='Linhas MT',
-            line=dict(width=0.8, color='gray'),
+            line=dict(width=1, color='blue'),
             hoverinfo='none',
             showlegend=True)
         edge_trace_bt = go.Scatter(
@@ -2430,7 +2438,7 @@ class ValidadorBDGD:
             mode='lines',
             legendgroup='Linhas BT',
             name='Linhas BT',
-            line=dict(width=0.5, color='green'),
+            line=dict(width=0.8, color='green',dash='dash'),
             hoverinfo='none',
             showlegend=True)
         
@@ -2573,8 +2581,9 @@ class ValidadorBDGD:
             legendgroup='UCBT',
             name='UCBT',
             marker=dict(
-                size=2,
-                color='green'
+                size=3,
+                color='forestgreen',
+                symbol='diamond'
             ))
         node_trace_ucmt = go.Scatter(
             x=node_x_ucmt,
@@ -2585,8 +2594,9 @@ class ValidadorBDGD:
             legendgroup='UCMT',
             name='UCMT',
             marker=dict(
-                size=8,
-                color='blue'
+                size=4,
+                color='blue',
+                symbol='square'
             ))
         node_trace_tr = go.Scatter(
             x=node_x_tr,
@@ -2775,7 +2785,7 @@ class ValidadorBDGD:
             marker=dict(
                 size=4,
                 color='red',
-                symbol='diamond'
+                symbol='circle'
             ))
         node_trace_ucbt = go.Scatter(
             x=node_x_ucbt,
@@ -2800,7 +2810,8 @@ class ValidadorBDGD:
             name='UCMT isolada',
             marker=dict(
                 size=6,
-                color='red'
+                color='red',
+                symbol='square'
             ))
         node_trace_tr = go.Scatter(
             x=node_x_tr,
@@ -2836,7 +2847,13 @@ class ValidadorBDGD:
         traces_bt = self.graph_points_fase_bt(df_bt=df_bt,df_trafo=df_trafo,fase_error=fase_error_bt,pos=pos)
         fig = go.Figure(
         data = traces_mt + traces_bt)
-
+        fig.add_annotation(
+            x=0,
+            y=1.05,
+            xref="paper",
+            yref="paper",
+            text=f"Alimentador:{feeder} - Erros de Faseamento",
+            showarrow=False)
         fig_path = os.path.join(output_path, f"figuras_{feeder}")
         
         if not os.path.exists(fig_path):
@@ -2891,7 +2908,7 @@ class ValidadorBDGD:
             mode='lines',
             line=dict(width=1, color='steelblue'),
             hoverinfo='none',
-            name='SSDMT')
+            name='Linhas MT')
         
         edge_error_trace = go.Scatter(
             x=edge_x_error,
@@ -3046,9 +3063,11 @@ class ValidadorBDGD:
     def graph_points_fase_bt(self,df_bt,df_trafo,fase_error,pos): #TODO fazer funcionar essa rotina
         grafos, pacs_trf = self.return_graph_trafo_plot(df_bt=df_bt,df_trafo=df_trafo)
         traces = []
-        show_legend = True
+        show_legend_tr = True
         show_legend_error = True
         show_legend_node = True
+        show_legend_node_ucbt = True
+        show_legend_ssdbt = True
         ##TODO agora plotar e mostrar 
         for grafo,pac_trf in zip(grafos,pacs_trf):
             valid_nodes = [n for n in grafo.nodes if _pac_key(n) in pos]
@@ -3082,9 +3101,9 @@ class ValidadorBDGD:
                 mode='lines',
                 line=dict(width=0.5, color='forestgreen'),
                 hoverinfo='none',
-                legendgroup = 'SSDBT',
-                showlegend=show_legend,
-                name='SSDBT')
+                legendgroup = 'Linhas BT',
+                showlegend=show_legend_ssdbt,
+                name='Linhas BT')
 
             edge_error_trace = go.Scatter(
                 x=edge_x_error,
@@ -3095,8 +3114,10 @@ class ValidadorBDGD:
                 legendgroup= 'Faseamento incorreto BT',
                 showlegend=show_legend_error,
                 name='Faseamento incorreto BT')
-            if len(edge_x_error) > 1: #para aparecer apenas na primeira vez a legenda
+            if len(edge_x_error) > 0: #para aparecer apenas na primeira vez a legenda
                 show_legend_error = False
+            if len(edge_x_normal) > 0:#para aparecer apenas na primeira vez a legenda
+                show_legend_ssdbt = False
             mid_x = []
             mid_y = []
             edge_text = []
@@ -3200,7 +3221,7 @@ class ValidadorBDGD:
                 text=node_text,
                 legendgroup='Barras BT',
                 name='Barras BT',
-                showlegend=show_legend,
+                showlegend=show_legend_node,
                 marker=dict(size=3.5,color='blue'))
             
             node_trace_ucbt = go.Scatter(
@@ -3211,13 +3232,16 @@ class ValidadorBDGD:
                 hoverinfo='text',
                 legendgroup='UCBT',
                 name='UCBT',
-                showlegend=show_legend_node,
+                showlegend=show_legend_node_ucbt,
                 marker=dict(
                     size=4.5,
                     color=node_color_ucbt,
                     symbol='square'))
             
-            if len(node_text_ucbt) > 1:
+            if len(node_text_ucbt) > 0:
+                show_legend_node_ucbt = False
+            
+            if len(node_text) > 0:
                 show_legend_node = False
                 
             traces.extend([edge_trace,edge_error_trace,edge_hover_trace,edge_hover_trace_error,node_trace,node_trace_ucbt])
@@ -3245,15 +3269,13 @@ class ValidadorBDGD:
                     text=text_trf,
                     hoverinfo='text',
                     legendgroup='TRs',
-                    showlegend=show_legend,
+                    showlegend=show_legend_tr,
                     name='TR'
                 )
                 highlight_trace_tr.legendgroup = 'TR'
                 traces.append(highlight_trace_tr)
-                show_legend = False
-        fig = go.Figure(
-            data = traces
-        )
+                show_legend_tr = False
+
         return traces
     
     def return_graph_trafo_plot(self,df_bt,df_trafo):
