@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "bdgd2opendss"
-version = "1.2.2"
+version = "1.2.4"
 description = "BDGD2OpenDSS converts BDGD data into OpenDSS models."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE", "AUTHORS.rst"]
 authors = [
   {name = "Paulo Radatz", email = "paulo.radatz@gmail.com"}
 ]
@@ -55,7 +56,6 @@ dependencies = [
     "zipp==3.15.0; python_version < '3.12'",
     "pyogrio==0.12.1; python_version < '3.12'",
     "pyarrow==23.0.1; python_version < '3.12'",
-    "setuptools==67.2.0; python_version < '3.12'",
     "matplotlib==3.9.0; python_version < '3.12'",
     "exceptiongroup==1.1.1; python_version < '3.12'",
     "tqdm==4.67.3; python_version < '3.12'",
@@ -80,7 +80,6 @@ dependencies = [
     "urllib3==2.2.1; python_version >= '3.12' and python_version < '3.13'",
     "pyogrio==0.12.1; python_version >= '3.12' and python_version < '3.13'",
     "pyarrow==23.0.1; python_version >= '3.12' and python_version < '3.13'",
-    "setuptools==71.0.3; python_version >= '3.12' and python_version < '3.13'",
     "matplotlib==3.9.0; python_version >= '3.12' and python_version < '3.13'",
     "tqdm==4.67.3; python_version >= '3.12' and python_version < '3.13'",
 
@@ -127,7 +126,6 @@ dependencies = [
     "typing_extensions==4.12.2; python_version >= '3.12' and python_version < '3.13'",
     "tzdata==2025.3; python_version >= '3.12' and python_version < '3.13'",
     "tzlocal==5.2; python_version >= '3.12' and python_version < '3.13'",
-    "wheel==0.43.0; python_version >= '3.12' and python_version < '3.13'",
     "zict==3.0.0; python_version >= '3.12' and python_version < '3.13'",
 
     # Python 3.13 only (from requirements_py313.txt)
@@ -164,10 +162,8 @@ dependencies = [
     "pandas==3.0.1; python_version >= '3.14'",
     "pluggy==1.6.0; python_version >= '3.14'",
     "pyarrow==23.0.1; python_version >= '3.14'",
-    "Pygments==2.19.2; python_version >= '3.14'",
     "pyogrio==0.12.1; python_version >= '3.14'",
     "pyproj==3.7.2; python_version >= '3.14'",
-    "pytest==9.0.2; python_version >= '3.14'",
     "python-dateutil==2.9.0.post0; python_version >= '3.14'",
     "shapely==2.1.2; python_version >= '3.14'",
     "six==1.17.0; python_version >= '3.14'",
@@ -179,7 +175,6 @@ keywords = ["OpenDSS", "Python", "Power Systems", "Distribution Systems", "Energ
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",

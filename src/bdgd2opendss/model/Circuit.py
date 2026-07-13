@@ -241,7 +241,7 @@ class Circuit:
         df.at[1,'TenNom_kV'] = kv
         df.at[1,'TenOpe_pu'] = pu
         df.at[1,'PerdTecnMed_MWh'] = _cell("PERD_MED") / 1000
-        if settings.TipoBDGD:
+        if settings._TipoBDGD:
             df.at[1,'PerdTecnA3a_MWh'] = _cell("PERD_A3A") / 1000
             df.at[1,'PerdTecnA3a_B_MWh'] = _cell("PERD_A3A_B") / 1000
             df.at[1,'PerdTecnB_A3a_MWh'] = _cell("PERD_B_A3A") / 1000

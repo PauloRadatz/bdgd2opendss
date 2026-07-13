@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.2.4 (2026-07-XX)
+## 1.2.4 (2026-07-13)
+
+- **Settings**: Removed `!GD` redirects from being written by default in Master files. Users can enable them via the new `intAddGDs` setting.
+- **Settings**: Removed unused properties (`limitRamal30m`, `ger4fios`, `gerCapacitors`, `genTypeMT`, `genTypeBT`), commented out `loadModel` and `intModeloConverge`, and renamed `TipoBDGD` to the private `_TipoBDGD`.
+
+## 1.2.3 (2026-07-10)
 
 - **Tests**: Added broken-BDGD integration pytest coverage for scan and Etapa17 validation, with manifest-driven GDB injections and in-memory patches where GDB edits are unreliable.
 - **Tests**: Hardened Etapa17 `faseamento_mismatch` and `propagacao_mismatch` injections using degree-2 topology so results are stable across `networkx` versions.
@@ -9,9 +14,6 @@
 - **Dependencies**: Aligned the Python 3.11–3.13 data/geo stack with 3.14 (`pandas==3.0.1`, `numpy==2.4.3`, `networkx==3.6.1`, `geopandas==1.1.3`, etc.); pandas below 3.0 reads empty PAC fields as `None`, which crashed `check_faseamento` in `networkx`.
 - **Dependencies**: Resolved Python 3.12 `PyYAML` pin conflict (`6.0.1` → `6.0.3`) for `pip`/`tox` installs; fixed `requirements_py312.txt` UTF-8 encoding.
 - **tox**: Default testenv and `flake8` env use Python 3.14; added `skip_missing_interpreters`; added `.python-version` (`3.14`) for IDE defaults.
-
-## 1.2.3 (2026-07-05)
-
 - **run** / **verificacao_bdgd**: Missing optional BDGD tables `UNSEBT` and `UNTRAT` no longer abort loading; an empty table is used and a warning is printed instead.
 - **JsonData**: Consolidated BDGD layer loading into a shared `_read_layer()` helper used by both `create_geodataframes()` (`run`) and `create_geodataframe_errors()` (`verificacao_bdgd`).
 

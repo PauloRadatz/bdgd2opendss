@@ -32,7 +32,7 @@ class TestRunFunctionality:
 
     def test_version(self):
         """Test that package version matches the release."""
-        assert bdgd.__version__ == "1.2.2"
+        assert bdgd.__version__ == "1.2.4"
 
     def test_public_api(self):
         """Test that the package exposes only the intended public API."""

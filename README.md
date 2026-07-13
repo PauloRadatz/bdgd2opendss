@@ -99,7 +99,7 @@ If you use `bdgd2opendss` in your academic work, please reference it as follows:
 
 **APA Style:**
 
-    Radatz, P., & Contributors. (2026). bdgd2opendss: A BDGD to OpenDSS conversion tool (Version 1.2.2) [Computer software]. GitHub. https://github.com/pauloradatz/bdgd2opendss
+    Radatz, P., & Contributors. (2026). bdgd2opendss: A BDGD to OpenDSS conversion tool (Version 1.2.4) [Computer software]. GitHub. https://github.com/pauloradatz/bdgd2opendss
 
 **BibTeX Entry:**
 
@@ -108,7 +108,7 @@ If you use `bdgd2opendss` in your academic work, please reference it as follows:
   author = {Paulo Radatz and Contributors},
   title = {bdgd2opendss: A BDGD to OpenDSS conversion tool},
   year = {2026},
-  version = {1.2.2},
+  version = {1.2.4},
   url = {https://github.com/pauloradatz/bdgd2opendss}
 }
 ```

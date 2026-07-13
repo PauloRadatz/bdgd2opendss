@@ -21,13 +21,9 @@ def _detect_csv_separator() -> str:
 
 @dataclass
 class Settings:
-    limitRamal30m: bool = field(default=True, metadata={"description": "Limits ramal to 30m"})
-    ger4fios: bool = field(default=True, metadata={"description": "Generates with Neutral"})
-    gerCapacitors: bool = field(default=False, metadata={"description": "Generates capacitor banks"})
-    loadModel: str = field(default="ANEEL", metadata={"description": "Load model (ANEEL or model8)"})
-    genTypeMT: str = field(default="asBDGD", metadata={"description": "MT generator type: generator/PVSystem/asBDGD"})
-    genTypeBT: str = field(default="generator", metadata={"description": "BT generator type: generator/PVSystem"})
-    gerCoord: bool = field(default=True, metadata={"description": "Controls geographic generation"})
+    # loadModel: str = field(default="ANEEL", metadata={"description": "Load model (ANEEL or model8)"})
+    gerCoord: bool = field(default=True, metadata={"description": "Controla a geração das coordenadas geográficas"})
+    intAddGDs: bool = field(default=False, metadata={"description": "Inclui redirects das GDs nos arquivos Master"})
 
     # TODO options in the ProgGeoPerdas
     intRealizaCnvrgcPNT: bool = field(default=False, metadata={"description": "Convergência de Perda Não Técnica"})
@@ -42,11 +38,11 @@ class Settings:
     intAdequarTrafoVazio: bool = field(default=False, metadata={"description": "Eliminar Transformadores Vazios"})
     intNeutralizarTrafoTerceiros: bool = field(default=False, metadata={"description": "Neutralizar Transformadores de Terceiros"})
     intNeutralizarRedeTerceiros: bool = field(default=False, metadata={"description": "Neutralizar Redes de Terceiros (MT/BT)"})
-    intModeloConverge: bool = field(default=False, metadata={"description": "Modelo de Convergência"})
+    # intModeloConverge: bool = field(default=False, metadata={"description": "Modelo de Convergência"})
     dblVPUMin: float = field(default=0.5, metadata={"description": "Tensão Mínima(pu)"})
     cbMeterComplete: bool = field(default=False, metadata={"description": "Medidores de Energia no barramento principal e transformadores"})
     # BDGD pública ou PRIVADA
-    TipoBDGD: bool = field(default=False, metadata={"description": "Define o arquivo JSON para a BDGD: privada (True) ou pública (False)"})
+    _TipoBDGD: bool = field(default=False, metadata={"description": "Define o arquivo JSON para a BDGD: privada (True) ou pública (False)"})
     TabelaPT: bool = field(default=True, metadata={"description": "Define se o usuário quer gerar as tabelas de perdas técnicas"})
     csv_separator: str = field(default_factory=_detect_csv_separator, metadata={"description": "Separador usado nos arquivos CSV"})
 

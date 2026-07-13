@@ -31,7 +31,7 @@ def get_caller_directory(caller_frame: inspect) -> pathlib.Path:
 def get_feeder_list(folder: str) -> List[str]:  # TODO is there a way to not load everything?
     folder_bdgd = folder
 
-    if settings.TipoBDGD:
+    if settings._TipoBDGD:
         json_file_name = bdgd2dss_private_json
     else:
         json_file_name = bdgd2dss_json
@@ -62,7 +62,7 @@ def bdgd_type(path):
     for item in arquivos:
         x,ext = os.path.splitext(item)
         if ext == '.dbf' or ext == '.shp' or ext == '.shx' or ext == '.prj':
-            settings.TipoBDGD = True
+            settings._TipoBDGD = True
             return "privada"
         elif ext == '.gdbtable' or ext == '.gdbtablx' or ext == '.gdbindexes':
             return "publica"
@@ -74,7 +74,7 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
     bdgd_type(bdgd_file_path) #define automaticamente se a bdgd é pública ou privada
     #
-    if settings.TipoBDGD:
+    if settings._TipoBDGD:
         json_file_name = bdgd2dss_private_json
     else:
         json_file_name = bdgd2dss_json
@@ -99,6 +99,9 @@ def run(bdgd_file_path: Union[str, pathlib.Path],
 
             case = Case(json_obj.data, geodataframes, bdgd_file_path, feeder, output_folder)
             case.PopulaCase()
+
+    if settings.intAddGDs:
+        print("\n[AVISO] Geração Distribuída (GD):\nOs valores de potência das GDs convertidas (tanto em BT quanto em MT) podem não ser exatos, e as curvas de carga assumem perfil solar padrão, o que pode não representar a realidade de todas as unidades. No momento, apenas a localização das GDs está modelada com precisão. Recomendamos cautela ao utilizar estes modelos em estudos. Melhorias nessa representação serão incluídas em versões futuras, especialmente se a ANEEL fornecer diretrizes oficiais de modelagem.\n")
 
 def _handle_uncaught_verification_failure(validation: ValidadorBDGD, phase: str, exc: Exception) -> None:
     if not getattr(validation, "cod_base", None):
@@ -151,7 +154,7 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path],
     if tipo:
         _report_verification("inicio", f"BDGD {tipo} detectada")
 
-    if settings.TipoBDGD:
+    if settings._TipoBDGD:
         #json_file_name = bdgd2dss_private_json
         json_file_name = bdgd2dss_error_private_json
     else:
@@ -165,7 +168,7 @@ def verificacao_bdgd(bdgd_file_path: Union[str, pathlib.Path],
     geodataframe,tables = json_obj.create_geodataframe_errors(bdgd_file_path)
     _report_verification("carga", "Tabelas carregadas")
 
-    if not settings.TipoBDGD: #se for BDGD pública
+    if not settings._TipoBDGD: #se for BDGD pública
         for key in bdgd_pub:
             geodataframe[key[0:4]] = geodataframe.pop(key)
 

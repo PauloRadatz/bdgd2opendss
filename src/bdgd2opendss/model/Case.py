@@ -43,7 +43,7 @@ class Case:
         self.data_bdgd = ""
         self.year_bdgd = 0
 
-        if settings.TipoBDGD: #BDGD privada
+        if settings._TipoBDGD: #BDGD privada
             self.ucbt = "UCBT"
             self.ucmt = "UCMT"
             self.ugbt = "UGBT"
@@ -190,7 +190,8 @@ class Case:
         voltagebases = " ".join(str(z) for z in set(y))
         for i in file_names:
             if i[:2] == "GD":
-                master = master + f'!Redirect "{i}"\n'
+                if settings.intAddGDs:
+                    master = master + f'Redirect "{i}"\n'
             else:
                 master = master + f'Redirect "{i}"\n'
         master = master + f'''Set mode = daily
@@ -433,7 +434,7 @@ buscoords buscoords.csv'''
                 'CTMT':'last','RAMAL':'last','DAT_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
 
-            if not settings.TipoBDGD:#apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
+            if not settings._TipoBDGD:#apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
                 Utils.check_duplicate_loads_names(df_ucbt,"BT") #deve-se passar o tipo de consumidor (BT ou MT)
 
             try:
@@ -476,7 +477,7 @@ buscoords buscoords.csv'''
             df_ucmt = pd.DataFrame(dfs).groupby('COD_ID', as_index=False).agg({'PAC': 'last', 'FAS_CON':'last','TEN_FORN':'last','TIP_CC':'last',
                 'CTMT':'last','PN_CON':'last','ENE_01':'sum','ENE_02':'sum','ENE_03':'sum','ENE_04':'sum','ENE_05':'sum',
                 'ENE_06':'sum','ENE_07': 'sum','ENE_08': 'sum','ENE_09':'sum','ENE_10':'sum','ENE_11':'sum','ENE_12':'sum'})#criar um dicionário 'last'
-            if not settings.TipoBDGD: #apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
+            if not settings._TipoBDGD: #apenas para BDGD pública, pois não está disponível o COD_ID correto da carga
                 Utils.check_duplicate_loads_names(df_ucmt,"MT") #deve-se passar o tipo de consumidor (BT ou MT)
             try:
                 self.loads, fileName = Load.create_load_from_json(self._jsonData,

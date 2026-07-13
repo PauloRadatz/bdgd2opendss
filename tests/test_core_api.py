@@ -30,10 +30,10 @@ CRELUZ_D_FEEDERS = [
 
 @pytest.fixture
 def tipo_bdgd_default():
-    original = settings.TipoBDGD
-    settings.TipoBDGD = False
+    original = settings._TipoBDGD
+    settings._TipoBDGD = False
     yield
-    settings.TipoBDGD = original
+    settings._TipoBDGD = original
 
 
 def get_creluz_d_path():
@@ -56,17 +56,17 @@ class TestBdgdType:
     def test_detects_private_bdgd_from_shapefile_extensions(self, tmp_path, tipo_bdgd_default):
         (tmp_path / "layer.dbf").touch()
         assert bdgd.bdgd_type(str(tmp_path)) == "privada"
-        assert settings.TipoBDGD is True
+        assert settings._TipoBDGD is True
 
     def test_detects_public_bdgd_from_gdb_extensions(self, tmp_path, tipo_bdgd_default):
         (tmp_path / "a00000001.gdbtable").touch()
         assert bdgd.bdgd_type(str(tmp_path)) == "publica"
-        assert settings.TipoBDGD is False
+        assert settings._TipoBDGD is False
 
     def test_leaves_default_when_no_recognized_extensions(self, tmp_path, tipo_bdgd_default):
         (tmp_path / "readme.txt").touch()
         assert bdgd.bdgd_type(str(tmp_path)) is None
-        assert settings.TipoBDGD is False
+        assert settings._TipoBDGD is False
 
 
 class TestGetFeederList:

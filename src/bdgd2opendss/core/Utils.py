@@ -355,8 +355,8 @@ def create_dfs_coords(filename="", feeder="", print_status=True):
     ]
 
     path_object = pathlib.Path(filename)
-    layer_ucbt = 'UCBT' if settings.TipoBDGD else 'UCBT_tab'
-    layer_ucmt = 'UCMT' if settings.TipoBDGD else 'UCMT_tab'
+    layer_ucbt = 'UCBT' if settings._TipoBDGD else 'UCBT_tab'
+    layer_ucmt = 'UCMT' if settings._TipoBDGD else 'UCMT_tab'
 
     gdf_SSDMT = gpd.read_file(path_object, layer='SSDMT',
                               columns=cols,
@@ -718,7 +718,7 @@ def ordem_pacs(df_aux_tramo:Optional[pd.DataFrame] = None, pac_ctmt: Optional[st
 #TODO cria uma lista dos elementos isolados no circuito
 def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac_ctmt: Optional[str] = None, output_folder: Optional[str] = None, log_isolated: bool = False): #cria uma lista de elementos isolados
     global lista_isolados
-    if settings.TipoBDGD: #BDGD privada
+    if settings._TipoBDGD: #BDGD privada
         ucbt = "UCBT"
         ucmt = "UCMT"
         ugbt = "UGBT"
@@ -753,7 +753,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
         df_aux_trafo['ELEM'] = 'TRAFO'
         df_aux_regul = df_reg[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        if settings.TipoBDGD:
+        if settings._TipoBDGD:
             df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
             df_aux_ucmt['PAC_2'] = ''
             df_aux_ucmt['ELEM'] = 'LDMT'
@@ -846,7 +846,7 @@ def elem_isolados(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, fee
 #TODO realiza a sequência elétrica do circuito
 def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feeder: Optional[str] = None,pac: Optional[str] = None, kvbase: Optional[float] = None, key:Optional[str] = None): #define as tensões de PRIMÁRIO dos elementos de MT
     global tensao_dict
-    if settings.TipoBDGD: #BDGD privada
+    if settings._TipoBDGD: #BDGD privada
         ucmt = "UCMT"
         ugmt = "UGMT"
     else: #BDGD pública
@@ -870,7 +870,7 @@ def seq_eletrica(dataframe: Optional[gpd.geodataframe.GeoDataFrame] = None, feed
         df_aux_unsemt['ELEM'] = 'CHVMT'
         df_aux_regul = dataframe['UNREMT']['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC_1','PAC_2']]
         df_aux_regul['ELEM'] = 'REGUL'
-        if settings.TipoBDGD:
+        if settings._TipoBDGD:
             df_aux_ucmt = dataframe[ucmt]['gdf'].query("CTMT == @alimentador")[['COD_ID','CTMT','PAC']]
             df_aux_ucmt = df_aux_ucmt.rename(columns={'PAC':'PAC_1'})
         else:
