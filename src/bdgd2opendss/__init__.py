@@ -1,4 +1,4 @@
-__version__ = "1.2.4"
+__version__ = "1.2.5"
 
 from bdgd2opendss.core.Core import (
     bdgd_type,

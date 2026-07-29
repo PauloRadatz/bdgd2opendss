@@ -25,7 +25,9 @@ from bdgd2opendss.core.Utils import create_output_file, create_output_folder,ade
 from bdgd2opendss.model.Transformer import Transformer #modificação 08/08
 from bdgd2opendss.model.Circuit import Circuit
 from bdgd2opendss.model.Count_days import return_day_type
+import os
 import math
+
 
 import numpy as np
 
@@ -726,14 +728,16 @@ class Load:
         
     def create_csv_dias(output_folder,feeder):
         global df_dias
-        df_dias = pd.DataFrame(columns=['Mês','DU','SA','DO'])
+        df_dias = pd.DataFrame(columns=['Ano','Mês','DU','SA','DO'])
         tipo_dia = ['DU','SA','DO']
+        ano = get_cod_year_bdgd(typ="data")[:4]
         for month in range(1,13):
+            df_dias.at[month,'Ano'] = ano
             df_dias.at[month,'Mês'] = f'{month:02d}'
             for dia in tipo_dia:
                 df_dias.at[month,dia] = return_day_type(tip_dia=dia,mes=f'{month:02d}')
 
-        path_file = output_folder + r"/csv_files" + r"/contagem_dias" + f"_{feeder}.csv"
+        csv_dir = os.path.join(output_folder, "csv_files")
+        os.makedirs(csv_dir, exist_ok=True)
+        path_file = os.path.join(csv_dir, f"contagem_dias_{feeder}.csv")
         df_dias.to_csv(path_file, encoding='utf-8', decimal='.', sep=settings.csv_separator, index=False)
-
-                

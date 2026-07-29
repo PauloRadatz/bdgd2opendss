@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.5 (2026-07-29)
+
+- **Load / CSV Export**: Added `Ano` column to `contagem_dias` CSV export.
+
 ## 1.2.4 (2026-07-13)
 
 - **Settings**: Removed `!GD` redirects from being written by default in Master files. Users can enable them via the new `intAddGDs` setting.
