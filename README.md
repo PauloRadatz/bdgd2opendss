@@ -13,6 +13,13 @@ O `bdgd2opendss` é uma ferramenta criada para facilitar a conversão e análise
 - **Não corrige dados da BDGD**: A ferramenta é exclusivamente um conversor. Se a BDGD de origem contiver dados incorretos ou incompletos, o modelo OpenDSS gerado refletirá essas inconsistências.
 - **Não entrega o modelo calibrado para qualquer estudo**: O modelo gerado é a representação física direta da BDGD. Para estudos específicos (como fluxo de potência, análise de tensão ou fluxo reverso), o usuário deve fazer os devidos ajustes de demanda e energia conforme o objetivo da análise.
 
+### Limitações e considerações da modelagem:
+- **Elementos ANEEL**: Converte apenas os elementos considerados pela ANEEL no cálculo de perdas técnicas. Alguns exemplos incluem: capacitores não serem criados no OpenDSS, a utilização de dois modelos de carga para os consumidores e a modelagem do neutro conforme o padrão regulatório.
+- **Rede Fixa**: O modelo utiliza uma rede estática para o ano todo, sem considerar alterações operacionais ao longo do tempo (como transferências de carga entre alimentadores). Isso pode fazer com que a energia medida no início do alimentador seja muito diferente da energia calculada no modelo.
+- **Geração Distribuída (GD)**: A ferramenta de perdas da ANEEL não cria elementos de GD no OpenDSS. O `bdgd2opendss` gera os arquivos DSS com GDs, mas apenas a localização (barra/bus) é totalmente confiável. Os demais parâmetros necessitam de estudos mais detalhados ou de uma padronização futura da ANEEL. Além disso:
+  - **Consumidor com consumo líquido**: É modelado aplicando a energia consumida líquida sobre a curva de carga típica. A GD é considerada no balanço de energia, mas não reflete o perfil instantâneo real de consumo, o que pode limitar alguns estudos.
+  - **Consumidor com geração líquida**: A energia gerada líquida não é considerada no modelo matemático. Isso limita estudos como o de fluxo reverso e pode fazer com que a energia medida no início do alimentador seja menor que a energia calculada no modelo.
+
 ## Por que um novo repositório?
 
 O `bdgd2opendss` foi criado para dar continuidade ao `bdgd-tools`, mas com foco exclusivo em fazer a conversão da BDGD para o OpenDSS. O `bdgd-tools` deu uma base muito boa, mas decidi criar este novo repositório por alguns motivos principais:
