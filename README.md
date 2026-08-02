@@ -1,107 +1,124 @@
 # bdgd2opendss
 
-`bdgd2opendss` is a powerful tool designed to facilitate the integration and analysis of distribution systems in OpenDSS. It builds on core functionalities initially developed in the `bdgd-tools` project, extending them with new features focused on improving conversion efficiency and accuracy. In addition to its technical benefits, bdgd2opendss serves an important educational purpose, aimed at democratizing Brazilian distribution system modeling by making real Brazilian distribution system models accessible to students and researchers.
+O `bdgd2opendss` é uma ferramenta criada para facilitar a conversão e análise de sistemas de distribuição de energia no OpenDSS. Ele foi desenvolvido a partir do projeto `bdgd-tools`, trazendo novos recursos para deixar a conversão mais rápida, precisa e simples. Além dos benefícios técnicos, a ferramenta tem um papel educacional importante: democratizar a modelagem de redes elétricas no Brasil, tornando modelos reais acessíveis para estudantes, pesquisadores e engenheiros.
 
-## What does `bdgd2opendss` do?
+## O que o `bdgd2opendss` faz (e o que NÃO faz)
 
-`bdgd2opendss` is responsible solely for converting models from `bdgd` format to OpenDSS format. It is not intended to verify or validate any data contained in `bdgd`.
+### O que ele faz:
+- **Suporta BDGD pública e privada**: Converte tanto as bases públicas disponibilizadas nos Dados Abertos da ANEEL quanto as bases privadas internas das distribuidoras.
+- **Modelagem alinhada com a ANEEL**: Replicamos a metodologia de conversão adotada pela ANEEL no cálculo de perdas técnicas (validada e publicada em [artigo acadêmico](https://www.sba.org.br/open_journal_systems/index.php/sbai/article/view/5172)).
+- **Simplicidade**: Realiza a conversão completa em poucas linhas de código em Python.
 
-## Why a New Repository?
+### O que ele NÃO faz:
+- **Não corrige dados da BDGD**: A ferramenta é exclusivamente um conversor. Se a BDGD de origem contiver dados incorretos ou incompletos, o modelo OpenDSS gerado refletirá essas inconsistências.
+- **Não entrega o modelo calibrado para qualquer estudo**: O modelo gerado é a representação física direta da BDGD. Para estudos específicos (como fluxo de potência, análise de tensão ou fluxo reverso), o usuário deve fazer os devidos ajustes de demanda e energia conforme o objetivo da análise.
 
-`bdgd2opendss` was created to continue and evolve the work from the `bdgd-tools` project with a clearer focus on performing only the conversion from `bdgd` to OpenDSS. While `bdgd-tools` provided a solid foundation, the decision to create a new repository stems from several key reasons:
+## Por que um novo repositório?
 
-1. **Streamlined Focus**: `bdgd2opendss` narrows its focus to exclusively performing the conversion from `bdgd` to OpenDSS, ensuring higher efficiency and precision.
-2. **Independence**: The new repository allows for more agile development and greater control over the direction of the project. As the primary maintainer of `bdgd2opendss`, I can ensure that the project aligns with my vision and goals for the future of this work.
-3. **Future-Proofing**: Since `bdgd-tools` is unlikely to be maintained or used going forward, `bdgd2opendss` provides a fresh start, ensuring continued development and improvements without being tied to the legacy of the previous project. This new repository will serve as the active and evolving tool for users and collaborators in the future.
+O `bdgd2opendss` foi criado para dar continuidade ao `bdgd-tools`, mas com foco exclusivo em fazer a conversão da BDGD para o OpenDSS. O `bdgd-tools` deu uma base muito boa, mas decidi criar este novo repositório por alguns motivos principais:
 
-By creating `bdgd2opendss`, I aim to push the boundaries of what was accomplished in `bdgd-tools`, while ensuring the project remains relevant, focused, and adaptable to the specific challenges of converting `bdgd` models to OpenDSS.
+1. **Foco**: O `bdgd2opendss` faz apenas a conversão da BDGD para o OpenDSS, o que garante mais eficiência e precisão.
+2. **Independência**: Um novo repositório permite desenvolver mais rápido e ter mais controle sobre o futuro do projeto. Como principal mantenedor, consigo garantir que a ferramenta siga alinhada com o que planejo para ela.
+3. **Futuro do projeto**: O `bdgd-tools` não deve mais receber atualizações. O `bdgd2opendss` é um recomeço para continuar evoluindo sem ficar preso ao código antigo.
 
-## Acknowledgments
+## Agradecimentos
 
-The development of `bdgd2opendss` builds upon the efforts of the contributors to the original `bdgd-tools` project. Special thanks to the following individuals who played a significant role in the success of the original project:
+O `bdgd2opendss` existe graças ao trabalho do pessoal que contribuiu no projeto original `bdgd-tools`. Um agradecimento especial para:
 
-- **Ênio Rodrigues** - The mastermind behind the outstanding code structure that has made the evolution of the tool easier.
-- **Paulo Radatz, Lucas Almeida, and Andrey Lopes** - Responsible for creating the mapping between the `bdgd` and OpenDSS models.
-- **Professor Lucas Melo, Miguel Casemiro, and Mozart Nogueira** (Universidade Federal do Ceará) - Improved the tool to near completion and performed valuable validations.
-- **Professor Carlos Frederico, Guilherme Broslavschi, Ananda, and Raphael Toshio Sakai** (Universidade de São Paulo) - Contributed to the development of important features, such as the addition of coordinates and energymeters.
+- **Ênio Rodrigues** - Criou a estrutura de código inicial que facilitou muito a evolução da ferramenta.
+- **Paulo Radatz, Lucas Almeida e Andrey Lopes** - Criaram o mapeamento entre o BDGD e o OpenDSS.
+- **Professor Lucas Melo, Miguel Casemiro e Mozart Nogueira** (Universidade Federal do Ceará) - Melhoraram a ferramenta e fizeram validações importantes.
+- **Professor Carlos Frederico, Guilherme Broslavschi, Ananda e Raphael Toshio Sakai** (Universidade de São Paulo) - Ajudaram com recursos importantes, como coordenadas e medidores de energia (*energymeters*).
 - **Ana Camila Mamede** (Universidade Federal de Uberlândia)
 - **Rodolfo Londero**
 
-Without their dedication and expertise, this continuation of the project would not have been possible.
+Sem a ajuda e a dedicação de vocês, este projeto não seria possível.
 
-## Installation
+## Instalação
 
-### Install from PyPI (Recommended)
+### Instalar via PyPI (Recomendado)
 
-The easiest way to install `bdgd2opendss` is using pip:
+A forma mais fácil de instalar o `bdgd2opendss` é usando o pip:
 
 ```bash
 pip install bdgd2opendss
 ```
 
-The package supports Python 3.11, 3.12, 3.13, and 3.14. Dependencies are automatically installed based on your Python version.
+O pacote roda no Python 3.11, 3.12, 3.13 e 3.14. As dependências são instaladas automaticamente de acordo com a sua versão do Python.
 
-### Install from Source
+### Instalar pelo código-fonte
 
-If you prefer to install from source or need to modify the code:
+Se você quiser modificar o código ou instalar direto do repositório:
 
-1. Clone the repository:
+1. Clone o repositório:
 
 ```bash
 git clone https://github.com/pauloradatz/bdgd2opendss.git
 ```
 
-2. Navigate to the project directory:
+2. Entre na pasta do projeto:
 
 ```bash
 cd bdgd2opendss
 ```
 
-3. Install the required dependencies:
+3. Instale as dependências:
 
 ```bash
-pip install -r requirements_py311.txt  # For Python 3.11
-pip install -r requirements_py312.txt  # For Python 3.12
-pip install -r requirements_py313.txt  # For Python 3.13
-pip install -r requirements_py314.txt  # For Python 3.14
+pip install -r requirements_py311.txt  # Para Python 3.11
+pip install -r requirements_py312.txt  # Para Python 3.12
+pip install -r requirements_py313.txt  # Para Python 3.13
+pip install -r requirements_py314.txt  # Para Python 3.14
 ```
 
-4. Install the package in editable mode:
+4. Instale o pacote em modo editável:
 
 ```bash
 pip install -e .
 ```
 
-### Installation Support
+## Como usar
 
-If you need support on installation and usage, or if you're interested in learning everything about creating virtual environments, setting up Python projects using PyCharm, and managing Python projects necessary for installation and use, I strongly recommend my Python course [Python Sem Mistérios: Instalação, Ambientes Virtuais e Gerenciamento de Projetos](https://paulo-radatz.kpages.online/pagina-de-vendas-39e03b9e-c528-4d0c-b831-f5593ef0baa7). Aula 6.1 summarizes the process of downloading and installing a repository like this one.
-
-## Usage
-
-After installation, you can start using `bdgd2opendss` by importing it into your Python scripts or running the provided command-line tools. Detailed usage examples can be found in the `examples` folder or in the documentation.
+Depois de instalar, você pode converter uma BDGD para OpenDSS com poucas linhas de código em Python:
 
 ```python
 import bdgd2opendss
-# Example usage
+
+# Caminho da sua BDGD (.gdb) e pasta onde deseja salvar os arquivos OpenDSS
+bdgd_path = "caminho/para/sua_bdgd.gdb"
+output_folder = "caminho/para/pasta_de_saida"
+
+# (Opcional) Listar os alimentadores disponíveis na BDGD
+feeders = bdgd2opendss.get_feeder_list(bdgd_path)
+print("Alimentadores encontrados:", feeders)
+
+# Executar a conversão completa
+bdgd2opendss.run(bdgd_path, output_folder)
 ```
 
-## License
+## Cursos e Treinamentos
 
-This project is licensed under the MIT License. See the `LICENSE` file for more information.
+Se você quiser aprender a usar o `bdgd2opendss` e se aprofundar no OpenDSS, confira os cursos disponíveis na [Radatz Academy BR](https://www.pauloradatz.me/radatz-academy-br).
 
-## Contributing
+## Licença
 
-Contributions to `bdgd2opendss` are welcome! Please refer to our contribution guidelines in `CONTRIBUTING.md` for details on how you can help improve the project.
+Este projeto usa a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
-## How to Cite
+## Contribuições
 
-If you use `bdgd2opendss` in your academic work, please reference it as follows:
+Quer ajudar a melhorar o `bdgd2opendss`? Toda contribuição é bem-vinda! Veja como ajudar no arquivo `CONTRIBUTING.md`.
 
-**APA Style:**
+## Como citar
+
+Para mais detalhes sobre a validação da ferramenta, você pode ler o [artigo publicado no SBAI](https://www.sba.org.br/open_journal_systems/index.php/sbai/article/view/5172).
+
+Se você usar o `bdgd2opendss` no seu trabalho acadêmico, pode citar assim:
+
+**Estilo APA:**
 
     Radatz, P., & Contributors. (2026). bdgd2opendss: A BDGD to OpenDSS conversion tool (Version 1.2.5) [Computer software]. GitHub. https://github.com/pauloradatz/bdgd2opendss
 
-**BibTeX Entry:**
+**BibTeX:**
 
 ```bibtex
 @software{radatz2024bdgd2opendss,
@@ -113,9 +130,8 @@ If you use `bdgd2opendss` in your academic work, please reference it as follows:
 }
 ```
 
-If you use another release, substitute the version you installed.
+Se estiver usando outra versão, é só mudar o número da versão na citação.
 
-## Contact
+## Contato
 
-For questions, support, or consulting inquiries, please contact Paulo Radatz at [paulo.radatz@gmail.com](mailto:paulo.radatz@gmail.com).
-
+Se tiver dúvidas, precisar de suporte ou quiser contratar consultoria, pode me mandar um e-mail: [paulo.radatz@gmail.com](mailto:paulo.radatz@gmail.com).
